@@ -17,6 +17,10 @@ hide:
 - The Dependency Injection system now supports async providers in nested dependencies.
 - GenericAlias was changed since Python 3.9+ to types.GenericAlias.
 
+### Fixed
+
+- Exception handler for HTTPException was not properly handling the response from the shortcuts.
+
 ## 0.2.1
 
 ### Added

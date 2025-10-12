@@ -1,4 +1,4 @@
-from typing import Union
+from typing import cast
 
 from lilya import status
 from lilya.exceptions import HTTPException as LilyaHTTPException
@@ -17,14 +17,18 @@ from ravyn.utils.enums import MediaType
 
 
 async def http_exception_handler(
-    request: Request, exc: Union[HTTPException, LilyaHTTPException]
-) -> Union[JSONResponse, Response]:  # pragma: no cover
+    request: Request, exc: HTTPException | LilyaHTTPException
+) -> JSONResponse | Response:  # pragma: no cover
     """
     Default exception handler for LilyaHTTPException and Ravyn HTTPException.
     """
 
     extra = getattr(exc, "extra", None)
     headers = getattr(exc, "headers", None)
+    response = getattr(exc, "response", None)
+
+    if exc.response is not None:
+        return cast(Response, response)
 
     if exc.status_code in {204, 304}:
         return JSONResponse(None, status_code=exc.status_code, headers=headers)
