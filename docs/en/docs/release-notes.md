@@ -11,6 +11,11 @@ hide:
 
 - Add response parameter to exception initialization.
 
+### Changed
+
+- Simplified `Factory` internals for cleaner nested provider handling and async consistency.
+- The Dependency Injection system now supports async providers in nested dependencies by delegating to core Lilya.
+
 ## 0.2.1
 
 ### Added

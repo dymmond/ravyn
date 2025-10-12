@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from ravyn.conf.global_settings import RavynAPISettings, RavynSettings
     from ravyn.context import Context
     from ravyn.core.datastructures import JSON, Redirect, Stream, Template, UploadFile
-    from ravyn.injector import Factory, Inject
+    from ravyn.injector import Factory, Inject, Injects
 
     from .applications import ChildRavyn, Ravyn
     from .background import BackgroundTask, BackgroundTasks
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
         ValidationErrorException,
     )
     from .param_functions import Requires, Security
-    from .params import Body, Cookie, File, Form, Header, Injects, Param, Path, Query
+    from .params import Body, Cookie, File, Form, Header, Param, Path, Query
     from .permissions import AllowAny, BasePermission, DenyAll
     from .pluggables import Extension, Pluggable
     from .requests import Request
@@ -204,7 +204,7 @@ _monkay: Monkay = Monkay(
         "File": ".params.File",
         "Form": ".params.Form",
         "Header": ".params.Header",
-        "Injects": ".params.Injects",
+        "Injects": ".injector.Injects",
         "Param": ".params.Param",
         "Path": ".params.Path",
         "Query": ".params.Query",
