@@ -58,7 +58,6 @@ class ExceptionMiddleware(LilyaExceptionMiddleware):
             conn = Request(scope, receive, send)
         else:
             conn = WebSocket(scope, receive, send)
-
         await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
 
 

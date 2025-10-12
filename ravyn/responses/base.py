@@ -17,15 +17,20 @@ import orjson
 from lilya import status
 from lilya.responses import (
     RESPONSE_TRANSFORM_KWARGS,
+    CSVResponse as CSVResponse,  # noqa
     Error as Error,  # noqa
+    EventStreamResponse as EventStreamResponse,  # noqa
     FileResponse as FileResponse,  # noqa
     HTMLResponse as HTMLResponse,  # noqa
+    ImageResponse as ImageResponse,  # noqa
     JSONResponse as JSONResponse,  # noqa
+    NDJSONResponse as NDJSONResponse,  # noqa
     Ok as Ok,  # noqa
     PlainText as PlainText,  # noqa
     RedirectResponse as RedirectResponse,  # noqa
     Response as LilyaResponse,  # noqa
     StreamingResponse as StreamingResponse,  # noqa
+    XMLResponse as XMLResponse,  # noqa
 )
 from typing_extensions import Annotated, Doc
 

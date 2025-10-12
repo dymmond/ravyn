@@ -89,7 +89,10 @@ class Inject(ArbitraryHashableBaseModel):
             return self.value
 
         try:
-            value = await self._depends.resolve(dependencies_map=kwargs)
+            if is_async_callable(self.dependency):
+                value = await self.dependency(**kwargs)
+            else:
+                value = self.dependency(**kwargs)
         except TypeError as e:
             raise ImproperlyConfigured(str(e)) from e
 
@@ -107,7 +110,14 @@ class Inject(ArbitraryHashableBaseModel):
         )
 
     def __hash__(self) -> int:
-        return hash((type(self), self.dependency, self.use_cache, getattr(self, "value", Void)))
+        values: dict[str, Any] = {}
+        for key, value in self.__dict__.items():
+            values[key] = None
+            if isinstance(value, (list, set)):
+                values[key] = tuple(value)
+            else:
+                values[key] = value
+        return hash((type(self),) + tuple(values))
 
 
 class Injects(FieldInfo):
