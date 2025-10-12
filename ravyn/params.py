@@ -6,7 +6,6 @@ from pydantic.fields import AliasChoices, AliasPath, FieldInfo
 
 from ravyn.security.scopes import Scopes
 from ravyn.typing import Undefined
-from ravyn.utils.constants import IS_DEPENDENCY, SKIP_VALIDATION
 from ravyn.utils.enums import EncodingType, ParamType
 from ravyn.utils.helpers import is_class_and_subclass, make_callable
 
@@ -617,35 +616,6 @@ class File(Form):
             kw_only=kw_only,
             include_in_schema=include_in_schema,
         )
-
-
-class Injects(FieldInfo):
-    """
-    Creates a FieldInfo class with extra parameters.
-    This is used for dependencies and to inject them.
-
-    **Example**
-
-    ```python
-    @get(dependencies={"value": Inject(lambda: 13)})
-    def myview(value: Injects()):
-        return {"value": value}
-    ```
-    """
-
-    def __init__(
-        self,
-        default: Any = Undefined,
-        skip_validation: bool = False,
-        allow_none: bool = True,
-    ) -> None:
-        self.allow_none = allow_none
-        self.extra: dict[str, Any] = {
-            IS_DEPENDENCY: True,
-            SKIP_VALIDATION: skip_validation,
-            "allow_none": self.allow_none,
-        }
-        super().__init__(default=default, json_schema_extra=self.extra)
 
 
 class BaseRequires:

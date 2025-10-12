@@ -1,12 +1,17 @@
 from .base import (
+    CSVResponse,
     Error,
+    EventStreamResponse,
     FileResponse,
     HTMLResponse,
+    ImageResponse,
     LilyaResponse,
+    NDJSONResponse,
     PlainText,
     RedirectResponse,
     Response,
     StreamingResponse,
+    XMLResponse,
 )
 from .encoders import ORJSONResponse as JSONResponse
 from .template import TemplateResponse
@@ -23,4 +28,9 @@ __all__ = [
     "StreamingResponse",
     "TemplateResponse",
     "RedirectResponse",
+    "EventStreamResponse",
+    "CSVResponse",
+    "XMLResponse",
+    "NDJSONResponse",
+    "ImageResponse",
 ]

@@ -15,8 +15,7 @@ from lilya._internal._path import clean_path
 
 from ravyn import HTTPException, Request, route
 from ravyn.exceptions import ImproperlyMiddlewareConfigured
-from ravyn.injector import Inject
-from ravyn.params import Injects
+from ravyn.injector import Inject, Injects
 from ravyn.responses import JSONResponse
 from ravyn.utils.helpers import make_callable
 

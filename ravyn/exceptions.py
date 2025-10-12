@@ -105,7 +105,9 @@ class HTTPException(LilyaHTTPException, RavynAPIException):
         if not detail:
             detail = args[0] if args else HTTPStatus(status_code or self.status_code).phrase
             args = args[1:]
-        super().__init__(status_code=status_code, detail=detail, headers=headers, response=response)
+        super().__init__(
+            status_code=status_code, detail=detail, headers=headers, response=response
+        )
         self.detail = detail
         self.headers = headers
         self.args = (f"{self.status_code}: {self.detail}", *args)

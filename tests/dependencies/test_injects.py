@@ -5,8 +5,7 @@ from lilya.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
 from ravyn.applications import Ravyn
 from ravyn.exceptions import ImproperlyConfigured
-from ravyn.injector import Factory, Inject
-from ravyn.params import Injects
+from ravyn.injector import Factory, Inject, Injects
 from ravyn.routing.controllers import Controller
 from ravyn.routing.gateways import Gateway
 from ravyn.routing.handlers import get
@@ -24,8 +23,8 @@ def test_is_dependency_inserted_into_field_extra() -> None:
     "field_info, exp",
     [
         (Injects(), None),
-        (Injects(default=None), None),
-        (Injects(default=13), 13),
+        (Injects(None), None),
+        (Injects(13), 13),
     ],
 )
 def test_dependency_defaults(field_info: Any, exp: Optional[int]) -> None:

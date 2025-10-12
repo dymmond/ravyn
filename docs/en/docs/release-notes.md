@@ -11,6 +11,16 @@ hide:
 
 - Add response parameter to exception initialization.
 
+### Changed
+
+- Simplified `Factory` internals for cleaner nested provider handling and async consistency.
+- The Dependency Injection system now supports async providers in nested dependencies.
+- GenericAlias was changed since Python 3.9+ to types.GenericAlias.
+
+### Fixed
+
+- Exception handler for HTTPException was not properly handling the response from the shortcuts.
+
 ## 0.2.1
 
 ### Added

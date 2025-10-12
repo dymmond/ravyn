@@ -5,7 +5,7 @@ be checked in the [official dependency injection section](https://ravyn.dev/depe
 for more details.
 
 ```python
-from ravyn import Inject, Injects, Factory, DiderectInjects
+from ravyn import Inject, Injects, Factory
 ```
 
 ::: ravyn.Inject

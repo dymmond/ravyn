@@ -29,6 +29,7 @@ class ExceptionMiddleware(LilyaExceptionMiddleware):
         handlers: Optional[Mapping[Any, Callable[[Request, Exception], Response]]] = None,
         debug: bool = False,
     ) -> None:
+        super().__init__(app=app, debug=debug)
         self.app = app
         self.debug = debug
         self._status_handlers: dict[int, Callable] = {}
@@ -58,7 +59,6 @@ class ExceptionMiddleware(LilyaExceptionMiddleware):
             conn = Request(scope, receive, send)
         else:
             conn = WebSocket(scope, receive, send)
-
         await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
 
 
