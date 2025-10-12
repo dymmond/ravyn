@@ -29,6 +29,7 @@ class ExceptionMiddleware(LilyaExceptionMiddleware):
         handlers: Optional[Mapping[Any, Callable[[Request, Exception], Response]]] = None,
         debug: bool = False,
     ) -> None:
+        super().__init__(app=app, debug=debug)
         self.app = app
         self.debug = debug
         self._status_handlers: dict[int, Callable] = {}

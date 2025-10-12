@@ -14,7 +14,7 @@ hide:
 ### Changed
 
 - Simplified `Factory` internals for cleaner nested provider handling and async consistency.
-- The Dependency Injection system now supports async providers in nested dependencies by delegating to core Lilya.
+- The Dependency Injection system now supports async providers in nested dependencies.
 - GenericAlias was changed since Python 3.9+ to types.GenericAlias.
 
 ## 0.2.1
