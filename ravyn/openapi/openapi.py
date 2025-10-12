@@ -9,9 +9,13 @@ from typing import (
     Set,
     Tuple,
     Union,
-    _GenericAlias,
     cast,
 )
+
+try:
+    from typing import _GenericAlias  # noqa
+except ImportError:
+    from types import GenericAlias as _GenericAlias
 
 from lilya._internal._path import clean_path
 from lilya.contrib.security.base import (

@@ -1,5 +1,10 @@
 from decimal import Decimal
-from typing import Any, Type, TypeVar, Union, _GenericAlias, cast, get_args
+from typing import Any, Type, TypeVar, Union, cast, get_args
+
+try:
+    from typing import _GenericAlias  # noqa
+except ImportError:
+    from types import GenericAlias as _GenericAlias
 
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import SkipJsonSchema

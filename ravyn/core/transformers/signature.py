@@ -9,10 +9,15 @@ from typing import (
     Set,
     Type,
     Union,
-    _GenericAlias,
     get_args,
     get_origin,
 )
+
+try:
+    from typing import _GenericAlias  # noqa
+except ImportError:
+    from types import GenericAlias as _GenericAlias
+
 
 from lilya.exceptions import HTTPException as LilyaHTTPException
 from orjson import loads

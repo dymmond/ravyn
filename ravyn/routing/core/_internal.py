@@ -1,6 +1,11 @@
 import inspect
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Type, Union, _GenericAlias, cast, get_args
+from typing import TYPE_CHECKING, Any, Type, Union, cast, get_args
+
+try:
+    from typing import _GenericAlias  # noqa
+except ImportError:
+    from types import GenericAlias as _GenericAlias
 
 from lilya.datastructures import DataUpload
 from pydantic import BaseModel, create_model
