@@ -1,31 +1,28 @@
 services:
   db:
     restart: always
-    image: postgres:12.3
+    image: docker.io/postgres:18
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
       POSTGRES_DB: "ravyn"
-    expose:
-      - "5432"
     command: >-
         --jit=false
+
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   mongodb:
     restart: always
-    image: mongo:latest
+    image: docker.io/mongo:latest
     container_name: mongo
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: mongoadmin
       MONGO_INITDB_DATABASE: mongodb
-    expose:
-      - 27017
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
 
   redis:
     restart: always
@@ -36,10 +33,10 @@ services:
       - "6379:6379"
 
   mongo-express:
-    image: mongo-express
+    image: docker.io/mongo-express
     restart: always
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
       ME_CONFIG_MONGODB_ENABLE_ADMIN: 'true'
       ME_CONFIG_MONGODB_SERVER: mongodb
