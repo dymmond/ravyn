@@ -7,6 +7,8 @@ services:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
       POSTGRES_DB: "ravyn"
+    command: >-
+      --jit=false
     ports:
       - "127.0.0.1:5432:5432"
 
