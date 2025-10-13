@@ -2,6 +2,7 @@ from lilya.authentication import AuthCredentials, AuthenticationBackend, AuthRes
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.authentication import AuthenticationMiddleware
 from lilya.requests import Connection
+from lilya.responses import RedirectResponse
 
 from ravyn import Include, Request, get, status
 from ravyn.responses import PlainText
@@ -21,9 +22,9 @@ def test_auth_app_level(test_client_factory):
     @get(path="/")
     async def homepage(request: Request) -> PlainText:
         if request.headers.get("allow-all") == "yes":
-            return request.user.display_name
+            return PlainText(request.user.display_name)
         else:
-            raise Exception("Should not be reached")
+            return PlainText("Should not be reached")
 
     with create_client(
         routes=[homepage],
@@ -34,20 +35,21 @@ def test_auth_app_level(test_client_factory):
         assert response.text == "Dummy"
 
         response = client.get("/")
+        assert response.text != "Should not be reached"
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_auth_include_level(test_client_factory):
     @get(path="/login")
     async def login(request: Request) -> PlainText:
-        return "logged in"
+        return PlainText("logged in")
 
     @get(path="/")
     async def homepage(request: Request) -> PlainText:
         if request.headers.get("allow-all") == "yes":
-            return request.user.display_name
+            return PlainText(request.user.display_name)
         else:
-            raise Exception("Should not be reached")
+            return PlainText("Should not be reached")
 
     with create_client(
         routes=[
@@ -56,7 +58,11 @@ def test_auth_include_level(test_client_factory):
                 "",
                 routes=[homepage],
                 middleware=[
-                    DefineMiddleware(AuthenticationMiddleware, backend=[DenyNotAllowAll()])
+                    DefineMiddleware(
+                        AuthenticationMiddleware,
+                        backend=[DenyNotAllowAll()],
+                        on_error=RedirectResponse("/login"),
+                    )
                 ],
             ),
         ],
@@ -69,5 +75,6 @@ def test_auth_include_level(test_client_factory):
         assert response.status_code == status.HTTP_200_OK
         assert response.text == "Dummy"
 
-        response = client.get("/")
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        response = client.get("/", follow_redirects=False)
+        assert response.text != "Should not be reached"
+        assert response.status_code == status.HTTP_303_SEE_OTHER
