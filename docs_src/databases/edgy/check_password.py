@@ -1,6 +1,6 @@
 from pydantic import EmailStr
 
-from eddy import monkay
+from edgy import monkay
 
 
 # Check if password is valid or correct

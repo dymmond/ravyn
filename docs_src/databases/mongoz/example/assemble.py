@@ -9,7 +9,7 @@ from pathlib import Path
 
 from ravyn import Ravyn, Gateway, Include
 from ravyn.conf import settings
-from ravyn.contrib.auth.mongoz.middleware import JWTAuthMiddleware
+from ravyn.contrib.auth.mongoz.middleware import JWTAuthMiddleware, JWTAuthBackend
 from lilya.middleware import DefineMiddleware as LilyaMiddleware
 
 
@@ -40,7 +40,13 @@ def get_application():
             Include(
                 routes=[Gateway(handler=home)],
                 middleware=[
-                    LilyaMiddleware(JWTAuthMiddleware, config=settings.jwt_config, user_model=User)
+                    LilyaMiddleware(
+                        JWTAuthMiddleware,
+                        backend=JWTAuthBackend(
+                            config=settings.jwt_config,
+                            user_model=User,
+                        ),
+                    ),
                 ],
             ),
         ],

@@ -1,6 +1,8 @@
 from pydantic import EmailStr
 from edgy import monkay
 
+from .accounts.models import User
+
 
 async def create_superuser(
     first_name: str, last_name: str, username: str, email: EmailStr, password: str

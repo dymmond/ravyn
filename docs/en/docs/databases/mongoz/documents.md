@@ -129,7 +129,7 @@ Ravyn already brings some pre-defined password hashers that are available in the
 ```python
 
 @property
-def password_hashers(self) -> List[str]:
+def password_hashers(self) -> list[str]:
     return [
         "ravyn.contrib.auth.hashers.BcryptPasswordHasher",
     ]

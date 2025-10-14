@@ -5,11 +5,11 @@ with the current [supported models](./models.md#user).
 
 ## JWTAuthMiddleware
 
-This simple but effective middleware extends the [BaseAuthMiddleware](../../middleware/middleware.md#baseauthmiddleware)
+This simple but effective middleware extends the [AuthenticationMiddleware](../../middleware/middleware.md#authenticationmiddleware)
 and enables the authentication via JWT.
 
 ```python
-from ravyn.contrib.auth.edgy.middleware import JWTAuthMiddleware
+from ravyn.contrib.auth.edgy.middleware import JWTAuthMiddleware, JWTAuthBackend
 ```
 
 ### Parameters

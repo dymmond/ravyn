@@ -4,7 +4,10 @@ from collections.abc import Callable
 from typing import Any, Sequence, Set
 
 from lilya._internal._connection import Connection  # noqa
-from lilya.authentication import AuthenticationBackend
+from lilya.authentication import (
+    AuthCredentials,  # noqa
+    AuthenticationBackend,
+)
 from lilya.middleware.authentication import (
     AuthenticationMiddleware as LilyaAuthenticationMiddleware,
 )
