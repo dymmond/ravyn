@@ -153,6 +153,9 @@ class BaseResponseHandler:
     In charge of handling the responses of the handlers.
     """
 
+    __original_status_code__: int | None = None
+    __is_status_overridden__: bool = False
+
     @staticmethod
     async def _get_response_data(
         route: "HTTPHandler", parameter_model: "TransformerModel", request: Request
