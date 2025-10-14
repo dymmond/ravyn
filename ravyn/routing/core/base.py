@@ -439,10 +439,11 @@ class BaseResponseHandler:
 
             background = getattr(data, "background", None) or self.background
 
-            if self.__is_status_overridden__:
-                status_code = self.status_code
-            else:
-                status_code = getattr(data, "status_code", None) or self.status_code
+            status_code = (
+                self.status_code
+                if self.__is_status_overridden__
+                else getattr(data, "status_code", None) or self.status_code
+            )
 
             if isinstance(data, LilyaResponse):
                 response = data
