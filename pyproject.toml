@@ -4,6 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ravyn"
+license-files = ["LICENSE"]
+license = "BSD-3-Clause"
 description = "Ravyn combines performance, type safety, and elegance. A next-generation async Python framework for APIs, microservices, and web applications."
 long_description = """
 Ravyn is a next-generation async Python web framework built on ASGI, designed for high performance,
@@ -34,7 +36,6 @@ classifiers = [
     "Framework :: AsyncIO",
     "Framework :: AnyIO",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

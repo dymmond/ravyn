@@ -17,6 +17,12 @@ hide:
 - Deprecate [BasicAuthMiddleware](./middleware/middleware.md#baseauthmiddleware) in favour of the new
 [AuthenticationMiddleware](./middleware/middleware.md#authenticationmiddleware) from Lilya and it will be removed from
 version 0.4.0.
+- Updated the documentation for [Edgy](./databases/edgy/motivation.md) with the new AuthenticationMiddleware.
+- Updated the documentation for [MongoZ](./databases/mongoz/motivation.md) with the new AuthenticationMiddleware.
+
+### Fixed
+
+- Overriding the `status_code` for custom encoder types (Pydantic, msgspec...).
 
 ## 0.2.2
 

@@ -1,8 +1,11 @@
 from typing import Union
 
+import pytest
 from lilya import status
+from msgspec import Struct
+from pydantic import BaseModel
 
-from ravyn import Response
+from ravyn import JSON, JSONResponse, Response
 from ravyn.responses.encoders import ORJSONResponse, UJSONResponse
 from ravyn.routing.gateways import Gateway
 from ravyn.routing.handlers import get
@@ -170,3 +173,51 @@ def test_multiple(test_client_factory):
 
         assert response.text == "Ok"
         assert response.status_code == status.HTTP_207_MULTI_STATUS
+
+
+@pytest.mark.parametrize(
+    "return_type", [JSONResponse, UJSONResponse, ORJSONResponse, Response, JSON]
+)
+def test_override_response_status_code_for_json(test_client_factory, return_type):
+    @get("/{user_id}")
+    def get_user(user_id: int) -> return_type:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "User not found",
+            },
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+    with create_client(routes=[Gateway(handler=get_user)]) as client:
+        response = client.get("/1")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+class ReturnModel(BaseModel):
+    success: bool
+    error: str
+
+
+class ReturnStruct(Struct):
+    success: bool
+    error: str
+
+
+@pytest.mark.parametrize("return_type", [ReturnModel, ReturnStruct])
+def test_override_response_status_code_for_encoders(test_client_factory, return_type):
+    @get("/{user_id}")
+    def get_user(user_id: int) -> return_type:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "User not found",
+            },
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+    with create_client(routes=[Gateway(handler=get_user)]) as client:
+        response = client.get("/1")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND

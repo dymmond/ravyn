@@ -2658,6 +2658,7 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
             name=name,
             permissions=self.__lilya_permissions__,  # type: ignore
         )
+
         self._permissions: Union[list[Permission], VoidType] = Void
         self._dependencies: Dependencies = {}
 
