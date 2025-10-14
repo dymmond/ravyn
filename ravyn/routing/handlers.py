@@ -465,6 +465,11 @@ def get(
         handler.fn = func
         handler.handler = wrapped
         handler.__type__ = HttpMethod.GET.value
+        handler.__original_status_code__ = status.HTTP_200_OK
+
+        if status_code != handler.__original_status_code__:
+            handler.__is_status_overridden__ = True
+
         handler.validate_handler()
         return handler
 
@@ -765,6 +770,11 @@ def head(
         handler.fn = func
         handler.handler = wrapped
         handler.__type__ = HttpMethod.HEAD.value
+        handler.__original_status_code__ = status.HTTP_200_OK
+
+        if status_code != handler.__original_status_code__:
+            handler.__is_status_overridden__ = True
+
         handler.validate_handler()
         return handler
 
@@ -1204,6 +1214,7 @@ def post(
         handler.fn = func
         handler.handler = wrapped
         handler.__type__ = HttpMethod.POST.value
+        handler.__original_status_code__ = status.HTTP_201_CREATED
         handler.validate_handler()
         return handler
 
@@ -1638,6 +1649,11 @@ def put(
         handler.fn = func
         handler.handler = wrapped
         handler.__type__ = HttpMethod.PUT.value
+        handler.__original_status_code__ = status.HTTP_200_OK
+
+        if status_code != handler.__original_status_code__:
+            handler.__is_status_overridden__ = True
+
         handler.validate_handler()
         return handler
 
@@ -2072,6 +2088,11 @@ def patch(
         handler.fn = func
         handler.handler = wrapped
         handler.__type__ = HttpMethod.PATCH.value
+        handler.__original_status_code__ = status.HTTP_200_OK
+
+        if status_code != handler.__original_status_code__:
+            handler.__is_status_overridden__ = True
+
         handler.validate_handler()
         return handler
 
@@ -2506,6 +2527,7 @@ def delete(
         handler.fn = func
         handler.handler = wrapped
         handler.__type__ = HttpMethod.DELETE.value
+        handler.__original_status_code__ = status.HTTP_204_NO_CONTENT
         handler.validate_handler()
         return handler
 
@@ -2806,6 +2828,11 @@ def options(
         handler.fn = func
         handler.handler = wrapped
         handler.__type__ = HttpMethod.OPTIONS.value
+        handler.__original_status_code__ = status.HTTP_200_OK
+
+        if status_code != handler.__original_status_code__:
+            handler.__is_status_overridden__ = True
+
         handler.validate_handler()
         return handler
 
@@ -3106,6 +3133,11 @@ def trace(
         handler.fn = func
         handler.handler = wrapped
         handler.__type__ = HttpMethod.TRACE.value
+        handler.__original_status_code__ = status.HTTP_200_OK
+
+        if status_code != handler.__original_status_code__:
+            handler.__is_status_overridden__ = True
+
         handler.validate_handler()
         return handler
 
@@ -3573,7 +3605,12 @@ def route(
 
         handler.fn = func
         handler.handler = wrapped
-        handler.__type__ = HttpMethod.OPTIONS.value
+        handler.__type__ = HttpMethod.GET.value
+        handler.__original_status_code__ = status.HTTP_200_OK
+
+        if status_code != handler.__original_status_code__:
+            handler.__is_status_overridden__ = True
+
         handler.validate_handler()
         return handler
 

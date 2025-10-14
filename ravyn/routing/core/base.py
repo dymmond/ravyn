@@ -433,17 +433,25 @@ class BaseResponseHandler:
         async def response_content(data: Any, **kwargs: dict[str, Any]) -> LilyaResponse:
             data = await self.get_response_data(data=data)
             _cookies = self.get_cookies(cookies)
+
+            background = getattr(data, "background", None) or self.background
+
+            if self.__is_status_overridden__:
+                status_code = self.status_code
+            else:
+                status_code = getattr(data, "status_code", None) or self.status_code
+
             if isinstance(data, LilyaResponse):
                 response = data
-                response.status_code = getattr(data, "status_code", None) or self.status_code
-                response.background = getattr(data, "background", None) or self.background
+                response.status_code = status_code
+                response.background = background
             else:
                 response = response_class(
-                    background=getattr(data, "background", None) or self.background,
+                    background=background,
                     content=data,
                     headers=headers,
                     media_type=media_type,
-                    status_code=getattr(data, "status_code", None) or self.status_code,
+                    status_code=status_code,
                 )
 
             for cookie in _cookies:
