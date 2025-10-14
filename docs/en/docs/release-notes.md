@@ -5,6 +5,19 @@ hide:
 
 # Release Notes
 
+## 0.2.3
+
+### Added
+
+- Support for the new [AuthenticationMiddleware](./middleware/middleware.md#authenticationmiddleware) from Lilya.
+- Extensive [documentation for the AuthenticationMiddleware](./middleware/autentication.md) with examples and guides.
+
+### Changed
+
+- Deprecate [BasicAuthMiddleware](./middleware/middleware.md#baseauthmiddleware) in favour of the new
+[AuthenticationMiddleware](./middleware/middleware.md#authenticationmiddleware) from Lilya and it will be removed from
+version 0.4.0.
+
 ## 0.2.2
 
 ### Added

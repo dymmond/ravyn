@@ -1,12 +1,20 @@
+import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Set
+from collections.abc import Callable
+from typing import Any, Sequence, Set
 
 from lilya._internal._connection import Connection  # noqa
+from lilya.authentication import AuthenticationBackend
+from lilya.middleware.authentication import (
+    AuthenticationMiddleware as LilyaAuthenticationMiddleware,
+)
 from lilya.types import ASGIApp, Receive, Scope, Send
 from typing_extensions import Annotated, Doc
 
 from ravyn.core.protocols.middleware import MiddlewareProtocol
+from ravyn.exceptions import AuthenticationError
 from ravyn.parsers import ArbitraryBaseModel
+from ravyn.responses.base import Response
 from ravyn.utils.enums import ScopeType
 
 
@@ -42,6 +50,11 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):  # pragma: no cover
     `AuthResult` object in order for the middleware to assign the `request.user`
     properly.
 
+    !!! Warning "Deprecation Warning"
+        `BaseAuthMiddleware` is deprecated and will be removed in a future release.
+        Please use `AuthenticationMiddleware` from `ravyn.middleware.authentication`
+        which provides the same functionality with a more robust implementation.
+
     The `AuthResult` is of type `ravyn.middleware.authentication.AuthResult`.
     """
 
@@ -59,6 +72,17 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):  # pragma: no cover
         super().__init__(app)
         self.app = app
         self.scopes: Set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
+
+        warning_msg = (
+            "`BaseAuthMiddleware` is deprecated and will be removed in a future release (0.4.0). "
+            "Please use `AuthenticationMiddleware`from `ravyn.middleware.authentication` which "
+            "provides the same functionality with a more robust implementation."
+        )
+        warnings.warn(
+            warning_msg,
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -80,3 +104,37 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):  # pragma: no cover
         The abstract method that needs to be implemented for any authentication middleware.
         """
         raise NotImplementedError("authenticate must be implemented.")
+
+
+class AuthenticationMiddleware(LilyaAuthenticationMiddleware):
+    def __init__(
+        self,
+        app: Annotated[
+            ASGIApp,
+            Doc(
+                """
+                The ASGI application callable wrapped by this middleware.
+                """
+            ),
+        ],
+        backend: Annotated[
+            AuthenticationBackend | Sequence[AuthenticationBackend] | None,
+            Doc(
+                """
+                One or more authentication backends used to authenticate the connection.
+                If multiple backends are provided, they are tried in order.
+                """
+            ),
+        ] = None,
+        on_error: Annotated[
+            Callable[[Connection, AuthenticationError], Response] | None,
+            Doc(
+                """
+                An optional error handler function called when authentication fails.
+                It receives the Connection and AuthenticationError and must return an
+                ASGI-compatible Response object.
+                """
+            ),
+        ] = None,
+    ) -> None:
+        super().__init__(app=app, backend=backend, on_error=on_error)  # type: ignore[arg-type]

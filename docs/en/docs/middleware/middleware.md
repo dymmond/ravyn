@@ -1,4 +1,4 @@
-# Middleware
+# Available Middleware
 
 Ravyn includes several middleware classes unique to the application but also allowing some other ways of designing
 them by using [protocols](../protocols.md). Inspired by other great frameworks, Ravyn has a similar approach
@@ -98,6 +98,11 @@ done with middleware and how to write some of them, Lilya also goes through with
 <a href='https://www.lilya.dev/middleware/#writing-pure-asgi-middleware' target='_blank'>detail</a>.
 
 ## BaseAuthMiddleware
+
+!!! Warning "Deprecation Notice"
+    `BaseAuthMiddleware` is deprecated and will be removed in future versions of Ravyn (0.4.0).
+    It is recommended to implement custom authentication by using the the [AuthenticationMiddleware](#authenticationmiddleware)
+    instead.
 
 This is a very special middleware and it is the core for every authentication middleware that is used within
 an **Ravyn** application.
@@ -209,6 +214,18 @@ If you need to specify parameters in your middleware then you will need to wrap 
 
 If no parameters are needed, then you can simply pass the middleware class directly and Ravyn will take care of
 the rest.
+
+## AuthenticationMiddleware
+
+This is the new and recommended way of implementing authentication middlewares for Ravyn applications.
+
+It is directly used from Lilya and it is a pure ASGI middleware.
+
+There is a special [section for authentication](./authentication.md) that explains how to use it in more detail.
+
+### API Reference
+
+Check out the [API Reference for BasseAuthMiddleware](../references/middleware/authentication.md) for more details.
 
 ## Available middlewares
 

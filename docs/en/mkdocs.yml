@@ -116,7 +116,9 @@ nav:
     - permissions/index.md
     - permissions/ravyn.md
     - permissions/lilya.md
-  - middleware/middleware.md
+  - Middleware:
+    - middleware/middleware.md
+    - middleware/authentication.md
   - observables.md
   - dependencies.md
   - decorators.md
@@ -251,6 +253,7 @@ nav:
   - references/interceptors.md
   - references/permissions.md
   - references/middleware/baseauth.md
+  - references/middleware/authentication.md
   - references/middleware/middlewares.md
   - references/extensions.md
   - references/pluggables.md
