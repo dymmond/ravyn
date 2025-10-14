@@ -15,7 +15,7 @@ from ravyn.core.config.jwt import JWTConfig
 TEST_DATABASE_URL = os.environ.get("DATABASE_URI", "mongodb://root:mongoadmin@localhost:27017")
 
 
-class TestSettings(RavynSettings):
+class AppTestSettings(RavynSettings):
     __test__ = False
     app_name: str = "test_client"
     debug: bool = False
@@ -53,7 +53,7 @@ class TestSettings(RavynSettings):
         return [GlobalContextMiddleware]
 
 
-class TestConfig(TestSettings):
+class TestConfig(AppTestSettings):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from ravyn import Gateway, Include, MiddlewareProtocol, get
 from ravyn.testclient import create_client
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 class Item(BaseModel):
@@ -47,7 +47,7 @@ def test_add_middleware_to_openapi(test_client_factory):
             ),
         ],
         enable_openapi=True,
-        settings_module=TestSettings,
+        settings_module=AppTestSettings,
     ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text

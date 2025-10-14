@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from ravyn import JSON, ChildRavyn, Gateway, Include, get
 from ravyn.openapi.datastructures import OpenAPIResponse
 from ravyn.testclient import create_client
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 class Item(BaseModel):
@@ -39,7 +39,7 @@ def test_add_child_ravyn_to_openapi(test_client_factory):
                 ),
             ),
         ],
-        settings_module=TestSettings(),
+        settings_module=AppTestSettings(),
     ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text
@@ -119,7 +119,7 @@ def test_child_ravyn_disabled_openapi(test_client_factory):
                 ),
             ),
         ],
-        settings_module=TestSettings,
+        settings_module=AppTestSettings,
     ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text
@@ -181,7 +181,7 @@ def test_child_ravyn_not_included_in_schema(test_client_factory):
             ),
             Gateway(handler=read_people),
         ],
-        settings_module=TestSettings(),
+        settings_module=AppTestSettings(),
     ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text

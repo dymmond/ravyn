@@ -7,7 +7,7 @@ from ravyn.openapi.datastructures import OpenAPIResponse
 from ravyn.routing.gateways import Gateway
 from ravyn.routing.handlers import post
 from ravyn.testclient import create_client
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 class User(Struct):
@@ -25,7 +25,7 @@ def user(payload: BaseUser) -> None: ...
 
 
 def test_user_msgspec_with_pydantic_openapi(test_client_factory):
-    with create_client(routes=[Gateway(handler=user)], settings_module=TestSettings) as client:
+    with create_client(routes=[Gateway(handler=user)], settings_module=AppTestSettings) as client:
         response = client.get("/openapi.json")
 
         assert response.json() == {

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from ravyn import Gateway, Include, get
 from ravyn.middleware.wsgi import WSGIMiddleware
 from ravyn.testclient import create_client
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 flask_app = Flask(__name__)
 
@@ -32,7 +32,7 @@ def test_external_app_not_include_in_schema(test_client_factory):
             Gateway(handler=read_people),
             Include("/child", app=WSGIMiddleware(flask_app)),
         ],
-        settings_module=TestSettings,
+        settings_module=AppTestSettings,
     ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text

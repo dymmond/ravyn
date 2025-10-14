@@ -2,7 +2,7 @@ from ravyn.core.datastructures.msgspec import Struct
 from ravyn.routing.gateways import Gateway
 from ravyn.routing.handlers import post
 from ravyn.testclient import create_client
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 class Address(Struct):
@@ -19,7 +19,7 @@ def user_with_pydantic(payload: AddressBook) -> None: ...
 
 def test_user_msgspec_openapi(test_client_factory):
     with create_client(
-        routes=[Gateway(handler=user_with_pydantic)], settings_module=TestSettings
+        routes=[Gateway(handler=user_with_pydantic)], settings_module=AppTestSettings
     ) as client:
         response = client.get("/openapi.json")
         assert response.json() == {

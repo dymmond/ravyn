@@ -2,7 +2,7 @@ from typing import Dict
 
 from ravyn import Ravyn, get
 from ravyn.testclient import RavynTestClient
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 @get("/bar")
@@ -18,7 +18,7 @@ app = Ravyn(
     },
     routes=[bar],
     enable_openapi=True,
-    settings_module=TestSettings,
+    settings_module=AppTestSettings,
 )
 
 

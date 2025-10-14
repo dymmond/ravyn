@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from ravyn import WebhookGateway, whpost
 from ravyn.testclient import create_client
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 class Payment(BaseModel):
@@ -23,7 +23,7 @@ def test_openapi_schema():
         routes=[],
         enable_openapi=True,
         webhooks=[WebhookGateway(handler=new_payment)],
-        settings_module=TestSettings,
+        settings_module=AppTestSettings,
     ) as client:
         response = client.get("/openapi.json")
 

@@ -279,7 +279,7 @@ template = "test"
 installer = "pip"
 
 [tool.hatch.envs.hatch-test.env-vars]
-RAVYN_SETTINGS_MODULE = "tests.settings.TestSettings"
+RAVYN_SETTINGS_MODULE = "tests.settings.AppTestSettings"
 
 [tool.hatch.envs.hatch-static-analysis]
 # disables custom ruff rules, required to align with pre-commit

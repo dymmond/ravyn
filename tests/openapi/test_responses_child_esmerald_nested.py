@@ -7,7 +7,7 @@ from ravyn import JSON, ChildRavyn, Gateway, Include, get
 from ravyn.conf import monkay as monkay_for_settings
 from ravyn.openapi.datastructures import OpenAPIResponse
 from ravyn.testclient import create_client
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 class Item(BaseModel):
@@ -30,7 +30,7 @@ async def read_item() -> JSON:
 
 @pytest.fixture(scope="function", autouse=True)
 def isolate_global_settings():
-    with monkay_for_settings.with_settings(TestSettings()):
+    with monkay_for_settings.with_settings(AppTestSettings()):
         yield
 
 

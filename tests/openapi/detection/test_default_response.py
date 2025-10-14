@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from ravyn import Gateway, JSONResponse, get
 from ravyn.testclient import create_client
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 class Item(BaseModel):
@@ -21,7 +21,7 @@ def test_open_api_schema(test_client_factory):
         routes=[Gateway(handler=read_item)],
         enable_openapi=True,
         include_in_schema=True,
-        settings_module=TestSettings,
+        settings_module=AppTestSettings,
     ) as client:
         response = client.get("/openapi.json")
 
