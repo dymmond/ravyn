@@ -1,4 +1,5 @@
 from lilya.authentication import AuthCredentials, AuthenticationBackend, AuthResult, BasicUser
+from lilya.exceptions import PermissionDenied
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.authentication import AuthenticationMiddleware
 from lilya.requests import Connection
@@ -15,7 +16,7 @@ class DenyNotAllowAll(AuthenticationBackend):
     async def authenticate(self, connection: Connection) -> AuthResult | None:
         if connection.headers.get("allow-all") == "yes":
             return (AuthCredentials(["authenticated"]), dummy)
-        return None
+        raise PermissionDenied()
 
 
 def test_auth_app_level(test_client_factory):
@@ -34,7 +35,7 @@ def test_auth_app_level(test_client_factory):
         assert response.status_code == status.HTTP_200_OK
         assert response.text == "Dummy"
 
-        response = client.get("/")
+        response = client.get("/", follow_redirects=False)
         assert response.text != "Should not be reached"
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -75,6 +76,6 @@ def test_auth_include_level(test_client_factory):
         assert response.status_code == status.HTTP_200_OK
         assert response.text == "Dummy"
 
-        response = client.get("/", follow_redirects=False)
+        response = client.get("/", follow_redirects=True)
         assert response.text != "Should not be reached"
-        assert response.status_code == status.HTTP_303_SEE_OTHER
+        assert response.status_code == status.HTTP_403_FORBIDDEN
