@@ -435,15 +435,15 @@ class BaseResponseHandler:
             _cookies = self.get_cookies(cookies)
             if isinstance(data, LilyaResponse):
                 response = data
-                response.status_code = self.status_code
-                response.background = self.background
+                response.status_code = getattr(data, "status_code", None) or self.status_code
+                response.background = getattr(data, "background", None) or self.background
             else:
                 response = response_class(
-                    background=self.background,
+                    background=getattr(data, "background", None) or self.background,
                     content=data,
                     headers=headers,
                     media_type=media_type,
-                    status_code=self.status_code,
+                    status_code=getattr(data, "status_code", None) or self.status_code,
                 )
 
             for cookie in _cookies:
