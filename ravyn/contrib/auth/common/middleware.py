@@ -1,29 +1,28 @@
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from jwt.exceptions import PyJWTError
 from lilya._internal._connection import Connection
+from lilya.authentication import AuthCredentials
 from lilya.types import ASGIApp
 
 from ravyn.core.config.jwt import JWTConfig
 from ravyn.exceptions import AuthenticationError, NotAuthorized
-from ravyn.middleware.authentication import AuthResult, BaseAuthMiddleware
+from ravyn.middleware.authentication import AuthenticationBackend, AuthenticationMiddleware
 from ravyn.security.jwt.token import Token
 
 T = TypeVar("T")
 
 
-class CommonJWTAuthMiddleware(BaseAuthMiddleware):  # pragma: no cover
+class CommonJWTAuthBackend(AuthenticationBackend):  # pragma: no cover
     """
     The simple JWT authentication Middleware.
     """
 
     def __init__(
         self,
-        app: ASGIApp,
         config: "JWTConfig",
         user_model: T,
     ):
-        super().__init__(app)
         """
         The user is simply the class type to be queried from the Tortoise ORM.
 
@@ -54,11 +53,12 @@ class CommonJWTAuthMiddleware(BaseAuthMiddleware):  # pragma: no cover
                 app = Ravyn(routes=[...], middleware=[CustomJWTMidleware])
 
         """
-        self.app = app
         self.config = config
         self.user_model = user_model
 
-    async def authenticate(self, request: Connection) -> AuthResult:
+    async def authenticate(
+        self, request: Connection, **kwargs: Any
+    ) -> tuple[AuthCredentials, Any]:
         """
         Retrieves the header default of the config and validates against the decoding.
 
@@ -88,4 +88,17 @@ class CommonJWTAuthMiddleware(BaseAuthMiddleware):  # pragma: no cover
         user = await self.retrieve_user(token.sub)
         if not user:
             raise AuthenticationError("User not found.")
-        return AuthResult(user=user)
+        return AuthCredentials(), user
+
+
+class CommonJWTAuthMiddleware(AuthenticationMiddleware):
+    """
+    The simple JWT authentication Middleware.
+    """
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        backend: AuthenticationBackend | list[AuthenticationBackend] | None = None,
+    ):
+        super().__init__(app, backend=backend)

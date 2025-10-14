@@ -1,29 +1,23 @@
 from typing import Any, TypeVar
 
 from edgy import ObjectNotFound
-from lilya.types import ASGIApp
 
-from ravyn.contrib.auth.common.middleware import CommonJWTAuthMiddleware
+from ravyn.contrib.auth.common.middleware import CommonJWTAuthBackend, CommonJWTAuthMiddleware
 from ravyn.core.config.jwt import JWTConfig
 from ravyn.exceptions import AuthenticationError, NotAuthorized
 
 T = TypeVar("T")
 
 
-class JWTAuthMiddleware(CommonJWTAuthMiddleware):
-    """
-    The simple JWT authentication Middleware.
-    """
-
+class JWTAuthBackend(CommonJWTAuthBackend):  # pragma: no cover
     def __init__(
         self,
-        app: "ASGIApp",
         config: "JWTConfig",
         user_model: T,
     ):
-        super().__init__(app, config, user_model)
+        super().__init__(config, user_model)
         """
-        The user is simply the class type to be queried from the Saffier ORM.
+        The user is simply the class type to be queried from the Edgy ORM.
 
         Example how to use:
 
@@ -36,25 +30,24 @@ class JWTAuthMiddleware(CommonJWTAuthMiddleware):
 
             2. Middleware
 
-                from ravyn.contrib.auth.edgy.middleware import JWTAuthMiddleware
+                from lilya.middleware import DefinedMiddleware
+
+                from ravyn.contrib.auth.edgy.middleware import JWTAuthMiddleware, JWTAuthBackend
                 from ravyn.config import JWTConfig
 
                 jwt_config = JWTConfig(...)
 
-                class CustomJWTMidleware(JWTAuthMiddleware):
-                    def __init__(self, app: "ASGIApp"):
-                        super().__init__(app, config=jwt_config, user=User)
+                class CustomJWTMiddleware(JWTAuthMiddleware): ...
 
             3. The application
                 from ravyn import Ravyn
-                from myapp.middleware import CustomJWTMidleware
+                from myapp.middleware import CustomJWTMiddleware
 
-                app = Ravyn(routes=[...], middleware=[CustomJWTMidleware])
+                app = Ravyn(routes=[...], middleware=[DefinedMiddleware(
+                    CustomJWTMiddleware, backend=[JWTAuthBackend(config=jwt_config, user_model=User]
+                ))])
 
         """
-        self.app = app
-        self.config = config
-        self.user_model = user_model  # type: ignore
 
     async def retrieve_user(self, token_sub: Any) -> T:
         """
@@ -73,3 +66,11 @@ class JWTAuthMiddleware(CommonJWTAuthMiddleware):
             raise NotAuthorized() from None
         except Exception as e:
             raise AuthenticationError(detail=str(e)) from e
+
+
+class JWTAuthMiddleware(CommonJWTAuthMiddleware):
+    """
+    The simple JWT authentication Middleware.
+    """
+
+    ...
