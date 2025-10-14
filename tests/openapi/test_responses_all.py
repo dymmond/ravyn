@@ -2,7 +2,7 @@ from typing import Dict
 
 from ravyn import Gateway, Ravyn, Router, get
 from ravyn.testclient import RavynTestClient
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 @get()
@@ -19,7 +19,7 @@ app = Ravyn(
     title="Custom title",
     summary="Summary",
     description="Description",
-    settings_module=TestSettings,
+    settings_module=AppTestSettings,
 )
 app.add_router(router=router)
 
@@ -64,7 +64,7 @@ def test_openapi_schema():
     }
 
 
-another_app = Ravyn(title="Ravyn", enable_openapi=True, settings_module=TestSettings)
+another_app = Ravyn(title="Ravyn", enable_openapi=True, settings_module=AppTestSettings)
 another_router = Router(routes=[Gateway(path="/people", handler=read_people)])
 another_app.add_router(router=another_router)
 

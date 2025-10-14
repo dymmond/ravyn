@@ -3,7 +3,7 @@ from __future__ import annotations
 from ravyn import Gateway, Include, post
 from ravyn.routing.controllers import Controller
 from ravyn.testclient import create_client
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 class UserAPIView(Controller):
@@ -47,7 +47,7 @@ def test_open_api_schema(test_client_factory):
         routes=[Include(path="/api/v1", namespace="tests.openapi.test_duplicate_operation_id")],
         enable_openapi=True,
         include_in_schema=True,
-        settings_module=TestSettings,
+        settings_module=AppTestSettings,
     ) as client:
         response = client.get("/openapi.json")
 

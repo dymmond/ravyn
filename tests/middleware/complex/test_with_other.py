@@ -9,7 +9,11 @@ from lilya.types import ASGIApp
 from ravyn import Gateway, HTTPException, Request, Response, get, settings, status
 from ravyn.contrib.auth.edgy.base_user import AbstractUser
 from ravyn.exceptions import NotAuthorized
-from ravyn.middleware.authentication import AuthResult, BaseAuthMiddleware
+from ravyn.middleware.authentication import (
+    AuthCredentials,
+    AuthenticationBackend,
+    AuthenticationMiddleware,
+)
 from ravyn.requests import Connection
 from ravyn.routing.controllers import Controller
 from ravyn.security.jwt.token import Token
@@ -58,11 +62,9 @@ def get_error_response(
     )
 
 
-class JWTAuthMiddleware(BaseAuthMiddleware):
-    def __init__(self, app: "ASGIApp"):
-        super().__init__(app)
-        self.app = app
-        self.config = settings.jwt_config
+class JWTAuthBackend(AuthenticationBackend):
+    def __init__(self, config: Any):
+        self.config = config
 
     async def retrieve_user(self, user_id) -> User:
         try:
@@ -72,7 +74,7 @@ class JWTAuthMiddleware(BaseAuthMiddleware):
         except ObjectNotFound:
             raise NotAuthorized() from None
 
-    async def authenticate(self, request: Connection) -> AuthResult:
+    async def authenticate(self, request: Connection) -> tuple[AuthCredentials, Any]:
         try:
             token = request.headers.get(self.config.api_key_header, None)
             if not token:
@@ -86,12 +88,17 @@ class JWTAuthMiddleware(BaseAuthMiddleware):
                 algorithms=self.config.algorithm,
             )
             user = await self.retrieve_user(token.sub)
-            return AuthResult(user=user)
+            return AuthCredentials(), user
         except PyJWTError:
             return get_error_response(
                 detail="Authentication failed",
                 status_code=status.HTTP_401_UNAUTHORIZED,
             )
+
+
+class JWTAuthMiddleware(AuthenticationMiddleware):
+    def __init__(self, app: "ASGIApp"):
+        super().__init__(app, backend=JWTAuthBackend(config=settings.jwt_config))
 
 
 @get()

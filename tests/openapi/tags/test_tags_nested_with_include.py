@@ -2,7 +2,7 @@ from typing import Dict
 
 from ravyn import Gateway, Include, Ravyn, get
 from ravyn.testclient import RavynTestClient
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 @get("/bar")
@@ -13,7 +13,7 @@ async def bar() -> Dict[str, str]:
 app = Ravyn(
     routes=[Include("/api/v2", routes=[Include(routes=[Gateway(handler=bar)])], tags=["Include"])],
     enable_openapi=True,
-    settings_module=TestSettings,
+    settings_module=AppTestSettings,
 )
 
 

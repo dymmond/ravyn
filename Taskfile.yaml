@@ -77,20 +77,20 @@ tasks:
   test:
     desc: Runs the suite tests
     env:
-      RAVYN_SETTINGS_MODULE: tests.settings.TestSettings
+      RAVYN_SETTINGS_MODULE: tests.settings.AppTestSettings
     cmds:
       - hatch run test:test {{ .ARGS }}
 
   test_man:
     desc: Runs the manual tests with more output details and python breakpoints allowed
     env:
-      RAVYN_SETTINGS_MODULE: tests.settings.TestSettings
+      RAVYN_SETTINGS_MODULE: tests.settings.AppTestSettings
     cmds:
       - hatch run test:test_man {{ .ARGS }}
 
   coverage:
     desc: Runs the coverage tests
     env:
-      RAVYN_SETTINGS_MODULE: tests.settings.TestSettings
+      RAVYN_SETTINGS_MODULE: tests.settings.AppTestSettings
     cmds:
       - hatch run test:coverage {{ .ARGS }}

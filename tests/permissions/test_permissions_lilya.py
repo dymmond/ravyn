@@ -1,3 +1,4 @@
+import pytest
 from lilya import status
 from lilya.protocols.permissions import PermissionProtocol
 from lilya.types import Receive, Scope, Send
@@ -76,9 +77,15 @@ def test_two_permissions_mixed_same_level() -> None:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_include() -> None:
-    @get(path="/secret")
-    def my_http_route_handler() -> None: ...
+@pytest.mark.parametrize("path", ["/secret", "", "/"])
+def test_include_routes(path) -> None:
+    was_reached = False
+
+    @get(path=path)
+    def my_http_route_handler() -> None:
+        nonlocal was_reached
+        was_reached = True
+        raise Exception("Should not be reached")
 
     with create_client(
         routes=[
@@ -86,5 +93,9 @@ def test_include() -> None:
         ],
         permissions=[RavynPermission],
     ) as client:
-        response = client.get("/secret", headers={"Authorization": "yes", "allow_all": "true"})
+        response = client.get(path or "/", headers={"Authorization": "yes", "allow_all": "false"})
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert not was_reached
+        response = client.get(path or "/", headers={"Authorization": "yes", "allow_all": "true"})
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert not was_reached

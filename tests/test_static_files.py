@@ -122,9 +122,9 @@ def test_static_substring_of_self(tmpdir: Any) -> None:
 
 
 def test_static_with_settings(tmpdir: Any) -> None:
-    from tests.settings import TestSettings
+    from tests.settings import AppTestSettings
 
-    class StaticSettings(TestSettings):
+    class StaticSettings(AppTestSettings):
         @property
         def static_files_config(self) -> Any:
             return StaticFilesConfig(path="/static", directory=tmpdir)

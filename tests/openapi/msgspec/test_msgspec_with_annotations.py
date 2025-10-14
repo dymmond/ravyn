@@ -5,7 +5,7 @@ from ravyn.core.datastructures.msgspec import Struct
 from ravyn.routing.gateways import Gateway
 from ravyn.routing.handlers import post
 from ravyn.testclient import create_client
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 Id = Annotated[int, msgspec.Meta(gt=0)]
 Email = Annotated[str, msgspec.Meta(min_length=5, max_length=100, pattern="[^@]+@[^@]+\\.[^@]+")]
@@ -22,7 +22,7 @@ def user(payload: Comment) -> Comment:
 
 
 def test_user_msgspec_openapi(test_client_factory):
-    with create_client(routes=[Gateway(handler=user)], settings_module=TestSettings) as client:
+    with create_client(routes=[Gateway(handler=user)], settings_module=AppTestSettings) as client:
         response = client.get("/openapi.json")
 
         assert response.json() == {

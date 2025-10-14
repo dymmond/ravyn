@@ -10,7 +10,7 @@ from ravyn.conf import settings
 from ravyn.core.caches.memory import InMemoryCache
 from ravyn.core.caches.redis import RedisCache
 from ravyn.testclient import RavynTestClient
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 try:
     import redis.asyncio as redis
@@ -51,10 +51,10 @@ async def redis_cache() -> RedisCache:
 
 
 @pytest.fixture(scope="function")
-async def redis_settings(redis_cache) -> TestSettings:
+async def redis_settings(redis_cache) -> AppTestSettings:
     """Fixture providing Redis settings for testing."""
 
-    class RedisSettings(TestSettings):
+    class RedisSettings(AppTestSettings):
         cache_backend: RedisCache = redis_cache
 
     setts = RedisSettings()

@@ -5,7 +5,7 @@ from lilya.types import ASGIApp
 from ravyn import Gateway, Include, Request
 from ravyn.conf import settings
 from ravyn.contrib.auth.edgy.base_user import User as EdgyUser
-from ravyn.contrib.auth.edgy.middleware import JWTAuthMiddleware
+from ravyn.contrib.auth.edgy.middleware import JWTAuthBackend, JWTAuthMiddleware
 from ravyn.core.config.jwt import JWTConfig
 from ravyn.routing.controllers import Controller
 from ravyn.routing.handlers import get, post, put
@@ -39,7 +39,7 @@ async def rollback_transactions():
 
 class CustomJWTMidleware(JWTAuthMiddleware):
     def __init__(self, app: "ASGIApp"):
-        super().__init__(app, config=jwt_config, user_model=User)
+        super().__init__(app, backend=JWTAuthBackend(config=jwt_config, user_model=User))
 
 
 class UserView(Controller):

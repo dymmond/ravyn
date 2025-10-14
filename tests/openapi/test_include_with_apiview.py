@@ -7,7 +7,7 @@ from ravyn import JSON, Gateway, Include, SimpleAPIView, get
 from ravyn.openapi.datastructures import OpenAPIResponse
 from ravyn.routing.controllers import Controller
 from ravyn.testclient import create_client
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 class Item(BaseModel):
@@ -39,7 +39,7 @@ def test_add_include_to_openapi(test_client_factory, value):
             Gateway(handler=read_people),
             Include("/child", routes=[Gateway(handler=MyAPI)]),
         ],
-        settings_module=TestSettings,
+        settings_module=AppTestSettings,
     ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text
@@ -127,7 +127,7 @@ def test_include_no_include_in_schema(test_client_factory, value):
             Gateway(handler=read_people),
             Include("/child", routes=[Gateway(handler=MyAPI)], include_in_schema=False),
         ],
-        settings_module=TestSettings,
+        settings_module=AppTestSettings,
     ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text

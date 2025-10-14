@@ -6,7 +6,7 @@ from ravyn import Gateway, Ravyn, post
 from ravyn.core.datastructures.msgspec import Struct
 from ravyn.openapi.datastructures import OpenAPIResponse
 from ravyn.testclient import RavynTestClient
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 class PydanticError(BaseModel):
@@ -35,7 +35,7 @@ app = Ravyn(
     routes=[Gateway(handler=foo)],
     enable_openapi=True,
     tags=["test"],
-    settings_module=TestSettings,
+    settings_module=AppTestSettings,
     contact={"name": "ravyn", "email": "ravyn@esmeral.dev"},
 )
 

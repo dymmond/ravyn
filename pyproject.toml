@@ -45,7 +45,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
-    "lilya[standard]>=0.22.0",
+    "lilya[standard]>=0.22.1",
     "pydantic-settings>=2.9.0",
     "orjson>=3.8.5,<4.0.0",
     "msgspec>=0.18.5,<1.0.0",
@@ -224,7 +224,7 @@ testing = [
 docs = [
     "a2wsgi>=1.9.0",
     "httpx>=0.25.0",
-    "lilya[standard]>=0.22.0",
+    "lilya[standard]>=0.22.1",
     "griffe-typingdoc>=0.2.2,<1.0",
     "mkdocs>=1.1.2,<2.0.0",
     "mkdocs-material>=9.4.4",
@@ -279,7 +279,7 @@ template = "test"
 installer = "pip"
 
 [tool.hatch.envs.hatch-test.env-vars]
-RAVYN_SETTINGS_MODULE = "tests.settings.TestSettings"
+RAVYN_SETTINGS_MODULE = "tests.settings.AppTestSettings"
 
 [tool.hatch.envs.hatch-static-analysis]
 # disables custom ruff rules, required to align with pre-commit
