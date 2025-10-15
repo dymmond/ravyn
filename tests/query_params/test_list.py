@@ -148,3 +148,30 @@ def test_query_list_with_optional_with_more_params(test_client_factory):
 
         assert response.status_code == 200
         assert response.json() == {"value": [1, 2, 3], "q": None}
+
+
+@get("/random-more-with-union")
+async def random_list_with_many_params_with_union(
+    a_value: Union[list[int], None] = None, q: Union[str, None] = None
+) -> JSONResponse:
+    return JSONResponse({"value": a_value, "q": q})
+
+
+def test_query_list_with_optional_with_more_params_with_union(test_client_factory):
+    with create_client(
+        routes=[Gateway(handler=random_list_with_many_params_with_union)]
+    ) as client:
+        response = client.get("/random-more-with-union")
+
+        assert response.status_code == 200
+        assert response.json() == {"value": None, "q": None}
+
+        response = client.get("/random-more-with-union?a_value=1&a_value=2&a_value=3&q=test")
+
+        assert response.status_code == 200
+        assert response.json() == {"value": [1, 2, 3], "q": "test"}
+
+        response = client.get("/random-more-with-union?a_value=1&a_value=2&a_value=3")
+
+        assert response.status_code == 200
+        assert response.json() == {"value": [1, 2, 3], "q": None}

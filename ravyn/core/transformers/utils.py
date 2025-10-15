@@ -260,6 +260,9 @@ async def get_request_params(
         default = param.default_value
 
         if is_requires(default):
+            """
+            Checks if the default value is a Requires instance.
+            """
             extracted[field_name] = default
             continue
 
