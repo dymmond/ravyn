@@ -193,7 +193,7 @@ This is quite the querystring isn't it? Well, its a normal one to populate **lis
 Did you notice the syntax for the dict `others`? Its not the same as [the example](#as-a-dict) and the reason for that its
 because we are mixing different datastructures in one go.
 
-When this happens **you must explicitly pass the `dict[key]=value` which here translates to `others[internal]=hr` and `others[company]=ACME`.
+When this happens **you must explicitly pass the `dict[key]=value` which here translates to `others[internal]=hr` and `others[company]=ACME`**.
 
 !!! Note
     This only happens when `list` and `dict` datastructures are mixed in the query parameters. The rest remains as is.
