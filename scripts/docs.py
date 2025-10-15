@@ -268,7 +268,7 @@ def live(
             help="The language to generate",
         ),
     ],
-    port: Annotated[int, Option(8000, "-p", help="The port to serve the documentation")],
+    port: Annotated[int, Option(9050, "-p", help="The port to serve the documentation")],
 ) -> None:
     """
     Serve a docs site with livereload for a specific language.

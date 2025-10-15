@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.2.4
+
+### Fixed
+
+- Parsing query parameters with multiple datastructures was not parsing it properly
+
 ## 0.2.3
 
 ### Added

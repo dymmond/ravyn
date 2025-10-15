@@ -15,7 +15,7 @@ from typing import (
     get_type_hints,
 )
 
-from lilya.datastructures import URL
+from lilya.datastructures import URL, QueryParam
 from pydantic.fields import FieldInfo
 
 from ravyn.exceptions import ImproperlyConfigured, ValidationErrorException
@@ -196,7 +196,7 @@ def _get_missing_required_params(params: Any, expected: Set[ParamSetting]) -> li
 
 
 async def get_request_params(
-    params: Mapping[Union[int, str], Any],
+    params: Mapping[Union[int, str], Any] | QueryParam,
     expected: Set[ParamSetting],
     url: URL,
 ) -> Any:
@@ -233,7 +233,7 @@ async def get_request_params(
             annotation = get_origin(param.field_info.annotation)
             origin = annotation or param.field_info.annotation
             if is_class_and_subclass(origin, (list, tuple)):
-                values[param.field_name] = params.values()
+                values[param.field_name] = params.getall(param.field_name, None)
             elif is_class_and_subclass(origin, dict):
                 values[param.field_name] = dict(params.items()) if params else None
             else:
@@ -241,7 +241,7 @@ async def get_request_params(
         elif is_union(param.field_info.annotation):
             arguments = get_args(param.field_info.annotation)
             if any(is_class_and_subclass(origin, (list, tuple)) for origin in arguments):
-                values[param.field_name] = params.values()
+                values[param.field_name] = params.getall(param.field_name, None)
             elif any(is_class_and_subclass(origin, dict) for origin in arguments):
                 values[param.field_name] = dict(params.items()) if params else None
             else:

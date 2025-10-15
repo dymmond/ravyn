@@ -28,6 +28,9 @@ The previous url will be translated as the following `query_params`:
 Since they are an integral part of the URL, it will automatically populate the parameters of the function that corresponds
 each value.
 
+!!! Tip
+    We are will be using direct examples but Ravyn **supports** the `Annotated` declaration as well.
+
 ## Declaring defaults
 
 Query parameters are not by design, part of a fixed URL path and that also means they can assume the following:
@@ -84,6 +87,85 @@ you can have multiple of both combined.
 
 ```python
 {!> ../../../docs_src/extras/query/example_combined.py !}
+```
+
+## Query parameters as list or dict
+
+In Ravyn you can also have query parameters passed as a `list` or as a `dictionary`. 
+
+This can be particularly useful when you are building complex filters, for example.
+
+### As a list
+
+Let us see how it would look like if we were building a list of query params.
+
+```python
+{!> ../../../docs_src/extras/query/as_list.py !}
+```
+
+As you can see, we made the `role` optional. This will allow you to do something like this:
+
+```shell
+http://127.0.0.1/users/1?role=admin&role=user&role=other
+```
+
+The `role` value will automatically populated similar to this:
+
+```python
+[
+  "admin",
+  "user",
+  "other"
+]
+```
+
+#### Using Annotated
+
+As mentioned before, we can use the `Annotated` syntax as well. This is how it would look like:
+
+```python
+{!> ../../../docs_src/extras/query/as_list_annotated.py !}
+```
+
+Same principle as before but now using the `Annotated` syntax approach. Its up to you to decide the best.
+
+### As a dict
+
+There is also the option to pass query parameters as a dictionary. The uses cases are many but in
+the end, it will always be up tp you to decide.
+
+Let us see how it would look like.
+
+```python
+{!> ../../../docs_src/extras/query/as_dict.py !}
+```
+
+Here we call it `roles` and the reason for that is to make it more readable for us, also, we made it optional.
+
+Now you can do something like this:
+
+```shell
+http://127.0.0.1/users/1?name=Ravyn&version=2&position=awesome
+```
+
+The `roles` will be automatically populated with:
+
+```python
+{
+  "name": "Ravyn",
+  "version": 2,
+  "position": "awesome"
+}
+```
+
+Pretty cool if you want to send completely different set of query parameters.
+
+#### Using the Annotated
+
+Same as for the list, we can also use the `Annotated`.
+
+```python
+{!> ../../../docs_src/extras/query/as_dict_annotated.py !}
 ```
 
 ## Required parameters

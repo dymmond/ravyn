@@ -257,7 +257,7 @@ def get_openapi_operation_request_body(
     field_mapping: dict[Tuple[FieldInfo, Literal["validation", "serialization"]], JsonSchemaValue],
 ) -> Optional[dict[str, Any]]:  # pragma: no cover
     if not data_field:
-        return None  # type: ignore
+        return None
 
     assert isinstance(data_field, FieldInfo), "The 'data' needs to be a FieldInfo"
     schema = get_schema_from_model_field(field=data_field, field_mapping=field_mapping)
