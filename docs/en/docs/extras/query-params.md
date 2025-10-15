@@ -91,7 +91,7 @@ you can have multiple of both combined.
 
 ## Query parameters as list or dict
 
-In Ravyn you can also have query parameters passed as a `list` or as a `dictionary`. 
+In Ravyn you can also have query parameters passed as a `list` or as a `dictionary`.
 
 This can be particularly useful when you are building complex filters, for example.
 
@@ -167,6 +167,36 @@ Same as for the list, we can also use the `Annotated`.
 ```python
 {!> ../../../docs_src/extras/query/as_dict_annotated.py !}
 ```
+
+## Mixing parameters
+
+What if we want to mix a lot of parameters in one go? It could happen quite often.
+
+**There are differences when mixing lists and dicts**. if there is no mix between **dict** and **list**
+in the same signature, then [list](#as-a-list) and [dict](#as-a-dict) operate as described above but
+when both come into the mix, then **dict** when called in the API is **declared differently**.
+
+Let us see an example:
+
+```python
+{!> ../../../docs_src/extras/query/mix.py !}
+```
+
+Ok, let us now call the API with all of this in mind.
+
+```shell
+http://127.0.0.1/users/1?roles=admin&roles=user&positions=senior&positions=junior&indexes=1&indexes=2&others[internal]=hr&others[company]=ACME&q=search
+```
+
+This is quite the querystring isn't it? Well, its a normal one to populate **lists* and **dicts**.
+
+Did you notice the syntax for the dict `others`? Its not the same as [the example](#as-a-dict) and the reason for that its
+because we are mixing different datastructures in one go.
+
+When this happens **you must explicitly pass the `dict[key]=value` which here translates to `others[internal]=hr` and `others[company]=ACME`.
+
+!!! Note
+    This only happens when `list` and `dict` datastructures are mixed in the query parameters. The rest remains as is.
 
 ## Required parameters
 
