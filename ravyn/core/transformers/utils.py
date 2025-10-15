@@ -199,54 +199,86 @@ async def get_request_params(
     params: Mapping[Union[int, str], Any] | QueryParam,
     expected: Set[ParamSetting],
     url: URL,
-) -> Any:
+) -> dict[str, Any]:
     """
-    Gather the parameters from the request.
+    Extract and validate request parameters based on expected settings.
 
     Args:
-        params (Any): Request parameters.
-        expected (Set[ParamSetting]): Set of expected parameters.
-        url (URL): The URL.
+        params (Mapping | QueryParam): Incoming request parameters.
+        expected_params (Set[ParamSetting]): Set of expected parameter definitions.
+        url (URL): The request URL, used for error reporting.
 
     Returns:
-        Any: The gathered parameters.
+        dict[str, Any]: A dictionary of validated and extracted parameter values.
 
     Raises:
         ValidationErrorException: If required parameters are missing.
     """
-    missing_params = _get_missing_required_params(params, expected)
-    if missing_params:
+    missing = _get_missing_required_params(params, expected)
+    if missing:
         raise ValidationErrorException(
-            f"Missing required parameter(s) {', '.join(missing_params)} for URL {url}."
+            f"Missing required parameter(s): {', '.join(missing)} for URL {url}."
         )
 
-    values: dict[Any, Any] = {}
-    for param in expected:
-        is_requires_dependency = is_requires(param.default_value)
+    extracted: dict[str, Any] = {}
 
-        # Using the default value if the parameter is a dependency requires
-        if is_requires_dependency:
-            values[param.field_name] = param.default_value
+    def get_param_value(
+        origin_type: Any,
+        field_name: str,
+        field_alias: str,
+        default: Any,
+    ) -> Any:
+        """
+        Resolve the value of a request parameter based on its expected type.
+
+        Args:
+            origin_type (Any): The resolved origin type of the parameter annotation.
+            field_name (str): The name of the parameter field.
+            field_alias (str): The alias used to look up the parameter in the request.
+            default (Any): The default value to use if the parameter is not provided.
+
+        Returns:
+            Any: The extracted value from the request parameters, or the default if not found.
+
+        Notes:
+            - If the parameter is a list or tuple, all values are retrieved using `getall`.
+            - If the parameter is a dictionary, all items are returned as a dict.
+            - Otherwise, a single value is retrieved using `get`, falling back to the default.
+        """
+
+        if is_class_and_subclass(origin_type, (list, tuple)):
+            return params.getall(field_name, None)
+        elif is_class_and_subclass(origin_type, dict):
+            return dict(params.items()) if params else None
+        else:
+            return params.get(field_alias, default)
+
+    for param in expected:
+        field_name = param.field_name
+        field_alias = param.field_alias
+        annotation = param.field_info.annotation
+        default = param.default_value
+
+        if is_requires(default):
+            extracted[field_name] = default
             continue
 
-        if not is_union(param.field_info.annotation):
-            annotation = get_origin(param.field_info.annotation)
-            origin = annotation or param.field_info.annotation
-            if is_class_and_subclass(origin, (list, tuple)):
-                values[param.field_name] = params.getall(param.field_name, None)
-            elif is_class_and_subclass(origin, dict):
-                values[param.field_name] = dict(params.items()) if params else None
+        origin = get_origin(annotation) or annotation
+
+        if is_union(annotation):
+            union_args = get_args(annotation)
+            if any(
+                is_class_and_subclass(get_origin(arg) or arg, (list, tuple)) for arg in union_args
+            ):
+                extracted[field_name] = params.getall(field_name, None)
+            elif any(is_class_and_subclass(get_origin(arg) or arg, dict) for arg in union_args):
+                extracted[field_name] = dict(params.items()) if params else None
             else:
-                values[param.field_name] = params.get(param.field_alias, param.default_value)
-        elif is_union(param.field_info.annotation):
-            arguments = get_args(param.field_info.annotation)
-            if any(is_class_and_subclass(origin, (list, tuple)) for origin in arguments):
-                values[param.field_name] = params.getall(param.field_name, None)
-            elif any(is_class_and_subclass(origin, dict) for origin in arguments):
-                values[param.field_name] = dict(params.items()) if params else None
-            else:
-                values[param.field_name] = params.get(param.field_alias, param.default_value)
-    return values
+                extracted[field_name] = params.get(field_alias, default)
+        else:
+            extracted[field_name] = get_param_value(origin, field_name, field_alias, default)
+
+    return extracted
 
 
 def get_connection_info(connection: "ConnectionType") -> Tuple[str, "URL"]:
