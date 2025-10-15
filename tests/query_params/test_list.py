@@ -175,3 +175,105 @@ def test_query_list_with_optional_with_more_params_with_union(test_client_factor
 
         assert response.status_code == 200
         assert response.json() == {"value": [1, 2, 3], "q": None}
+
+
+@get("/random-with-int")
+async def random_list_with_int(
+    a_value: Union[list[int], None] = None, q: Union[str, None] = None
+) -> JSONResponse:
+    return JSONResponse({"value": a_value, "q": q})
+
+
+def test_query_list_with_int(test_client_factory):
+    with create_client(routes=[Gateway(handler=random_list_with_int)]) as client:
+        response = client.get("/random-with-int")
+
+        assert response.status_code == 200
+        assert response.json() == {"value": None, "q": None}
+
+        response = client.get("/random-with-int?a_value=1&a_value=2&a_value=3&q=test")
+
+        assert response.status_code == 200
+        assert response.json() == {"value": [1, 2, 3], "q": "test"}
+
+        response = client.get("/random-with-int?a_value=1&a_value=2&a_value=3")
+
+        assert response.status_code == 200
+        assert response.json() == {"value": [1, 2, 3], "q": None}
+
+
+@get("/random-with-int-in-the-mix")
+async def random_list_with_int_in_the_mix(
+    a_value: Union[list[int], None] = None,
+    b_value: Union[list[str], None] = None,
+    c_value: Union[list[bool], None] = None,
+    q: Union[str, None] = None,
+) -> JSONResponse:
+    return JSONResponse({"value": a_value, "b": b_value, "c": c_value, "q": q})
+
+
+def test_random_list_with_int_in_the_mix(test_client_factory):
+    with create_client(routes=[Gateway(handler=random_list_with_int_in_the_mix)]) as client:
+        response = client.get("/random-with-int-in-the-mix")
+
+        assert response.status_code == 200
+        assert response.json() == {"value": None, "b": None, "c": None, "q": None}
+
+        response = client.get("/random-with-int-in-the-mix?a_value=1&a_value=2&a_value=3&q=test")
+
+        assert response.status_code == 200
+        assert response.json() == {"value": [1, 2, 3], "b": None, "c": None, "q": "test"}
+
+        response = client.get(
+            "/random-with-int-in-the-mix?a_value=1&a_value=2&a_value=3&b_value=test&c_value=true&q=test"
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"value": [1, 2, 3], "b": ["test"], "c": [True], "q": "test"}
+
+
+@get("/random-with-int-in-the-mix-and-dict")
+async def random_list_with_int_in_the_mix_and_dict(
+    a_value: Union[list[int], None] = None,
+    b_value: Union[list[str], None] = None,
+    c_value: list[bool] | None = None,
+    q: Union[str, None] = None,
+    d_value: dict[str, int] | None = None,
+) -> JSONResponse:
+    return JSONResponse({"value": a_value, "b": b_value, "c": c_value, "q": q, "d": d_value})
+
+
+def test_random_list_with_int_in_the_mix_and_dict(test_client_factory):
+    with create_client(
+        routes=[Gateway(handler=random_list_with_int_in_the_mix_and_dict)]
+    ) as client:
+        response = client.get("/random-with-int-in-the-mix-and-dict")
+
+        assert response.status_code == 200
+        assert response.json() == {"value": None, "b": None, "c": None, "q": None, "d": None}
+
+        response = client.get(
+            "/random-with-int-in-the-mix-and-dict?a_value=1&a_value=2&a_value=3&q=test&d_value[foo]=1&d_value[bar]=2"
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "value": [1, 2, 3],
+            "b": None,
+            "c": None,
+            "q": "test",
+            "d": {"foo": 1, "bar": 2},
+        }
+
+        response = client.get(
+            "/random-with-int-in-the-mix-and-dict?a_value=1&a_value=2&a_value=3&b_value=test&c_value=true&q=test&d_value[foo]=1&d_value[bar]=2"
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "value": [1, 2, 3],
+            "b": ["test"],
+            "c": [True],
+            "q": "test",
+            "d": {"foo": 1, "bar": 2},
+        }

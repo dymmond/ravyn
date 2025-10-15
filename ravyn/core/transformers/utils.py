@@ -222,6 +222,41 @@ async def get_request_params(
 
     extracted: dict[str, Any] = {}
 
+    def extract_dict_param(field_alias: str, default: Any) -> dict[str, Any] | Any:
+        """
+        Extract dictionary-style query parameters from the request.
+
+        This function supports two styles of query parameter encoding for dictionary-like fields:
+
+        1. **Nested keys**: Parameters encoded with square brackets, e.g. `d_value[foo]=1`.
+        These are parsed into a dictionary like `{"foo": 1}`.
+
+        2. **Flat key-value pairs**: If the expected parameter is the only one in the request,
+        all query parameters are treated as part of the dictionary, e.g.
+        `?a_value=true&b_value=false` becomes `{"a_value": "true", "b_value": "false"}`.
+
+        Args:
+            field_alias (str): The alias used to identify the dictionary field in the query string.
+            default (Any): The default value to return if no matching parameters are found.
+
+        Returns:
+            dict[str, Any]: A dictionary constructed from matching query parameters,
+                            or the default value if none are found.
+        """
+        prefix = f"{field_alias}["
+        nested = {
+            key[len(prefix) : -1]: value  # type: ignore
+            for key, value in params.items()
+            if key.startswith(prefix) and key.endswith("]")
+        }
+        if nested:
+            return nested
+
+        if len(expected) == 1:
+            return dict(params.items()) if params else default
+
+        return default
+
     def get_param_value(
         origin_type: Any,
         field_name: str,
@@ -249,7 +284,7 @@ async def get_request_params(
         if is_class_and_subclass(origin_type, (list, tuple)):
             return params.getall(field_name, None)
         elif is_class_and_subclass(origin_type, dict):
-            return dict(params.items()) if params else None
+            return extract_dict_param(field_alias, default)
         else:
             return params.get(field_alias, default)
 
@@ -275,7 +310,7 @@ async def get_request_params(
             ):
                 extracted[field_name] = params.getall(field_name, None)
             elif any(is_class_and_subclass(get_origin(arg) or arg, dict) for arg in union_args):
-                extracted[field_name] = dict(params.items()) if params else None
+                extracted[field_name] = extract_dict_param(field_alias, default)
             else:
                 extracted[field_name] = params.get(field_alias, default)
         else:

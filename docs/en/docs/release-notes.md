@@ -7,6 +7,10 @@ hide:
 
 ## 0.2.4
 
+### Changed
+
+- [Query Parameters](./extras/query-params.md) documentation updated with generics (list, dict) examples.
+
 ### Fixed
 
 - Parsing query parameters with multiple datastructures was not parsing it properly
