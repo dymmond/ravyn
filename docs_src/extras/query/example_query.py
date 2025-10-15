@@ -1,5 +1,3 @@
-from typing import Union
-
 from ravyn import Ravyn, Gateway, JSONResponse, Query, get
 
 
