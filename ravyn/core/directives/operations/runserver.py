@@ -5,7 +5,7 @@ from typing import Annotated
 
 import click
 from rich.tree import Tree
-from sayer import Option, command, error
+from sayer import Argument, Option, command, error
 
 from ravyn.core.directives.env import DirectiveEnv
 from ravyn.core.directives.exceptions import DirectiveError
@@ -40,6 +40,8 @@ def get_app_tree(module_paths: list[Path], discovery_file: str) -> Tree:
 
 @command
 def runserver(
+    path: Annotated[Path | None, Argument(default=None, help="The optional of the app")],
+    *,
     port: Annotated[
         int, Option(8000, "-p", help="Port to run the development server.", show_default=True)
     ],
