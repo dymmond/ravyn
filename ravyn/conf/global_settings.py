@@ -1563,6 +1563,48 @@ class RavynSettings(CacheBackendSettings):
         """
         return []
 
+    @property
+    def runserver_theme(self) -> dict[str, str]:
+        """
+        Returns a dictionary defining the color theme for the terminal UI
+        when running the runserver.
+
+        The theme includes styles for various elements such as tags, placeholders,
+        text, selected items, results, progress indicators, errors, and log info.
+
+        **Example**
+
+        ```python
+        from lilya.conf import Settings
+
+        class AppSettings(Settings):
+            @property
+            def runserver_theme(self) -> dict[str, str]:
+                return {
+                    "tag.title": "white on #f11e64",
+                    "tag": "white on #af1b4c",
+                    "placeholder": "grey85",
+                    "text": "white",
+                    "selected": "#e92063",
+                    "result": "grey85",
+                    "progress": "on #af1b4c",
+                    "error": "red",
+                    "log.info": "black on blue",
+                }
+        ```
+        """
+        return {
+            "tag.title": "white on #f11e64",
+            "tag": "white on #af1b4c",
+            "placeholder": "grey85",
+            "text": "white",
+            "selected": "#e92063",
+            "result": "grey85",
+            "progress": "on #af1b4c",
+            "error": "red",
+            "log.info": "black on blue",
+        }
+
     def __hash__(self) -> int:
         values: dict[str, Any] = {}
         for key, value in self.__dict__.items():

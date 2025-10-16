@@ -40,7 +40,7 @@ def get_app_tree(module_paths: list[Path], discovery_file: str) -> Tree:
 
 @command
 def runserver(
-    path: Annotated[Path | None, Argument(default=None, help="The optional of the app")],
+    path: Annotated[str | None, Argument(help="Path to the application.", required=False)],
     *,
     port: Annotated[
         int, Option(8000, "-p", help="Port to run the development server.", show_default=True)
@@ -122,7 +122,8 @@ def runserver(
         if os.environ.get("RAVYN_SETTINGS_MODULE"):
             from ravyn.conf import settings as ravyn_settings
 
-            server_environment = f"{ravyn_settings.environment} "
+            environment = getattr(ravyn_settings, "environment", "development")
+            server_environment = f"{environment}"
 
         if not server_environment:
             server_environment = "development"
@@ -163,8 +164,6 @@ def runserver(
             tag="docs",
         )
 
-        app = env.app
-
         if os.environ.get("RAVYN_SETTINGS_MODULE"):
             custom_message = f"'{os.environ['RAVYN_SETTINGS_MODULE']}'"
             toolkit.print(
@@ -180,7 +179,7 @@ def runserver(
             )
 
         toolkit.print(
-            "[yellow][bold]Remember, [bold]runserver is for development purposes[/bold]. For production, use a proper ASGI server.[/bold][/yellow]",
+            "[green]You can use the runserver to run in production too.[/green]",
             tag="note",
         )
         toolkit.print_line()
@@ -188,10 +187,30 @@ def runserver(
         if debug and env.ravyn_app:
             env.ravyn_app.debug = debug
 
+        if path:
+            # User explicitly provided the app path (e.g., myproject.main:app)
+            app_target = path
+            toolkit.print(f"Using app path provided: [green]{path}[/green]", tag="Ravyn")
+        elif getattr(env, "path", None):
+            # Use discovered or environment app path
+            app_target = env.path
+        else:
+            error(
+                "No application path found. Provide it via CLI or environment variable 'RAVYN_DEFAULT_APP'."
+            )
+            sys.exit(1)
+
+        if not reload and not workers:
+            # Run using the actual loaded app instance when possible
+            app_to_run = env.app or app_target
+        else:
+            # Use import path string for reload/workers compatibility
+            app_to_run = app_target  # type: ignore[assignment]
+
         uvicorn.run(
             # in case of no reload and workers, we might end up initializing twice when
             # using a function, so use app instead
-            app=app if not reload and not workers else env.path,
+            app=app_to_run,
             port=port,
             host=host,
             reload=reload,

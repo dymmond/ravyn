@@ -5,6 +5,17 @@ hide:
 
 # Release Notes
 
+## 0.2.5
+
+### Added
+
+- `runserver_theme` to `Ravyn` settings and `runserver` directive. This allows you to customise the theme of the
+`ravyn runserver` command.
+
+### Fixed
+
+- Regression in runserver with a path provided.
+
 ## 0.2.4
 
 ### Changed
