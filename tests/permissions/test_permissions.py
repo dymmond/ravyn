@@ -172,6 +172,12 @@ class DummyPermission(PermissionProtocol):
 class DummyTrue(BasePermission): ...
 
 
+class Op1True(BasePermission): ...
+
+
+class Op2True(BasePermission): ...
+
+
 @pytest.mark.parametrize(
     "permission,result",
     [
@@ -179,6 +185,17 @@ class DummyTrue(BasePermission): ...
         (DummyTrue, True),
         (TestPermission, False),
         (DummyPermission, False),
+        (Op1True, True),
+        (Op2True, True),
+        (~Op1True, True),
+        (Op1True & Op2True, True),
+        (~Op1True & Op2True, True),
+        (Op1True & ~Op2True, True),
+        (~(Op1True & Op2True), True),
+        (Op1True | Op2True, True),
+        (~Op1True | Op2True, True),
+        (Op1True | ~Op2True, True),
+        (~(Op1True | Op2True), True),
     ],
 )
 def test_is_ravyn_permission(permission, result) -> None:
