@@ -54,10 +54,15 @@ def is_ravyn_permission(permission: Union["BasePermission", Any]) -> bool:
     Returns:
         bool: True if the permission is an instance or subclass of BasePermission, False otherwise.
     """
+    from inspect import isclass
 
     from ravyn.permissions import BasePermission
+    from ravyn.permissions.base import BaseOperationHolder
 
-    return is_class_and_subclass(permission, BasePermission)
+    if isclass(permission):
+        return is_class_and_subclass(permission, BasePermission)
+
+    return isinstance(permission, BaseOperationHolder)
 
 
 def is_lilya_permission(permission: Union[DefinePermission, Any]) -> bool:
