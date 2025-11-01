@@ -42,7 +42,7 @@ class LilyaPermDeny(PermissionProtocol):
         raise PermissionDenied()
 
 
-def test_mix_permissions_with_native_ravyn() -> None:
+def test_permissions_with_native_ravyn() -> None:
     @get(path="/secret", permissions=[LilyaDeny])
     def my_http_route_handler() -> None: ...
 
@@ -59,22 +59,42 @@ def test_mix_permissions_with_native_ravyn() -> None:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_two_permissions_mixed_same_level() -> None:
-    @get(path="/secret", permissions=[RavynPermission, LilyaDeny])
+def test_two_permissions_mixed_same_level_raises_error() -> None:
+    with pytest.raises(AssertionError):
+
+        @get(path="/secret", permissions=[RavynPermission, LilyaDeny])
+        def my_http_route_handler() -> None: ...
+
+
+def test_two_permissions_mixed_fails() -> None:
+    with pytest.raises(AssertionError):
+        with create_client(routes=[], permissions=[RavynPermission, LilyaDeny]):
+            ...
+
+
+def test_two_permissions_mixed_on_include_fails() -> None:
+    with pytest.raises(AssertionError):
+        with create_client(routes=[Include(permissions=[RavynPermission, LilyaDeny])]):
+            ...
+
+
+def test_two_permissions_mixed_on_gateway_fails() -> None:
+    @get()
     def my_http_route_handler() -> None: ...
 
-    with create_client(
-        routes=[Gateway(handler=my_http_route_handler)],
-    ) as client:
-        response = client.get("/secret")
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-        response = client.get("/secret", headers={"Authorization": "yes"})
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-        assert response.json().get("detail") == "Not Authorized."
-        response = client.get("/secret", headers={"Authorization": "yes", "allow_all": "true"})
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    with pytest.raises(AssertionError):
+        with create_client(
+            routes=[
+                Include(
+                    routes=[
+                        Gateway(
+                            handler=my_http_route_handler, permissions=[RavynPermission, LilyaDeny]
+                        )
+                    ]
+                )
+            ]
+        ):
+            ...
 
 
 @pytest.mark.parametrize("path", ["/secret", "", "/"])

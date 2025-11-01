@@ -4,11 +4,8 @@ import json
 import warnings
 from typing import (
     Any,
-    Optional,
     Sequence,
     Set,
-    Tuple,
-    Union,
     cast,
 )
 
@@ -31,6 +28,7 @@ from pydantic.fields import FieldInfo
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 from typing_extensions import Literal
 
+from ravyn.core.protocols.middleware import MiddlewareProtocol
 from ravyn.openapi.constants import METHODS_WITH_BODY, REF_PREFIX, REF_TEMPLATE
 from ravyn.openapi.models import (
     Contact,
@@ -61,21 +59,43 @@ from ravyn.utils.dependencies import is_base_requires
 from ravyn.utils.enums import MediaType
 from ravyn.utils.helpers import is_class_and_subclass, is_union
 
-ADDITIONAL_TYPES = ["bool", "list", "dict"]
-TRANSFORMER_TYPES_KEYS = list(TRANSFORMER_TYPES.keys())
+SecurityRequirement = dict[str, Sequence[str]]
+
+
+ADDITIONAL_TYPES: list[str] = ["bool", "list", "dict"]
+TRANSFORMER_TYPES_KEYS: list[str] = list(TRANSFORMER_TYPES.keys())
 TRANSFORMER_TYPES_KEYS += ADDITIONAL_TYPES
 
 
-def get_flat_params(route: Union[router.HTTPHandler, Any], body_fields: list[str]) -> list[Any]:
+def get_flat_params(route: router.HTTPHandler | Any, body_fields: list[str]) -> list[Any]:
     """
-    Gets all the neded params of the request and route.
-    """
-    path_params = [param.field_info for param in route.transformer.get_path_params()]
-    cookie_params = [param.field_info for param in route.transformer.get_cookie_params()]
-    header_params = [param.field_info for param in route.transformer.get_header_params()]
+    Extracts and flattens all relevant parameters (Path, Query, Header, Cookie)
+    from a route handler's signature.
 
-    handler_dependencies = set(route.get_dependencies().keys())
-    body_encoder_fields = route.body_encoder_fields
+    It filters out parameters that are dependencies, security requirements, or those
+    expected to be in the request body.
+
+    Args:
+        route: The `HTTPHandler` instance containing the route and its transformer.
+        body_fields: A list of field aliases expected to be in the request body (and should be excluded from parameters).
+
+    Returns:
+        A list of `FieldInfo` objects representing all OpenAPI parameters.
+    """
+    path_params: list[FieldInfo] = [
+        param.field_info for param in route.transformer.get_path_params()
+    ]
+    cookie_params: list[FieldInfo] = [
+        param.field_info for param in route.transformer.get_cookie_params()
+    ]
+    header_params: list[FieldInfo] = [
+        param.field_info for param in route.transformer.get_header_params()
+    ]
+
+    handler_dependencies: set[str] = set(route.get_dependencies().keys())
+    body_encoder_fields: dict[str, Any] = route.body_encoder_fields
+
+    # Filter query parameters
     handler_query_params = [
         param
         for param in route.transformer.get_query_params()
@@ -84,9 +104,9 @@ def get_flat_params(route: Union[router.HTTPHandler, Any], body_fields: list[str
         and param.field_alias not in handler_dependencies
     ]
 
-    query_params = []
+    query_params: list[FieldInfo] = []
     for param in handler_query_params:
-        is_union_or_optional = is_union(param.field_info.annotation)
+        is_union_or_optional: bool = is_union(param.field_info.annotation)
 
         if param.field_info.alias in body_fields:
             continue
@@ -94,7 +114,7 @@ def get_flat_params(route: Union[router.HTTPHandler, Any], body_fields: list[str
         if param.is_security or param.is_requires_dependency:
             continue
 
-        # Making sure all the optional and union types are included
+        # Logic to include parameters based on type and whether they are explicit requirements
         if is_union_or_optional:
             if not is_base_requires(param.field_info.default):
                 query_params.append(param.field_info)
@@ -114,12 +134,21 @@ def get_flat_params(route: Union[router.HTTPHandler, Any], body_fields: list[str
     return path_params + query_params + cookie_params + header_params
 
 
-def get_openapi_security_schemes(schemes: Any) -> Tuple[dict, list]:
+def get_openapi_security_schemes(schemes: Any) -> tuple[dict[str, Any], list[SecurityRequirement]]:
     """
-    Builds the security schemas for OpenAPI.
+    Builds the security schemes components and the operational security requirements
+    for OpenAPI based on the configured security objects.
+
+    Args:
+        schemes: A sequence of security scheme instances or classes (subclasses of SecurityScheme/SecurityBase).
+
+    Returns:
+        A tuple containing:
+        1. Security Definitions (for `components/securitySchemes`).
+        2. Operation Security List (for the `security` field in an operation object).
     """
-    security_definitions = {}
-    operation_security = []
+    security_definitions: dict[str, Any] = {}
+    operation_security: list[SecurityRequirement | Any] = []
 
     for security_requirement in schemes:
         if inspect.isclass(security_requirement):
@@ -130,20 +159,34 @@ def get_openapi_security_schemes(schemes: Any) -> Tuple[dict, list]:
             (SecurityScheme, SecurityBase),
         ):
             raise ValueError(
-                "Security schemes must subclass from `ravyn.openapi.models.SecurityScheme`"
+                "Security schemes must subclass from `ravyn.openapi.models.SecurityScheme` or `ravyn.security.oauth2.oauth.SecurityBase`"
             )
 
-        security_definition = security_requirement.model_dump(by_alias=True, exclude_none=True)
-        security_name = security_requirement.scheme_name
+        security_definition: dict[str, Any] = security_requirement.model_dump(
+            by_alias=True, exclude_none=True
+        )
+        security_name: str = security_requirement.scheme_name
+
         security_definitions[security_name] = security_definition
+        # Note: Appending the requirement object itself, assuming it maps to scopes later if needed.
         operation_security.append({security_name: security_requirement})
+
     return security_definitions, operation_security
 
 
 def get_fields_from_routes(
-    routes: Sequence[BasePath], request_fields: Optional[list[FieldInfo]] = None
+    routes: Sequence[BasePath], request_fields: list[FieldInfo] | None = None
 ) -> list[FieldInfo]:
-    """Extracts the fields from the given routes of Ravyn"""
+    """Extracts all unique Pydantic fields (for request body, response models, and parameters)
+    across a sequence of routes, handling recursive route includes.
+
+    Args:
+        routes: A sequence of `BasePath` objects (routes, includes, gateways).
+        request_fields: Initial list of fields to extend (used for recursion).
+
+    Returns:
+        A list of `FieldInfo` objects.
+    """
     body_fields: list[FieldInfo] = []
     response_from_routes: list[FieldInfo] = []
 
@@ -151,42 +194,59 @@ def get_fields_from_routes(
         request_fields = []
 
     for route in routes:
+        # Handle recursive includes
         if getattr(route, "include_in_schema", None) and isinstance(route, router.Include):
             request_fields.extend(get_fields_from_routes(route.routes, request_fields))
             continue
 
+        # Handle Gateway routes
         if getattr(route, "include_in_schema", None) and isinstance(
             route, (gateways.Gateway, gateways.WebhookGateway)
         ):
-            handler = cast(router.HTTPHandler, route.handler)
+            handler: router.HTTPHandler = cast(router.HTTPHandler, route.handler)
 
+            # Extract request body field
             if handler.data_field:
                 body_fields.append(handler.data_field)
 
+            # Extract response model fields
             if handler.response_models:
                 for _, response in handler.response_models.items():
                     response_from_routes.append(response)
 
-            # Get the params from the transformer
-            body_fields_names = [field.alias for field in body_fields]
-            params = get_flat_params(handler, body_fields_names)
+            # Extract parameter fields
+            body_fields_names: list[str] = [field.alias for field in body_fields]
+            params: list[FieldInfo] = get_flat_params(handler, body_fields_names)
             if params:
                 request_fields.extend(params)
 
+    # Return unique combination of all gathered fields
     return list(body_fields + response_from_routes + request_fields)
 
 
 def get_openapi_operation(
     *, route: gateways.Gateway, operation_ids: Set[str]
 ) -> dict[str, Any]:  # pragma: no cover
-    operation = Operation()
+    """
+    Builds the base OpenAPI Operation Object for a given route method.
+
+    Handles setting tags, summary, description, and ensures the operation ID is unique.
+
+    Args:
+        route: The `Gateway` instance.
+        operation_ids: A set of already used operation IDs (modified in place).
+
+    Returns:
+        The OpenAPI Operation Object dictionary structure.
+    """
+    operation: Operation = Operation()
     operation.tags = route.handler.get_handler_tags()
 
     # Handle the routing summary
     if route.handler.summary:
         operation.summary = route.handler.summary
     else:
-        name = route.handler.name or route.name
+        name: str = route.handler.name or route.name
         operation.summary = name.replace("_", " ").replace("-", " ").title()
 
     # Handle the handler description
@@ -195,77 +255,112 @@ def get_openapi_operation(
     else:
         operation.description = inspect.cleandoc(route.handler.fn.__doc__ or "")
 
-    operation_id = getattr(route, "operation_id", None) or route.handler.operation_id
+    operation_id: str | None = getattr(route, "operation_id", None) or route.handler.operation_id
 
+    # Check and warn on duplicate operation IDs
     if operation_id in operation_ids:
-        message = (
+        message: str = (
             f"Duplicate Operation ID {operation_id} for function " + f"{route.handler.fn.__name__}"
         )
-        file_name = getattr(route.handler, "__globals__", {}).get("__file__")
+        file_name: str | None = getattr(route.handler, "__globals__", {}).get("__file__")
         if file_name:
             message += f" at {file_name}"
         warnings.warn(message, stacklevel=1)
     operation_ids.add(operation_id)
 
     operation.operationId = operation_id
+
+    # Handle deprecation status
     if route.deprecated:
         operation.deprecated = route.deprecated
     elif route.handler.deprecated:
         operation.deprecated = route.handler.deprecated
 
-    operation_schema = operation.model_dump(exclude_none=True, by_alias=True)
+    operation_schema: dict[str, Any] = operation.model_dump(exclude_none=True, by_alias=True)
     return operation_schema
 
 
 def get_openapi_operation_parameters(
     *,
     all_route_params: Sequence[FieldInfo],
-    field_mapping: dict[Tuple[FieldInfo, Literal["validation", "serialization"]], JsonSchemaValue],
+    field_mapping: dict[tuple[FieldInfo, Literal["validation", "serialization"]], JsonSchemaValue],
 ) -> list[dict[str, Any]]:  # pragma: no cover
-    parameters = []
+    """
+    Converts a sequence of `FieldInfo` objects into OpenAPI Parameter objects.
+
+    Args:
+        all_route_params: Sequence of `FieldInfo` objects derived from route parameters.
+        field_mapping: Mapping of fields to their root JSON Schema.
+
+    Returns:
+        A list of OpenAPI Parameter Object dictionaries.
+    """
+    parameters: list[dict[str, Any]] = []
     for param in all_route_params:
-        field_info = cast(Param, param)
+        field_info: Param = cast(Param, param)
         if not field_info.include_in_schema:
             continue
 
-        param_schema = get_schema_from_model_field(
+        param_schema: dict[str, Any] = get_schema_from_model_field(
             field=param,
             field_mapping=field_mapping,
         )
+
+        # Set default value if present and not Undefined
         if field_info.default is not None and field_info.default is not Undefined:
             param_schema["default"] = field_info.default
 
-        parameter = Parameter(  # type: ignore
+        parameter: Parameter = Parameter(  # type: ignore[call-arg]
             name=param.alias,
             param_in=field_info.in_.value,
             required=param.is_required(),
-            schema=param_schema,  # type: ignore
+            schema=param_schema,  # type: ignore[arg-type]
         )
+
+        # Add description, examples, and deprecation status
         if field_info.description:
             parameter.description = field_info.description
         if field_info.examples is not None:
+            # Note: Examples are dumped to JSON string as per original logic
             parameter.example = json.dumps(field_info.examples)
         if field_info.deprecated:
-            parameter.deprecated = field_info.deprecated  # type: ignore
+            parameter.deprecated = bool(field_info.deprecated)
+
         parameters.append(parameter.model_dump(by_alias=True, exclude_none=True))
+
     return parameters
 
 
 def get_openapi_operation_request_body(
     *,
-    data_field: Optional[FieldInfo],
-    field_mapping: dict[Tuple[FieldInfo, Literal["validation", "serialization"]], JsonSchemaValue],
-) -> Optional[dict[str, Any]]:  # pragma: no cover
-    if not data_field:
-        return None  # type: ignore
+    data_field: FieldInfo | None = None,
+    field_mapping: dict[tuple[FieldInfo, Literal["validation", "serialization"]], JsonSchemaValue],
+) -> dict[str, Any] | None:  # pragma: no cover
+    """
+    Builds the OpenAPI Request Body Object for a route method.
+
+    Args:
+        data_field: The `FieldInfo` object representing the request body payload.
+        field_mapping: Mapping of fields to their root JSON Schema.
+
+    Returns:
+        The OpenAPI Request Body Object dictionary, or None if no body field is present.
+    """
+    if data_field is None:
+        return None
 
     assert isinstance(data_field, FieldInfo), "The 'data' needs to be a FieldInfo"
-    schema = get_schema_from_model_field(field=data_field, field_mapping=field_mapping)
 
-    field_info = data_field
-    extra = cast("dict[str, Any]", data_field.json_schema_extra)
-    request_media_type = extra.get("media_type").value
-    required = field_info.is_required()
+    schema: dict[str, Any] = get_schema_from_model_field(
+        field=data_field, field_mapping=field_mapping
+    )
+
+    field_info: FieldInfo = data_field
+    extra: dict[str, Any] = cast("dict[str, Any]", data_field.json_schema_extra)
+
+    # Determine the media type from the field's extra schema
+    request_media_type: str = extra.get("media_type").value
+    required: bool = field_info.is_required()
 
     request_data_oai: dict[str, Any] = {}
     if required:
@@ -274,25 +369,39 @@ def get_openapi_operation_request_body(
     request_media_content: dict[str, Any] = {"schema": schema}
     if field_info.examples is not None:
         request_media_content["example"] = json.dumps(field_info.examples)
+
     request_data_oai["content"] = {request_media_type: request_media_content}
     return request_data_oai
 
 
 def get_openapi_path(
     *,
-    route: Union[gateways.Gateway, gateways.WebhookGateway],
+    route: gateways.Gateway | gateways.WebhookGateway,
     operation_ids: Set[str],
-    field_mapping: dict[Tuple[FieldInfo, Literal["validation", "serialization"]], JsonSchemaValue],
+    field_mapping: dict[tuple[FieldInfo, Literal["validation", "serialization"]], JsonSchemaValue],
     is_deprecated: bool = False,
-) -> Tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:  # pragma: no cover
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]] | None:  # pragma: no cover
+    """
+    Generates the OpenAPI Path Item Object for all HTTP methods supported by a single route.
+
+    Args:
+        route: The Gateway or WebhookGateway route object.
+        operation_ids: Set of existing operation IDs (updated in place).
+        field_mapping: Mapping of fields to their root JSON Schema.
+        is_deprecated: Boolean indicating if the route inherited a deprecated status from an include.
+
+    Returns:
+        A tuple containing: (Path Item Dict, Security Schemes Dict, Component Definitions Dict), or None if the route is excluded.
+    """
     path: dict[str, Any] = {}
     security_schemes: dict[str, Any] = {}
     definitions: dict[str, Any] = {}
 
     assert route.handler.methods is not None, "Methods must be a list"
-    route_response_media_type: str = None
+    route_response_media_type: str | None = None
     handler: router.HTTPHandler = cast("router.HTTPHandler", route.handler)
 
+    # Determine the primary response media type
     if not handler.response_class:
         internal_response = create_internal_response(handler)
         route_response_media_type = internal_response.media_type
@@ -304,12 +413,13 @@ def get_openapi_path(
 
     # If routes do not want to be included in the schema generation
     if not route.include_in_schema or not handler.include_in_schema:
-        return path, security_schemes, definitions
+        return None
 
-    # For each method
+    # For each method (GET, POST, etc.)
     for method in route.handler.methods:
-        operation = get_openapi_operation(route=route, operation_ids=operation_ids)  # type: ignore
-        # If the parent if marked as deprecated, it takes precedence
+        operation: dict[str, Any] = get_openapi_operation(route=route, operation_ids=operation_ids)  # type: ignore[arg-type]
+
+        # Apply deprecation status
         if is_deprecated or route.deprecated:
             operation["deprecated"] = is_deprecated if is_deprecated else route.deprecated
 
@@ -318,27 +428,33 @@ def get_openapi_path(
             handler.get_security_schemes()
         )
 
+        # Merge security requirements
         if operation_security:
             operation.setdefault("security", []).extend(operation_security)
 
         if security_definitions:
             security_schemes.update(security_definitions)
 
-        body_fields = []
+        # Get and process parameters
+        body_fields: list[FieldInfo] = []
         if handler.data_field:
             body_fields.append(handler.data_field)
 
-        body_fields_names = [field.alias for field in body_fields]
-        all_route_params = get_flat_params(handler, body_fields_names)
-        operation_parameters = get_openapi_operation_parameters(
+        body_fields_names: list[str] = [field.alias for field in body_fields]
+        all_route_params: list[FieldInfo] = get_flat_params(handler, body_fields_names)
+
+        operation_parameters: list[dict[str, Any]] = get_openapi_operation_parameters(
             all_route_params=all_route_params,
             field_mapping=field_mapping,
         )
         parameters.extend(operation_parameters)
 
         if parameters:
-            all_parameters = {(param["in"], param["name"]): param for param in parameters}
-            required_parameters = {
+            # Deduplicate parameters by (in, name) and ensure required ones override
+            all_parameters: dict[tuple[str, str], dict[str, Any]] = {
+                (param["in"], param["name"]): param for param in parameters
+            }
+            required_parameters: dict[tuple[str, str], dict[str, Any]] = {
                 (param["in"], param["name"]): param
                 for param in parameters
                 if param.get("required")
@@ -346,22 +462,26 @@ def get_openapi_path(
             all_parameters.update(required_parameters)
             operation["parameters"] = list(all_parameters.values())
 
+        # Process Request Body
         if method in METHODS_WITH_BODY:
-            request_data_oai = get_openapi_operation_request_body(
+            request_data_oai: dict[str, Any] | None = get_openapi_operation_request_body(
                 data_field=handler.data_field,
                 field_mapping=field_mapping,
             )
             if request_data_oai:
                 operation["requestBody"] = request_data_oai
 
-        status_code = str(handler.status_code)
+        # Process Responses
+        status_code: str = str(handler.status_code)
+
+        # Set description for primary response
         operation.setdefault("responses", {}).setdefault(status_code, {})["description"] = (
             handler.response_description
         )
 
-        # Media type
+        # Set schema for primary response media type
         if route_response_media_type and is_status_code_allowed(handler.status_code):
-            response_schema = (
+            response_schema: dict[str, Any] = (
                 {"type": "string"} if handler.status_code not in handler.responses else {}
             )
 
@@ -369,41 +489,45 @@ def get_openapi_path(
                 "content", {}
             ).setdefault(route_response_media_type, {})["schema"] = response_schema
 
-        # Additional responses
+        # Process Additional Responses (handler.response_models)
         if handler.response_models:
-            operation_responses = operation.setdefault("responses", {})
+            operation_responses: dict[str, Any] = operation.setdefault("responses", {})
             for additional_status_code, _ in handler.response_models.items():
-                process_response = handler.responses[additional_status_code].model_copy()
-                status_code_key = str(additional_status_code).upper()
+                process_response: Any = handler.responses[additional_status_code].model_copy()
+                status_code_key: str = str(additional_status_code).upper()
 
                 if status_code_key == "DEFAULT":
                     status_code_key = "default"
 
-                openapi_response = operation_responses.setdefault(status_code_key, {})
+                openapi_response: dict[str, Any] = operation_responses.setdefault(
+                    status_code_key, {}
+                )
 
-                field = handler.response_models.get(additional_status_code)
-                additional_field_schema: Optional[dict[str, Any]] = None
-                model_schema = process_response.model_json_schema()
+                field: FieldInfo | None = handler.response_models.get(additional_status_code)
+                additional_field_schema: dict[str, Any] | None = None
+                model_schema: dict[str, Any] = process_response.model_json_schema()
 
                 if field:
                     additional_field_schema = get_schema_from_model_field(
                         field=field, field_mapping=field_mapping
                     )
-                    media_type = route_response_media_type or MediaType.JSON.value
-                    additional_schema = (
+                    media_type: str = route_response_media_type or MediaType.JSON.value
+
+                    # Update the schema within the content section
+                    additional_schema: dict[str, Any] = (
                         model_schema.setdefault("content", {})
                         .setdefault(media_type, {})
                         .setdefault("schema", {})
                     )
                     dict_update(additional_schema, additional_field_schema)
 
-                # status
-                status_text = (
+                # Set description for the response
+                status_text: str = (
                     process_response.status_text
                     or STATUS_CODE_RANGES.get(str(additional_status_code).upper())
-                    or http.client.responses.get(int(additional_status_code))
+                    or http.client.responses.get(int(additional_status_code), "")
                 )
-                description = (
+                description: str = (
                     process_response.description
                     or openapi_response.get("description")
                     or status_text
@@ -412,8 +536,7 @@ def get_openapi_path(
                 dict_update(openapi_response, model_schema)
                 openapi_response["description"] = description
 
-        # Convert to automatic response detection if none is provided by the
-        # responses of the handler.
+        # Convert return annotation to response schema if not explicitly provided
         if handler.handler_signature.return_annotation:
             response_schema = convert_annotation_to_pydantic_model(
                 handler.handler_signature.return_annotation
@@ -424,11 +547,13 @@ def get_openapi_path(
                 and status_code not in handler.responses
                 and int(status_code) not in handler.responses
             ):
+                # Update the primary response schema
                 operation["responses"][status_code]["content"][route_response_media_type][
                     "schema"
                 ] = response_schema.model_json_schema()
 
-        http422 = str(HTTP_422_UNPROCESSABLE_ENTITY)
+        # Add 422 Unprocessable Entity response if request body or parameters exist
+        http422: str = str(HTTP_422_UNPROCESSABLE_ENTITY)
         if (all_route_params or handler.data_field) and not any(
             status in operation["responses"] for status in {http422, "4XX", "default"}
         ):
@@ -438,6 +563,7 @@ def get_openapi_path(
                     "application/json": {"schema": {"$ref": REF_PREFIX + "HTTPValidationError"}}
                 },
             }
+            # Ensure ValidationError definitions are present in components/schemas
             if "ValidationError" not in definitions:
                 definitions.update(
                     {
@@ -445,22 +571,31 @@ def get_openapi_path(
                         "HTTPValidationError": VALIDATION_ERROR_RESPONSE_DEFINITION,
                     }
                 )
+
         path[method.lower()] = operation
+
     return path, security_schemes, definitions
 
 
 def should_include_in_schema(route: router.Include) -> bool:
     """
-    Checks if a specifc object should be included in the schema
+    Checks if a specific included application or router should be included in the OpenAPI schema.
+
+    Args:
+        route: The `Include` router object.
+
+    Returns:
+        True if the route should be included, False otherwise (e.g., if explicitly disabled or it's a middleware app).
     """
     from ravyn import ChildRavyn, Ravyn
 
     if not route.include_in_schema:
         return False
 
-    if not is_middleware_app(route):
+    if not isinstance(route.app, (DefineMiddleware, MiddlewareProtocol)):
         return True
 
+    # Logic to handle nested Ravyn/ChildRavyn apps that might disable OpenAPI generation
     if (
         isinstance(route.app, (Ravyn, ChildRavyn))
         or (
@@ -468,6 +603,7 @@ def should_include_in_schema(route: router.Include) -> bool:
         )
     ) and not getattr(route.app, "enable_openapi", False):
         return False
+
     if (
         isinstance(route.app, (Ravyn, ChildRavyn))
         or (
@@ -481,9 +617,14 @@ def should_include_in_schema(route: router.Include) -> bool:
 
 def is_middleware_app(route: router.Include) -> bool:
     """
-    Checks if the app is a middleware or a router
+    Checks if the application object within the Include route is a middleware or a router.
+
+    Args:
+        route: The `Include` router object.
+
+    Returns:
+        True if the included app is a middleware definition, False if it's a standard router/application.
     """
-    from ravyn import MiddlewareProtocol
 
     return bool(isinstance(route.app, (DefineMiddleware, MiddlewareProtocol)))
 
@@ -494,28 +635,50 @@ def get_openapi(
     title: str,
     version: str,
     openapi_version: str = "3.1.0",
-    summary: Optional[str] = None,
-    description: Optional[str] = None,
+    summary: str | None = None,
+    description: str | None = None,
     routes: Sequence[BasePath],
-    tags: Optional[list[str]] = None,
-    servers: Optional[list[dict[str, Union[str, Any]]]] = None,
-    terms_of_service: Optional[Union[str, AnyUrl]] = None,
-    contact: Optional[Contact] = None,
-    license: Optional[License] = None,
-    webhooks: Optional[Sequence[BasePath]] = None,
+    tags: list[str] | None = None,
+    servers: list[dict[str, str | Any]] | None = None,
+    terms_of_service: str | AnyUrl | None = None,
+    contact: Contact | None = None,
+    license: License | None = None,
+    webhooks: Sequence[BasePath] | None = None,
 ) -> dict[str, Any]:  # pragma: no cover
     """
-    Builds the whole OpenAPI route structure and object
+    The main function responsible for building the complete OpenAPI specification object
+    for the application.
+
+    It performs recursive route traversal, schema generation, and final object assembly.
+
+    Args:
+        app: The root application instance.
+        title: The title of the API.
+        version: The version of the API.
+        openapi_version: The version of the OpenAPI specification (default: "3.1.0").
+        summary: A short summary of the API.
+        description: A detailed description of the API.
+        routes: The sequence of HTTP routes.
+        tags: A list of global tags.
+        servers: A list of server objects.
+        terms_of_service: Link to the terms of service.
+        contact: Contact information object.
+        license: License information object.
+        webhooks: A sequence of Webhook routes (optional, for OpenAPI 3.1).
+
+    Returns:
+        The final OpenAPI specification dictionary.
     """
     from ravyn import ChildRavyn, Ravyn
 
-    info = Info(title=title, version=version)
+    # 1. Build Info Object
+    info: Info = Info(title=title, version=version)
     if summary:
         info.summary = summary
     if description:
         info.description = description
     if terms_of_service:
-        info.termsOfService = terms_of_service  # type: ignore
+        info.termsOfService = terms_of_service
     if contact:
         info.contact = contact
     if license:
@@ -533,24 +696,33 @@ def get_openapi(
     paths: dict[str, dict[str, Any]] = {}
     webhooks_paths: dict[str, dict[str, Any]] = {}
     operation_ids: Set[str] = set()
-    all_fields = get_fields_from_routes(list(routes or []) + list(webhooks or []))
-    schema_generator = GenerateJsonSchema(ref_template=REF_TEMPLATE)
+
+    # 2. Extract All Fields for Schema Generation
+    all_fields: list[FieldInfo] = get_fields_from_routes(list(routes or []) + list(webhooks or []))
+    schema_generator: GenerateJsonSchema = GenerateJsonSchema(ref_template=REF_TEMPLATE)
+
+    # Generate definitions once for all fields
+    field_mapping: dict[tuple[FieldInfo, Literal["validation", "serialization"]], JsonSchemaValue]
+    definitions: dict[str, dict[str, Any]]
+
     field_mapping, definitions = get_definitions(
         fields=all_fields,
         schema_generator=schema_generator,
     )
 
-    # Iterate through the routes
+    # 3. Recursive Route Traversal and Path Generation
     def iterate_routes(
         app: Any,
         routes: Sequence[BasePath],
-        definitions: Any = None,
-        components: Any = None,
-        prefix: Optional[str] = "",
+        definitions: dict[str, dict[str, Any]],
+        components: dict[str, dict[str, Any]],
+        prefix: str | None = "",
         is_webhook: bool = False,
         is_deprecated: bool = False,
-    ) -> Tuple[dict[str, Any], dict[str, Any]]:
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Internal recursive function to traverse and process routes."""
         for route in routes:
+            # Inherit deprecation status from parent app/router
             if app.router.deprecated:
                 is_deprecated = True
 
@@ -559,15 +731,18 @@ def get_openapi(
                     if not should_include_in_schema(route):
                         continue
 
-                # For external middlewares
-                if getattr(route.app, "routes", None) is None and not is_middleware_app(route):
+                # Skip external middlewares without attached routes
+                if getattr(route.app, "routes", None) is None and not isinstance(
+                    route.app, (DefineMiddleware, MiddlewareProtocol)
+                ):
                     continue
 
+                # Recurse into nested Ravyn apps/routers
                 if hasattr(route, "app") and isinstance(route.app, (Ravyn, ChildRavyn)):
-                    route_path = clean_path(prefix + route.path)
+                    route_path: str = clean_path(prefix + route.path)
 
                     definitions, components = iterate_routes(
-                        app,
+                        route.app,
                         route.app.routes,
                         definitions,
                         components,
@@ -586,32 +761,41 @@ def get_openapi(
                     )
                 continue
 
+            # Process Gateway/WebhookGateway
             if isinstance(route, (gateways.Gateway, gateways.WebhookGateway)):
-                result = get_openapi_path(
-                    route=route,
-                    operation_ids=operation_ids,
-                    field_mapping=field_mapping,
-                    is_deprecated=is_deprecated,
+                result: tuple[dict[str, Any], dict[str, Any], dict[str, Any]] | None = (
+                    get_openapi_path(
+                        route=route,
+                        operation_ids=operation_ids,
+                        field_mapping=field_mapping,
+                        is_deprecated=is_deprecated,
+                    )
                 )
+
                 if result:
-                    path, security_schemes, path_definitions = result
-                    if path:
+                    path_item, security_schemes, path_definitions = result
+
+                    if path_item:
                         if is_webhook:
-                            webhooks_paths.setdefault(route.path, {}).update(path)
+                            webhooks_paths.setdefault(route.path, {}).update(path_item)
                         else:
                             route_path = clean_path(prefix + route.path_format)
-                            paths.setdefault(route_path, {}).update(path)
+                            paths.setdefault(route_path, {}).update(path_item)
+
                     if security_schemes:
                         components.setdefault("securitySchemes", {}).update(security_schemes)
+
                     if path_definitions:
                         definitions.update(path_definitions)
 
         return definitions, components
 
+    # Process HTTP Routes
     definitions, components = iterate_routes(
         app=app, routes=routes, definitions=definitions, components=components
     )
 
+    # Process Webhooks (if provided)
     if webhooks:
         definitions, components = iterate_routes(
             app=app,
@@ -621,16 +805,23 @@ def get_openapi(
             is_webhook=True,
         )
 
+    # 4. Final Assembly
     if definitions:
+        # Sort schemas alphabetically
         components["schemas"] = {k: definitions[k] for k in sorted(definitions)}
     if components:
         output["components"] = components
+
     output["paths"] = paths
+
     if webhooks_paths:
         output["webhooks"] = webhooks_paths
+
     if tags:
         output["tags"] = tags
 
-    openapi = OpenAPI(**output)
-    model_dump = openapi.model_dump_json(by_alias=True, exclude_none=True)
+    # Final Pydantic model validation and serialization
+    openapi: OpenAPI = OpenAPI(**output)
+    model_dump: str = openapi.model_dump_json(by_alias=True, exclude_none=True)
+
     return cast(dict[str, Any], loads(model_dump))

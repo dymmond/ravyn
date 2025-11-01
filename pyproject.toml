@@ -46,7 +46,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
-    "lilya[standard]>=0.22.1",
+    "lilya[standard]>=0.22.9",
     "pydantic-settings>=2.9.0",
     "orjson>=3.8.5,<4.0.0",
     "msgspec>=0.18.5,<1.0.0",
@@ -272,12 +272,13 @@ check_types = "mypy -p ravyn"
 
 #[[tool.hatch.envs.hatch-test.matrix]]
 #python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
-#python = ["3.11"]
+#python = ["3.10"]
 
 [tool.hatch.envs.hatch-test]
 features = ["all", "testing"]
 template = "test"
 installer = "pip"
+extra-dependencies = ["msgspec@git+https://github.com/jcrist/msgspec.git ; python_version >= '3.14.0'"]
 
 [tool.hatch.envs.hatch-test.env-vars]
 RAVYN_SETTINGS_MODULE = "tests.settings.AppTestSettings"

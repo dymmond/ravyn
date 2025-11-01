@@ -94,3 +94,17 @@ tasks:
       RAVYN_SETTINGS_MODULE: tests.settings.AppTestSettings
     cmds:
       - hatch run test:coverage {{ .ARGS }}
+
+  test_single:
+    desc: Don't use hatch for this
+    env:
+      RAVYN_SETTINGS_MODULE: tests.settings.AppTestSettings
+    cmds:
+      - pytest -s {{ .ARGS }}
+
+  test_single_man:
+    desc: Don't use hatch for this with verbose
+    env:
+      RAVYN_SETTINGS_MODULE: tests.settings.AppTestSettings
+    cmds:
+      - pytest -s -vv {{ .ARGS }}

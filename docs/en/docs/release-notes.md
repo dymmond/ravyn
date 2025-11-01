@@ -5,16 +5,23 @@ hide:
 
 # Release Notes
 
-## 0.2.5
+## 0.3.0
 
 ### Added
 
 - `runserver_theme` to `Ravyn` settings and `runserver` directive. This allows you to customise the theme of the
 `ravyn runserver` command.
 
+### Changed
+
+- Rewritten the internals for OpenAPI representation models with Pydantic and compatible with Python 3.14+.
+
 ### Fixed
 
 - Regression in runserver with a path provided.
+- Fix permissions operations AND,OR,NOT
+by [@egorvavilov](https://github.com/egorvavilov). [PR #627](https://github.com/dymmond/ravyn/pull/627).
+- Lilya permissions and Ravyn permissions cannot be combined and now Ravyn raises an assertation error when it happens.
 
 ## 0.2.4
 

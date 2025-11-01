@@ -54,7 +54,7 @@ class Info(BaseModel):
     [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
     """
 
-    termsOfService: Optional[AnyUrl] = None
+    termsOfService: Optional[AnyUrl] | str = None
     """
     A URL to the Terms of Service for the API.
     MUST be in the form of a URL.

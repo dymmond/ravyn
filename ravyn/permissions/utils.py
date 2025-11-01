@@ -1,3 +1,4 @@
+from inspect import isclass
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
 from lilya.permissions.base import DefinePermission
@@ -54,8 +55,6 @@ def is_ravyn_permission(permission: Union["BasePermission", Any]) -> bool:
     Returns:
         bool: True if the permission is an instance or subclass of BasePermission, False otherwise.
     """
-    from inspect import isclass
-
     from ravyn.permissions import BasePermission
     from ravyn.permissions.base import BaseOperationHolder
 
@@ -74,7 +73,11 @@ def is_lilya_permission(permission: Union[DefinePermission, Any]) -> bool:
     Returns:
         bool: True if the permission is an instance of DefinePermission, False otherwise.
     """
-    return isinstance(permission, DefinePermission)
+    return (
+        isinstance(permission, DefinePermission)
+        or not is_ravyn_permission(permission)
+        and not isinstance(permission, AsyncCallable)
+    )
 
 
 def wrap_permission(

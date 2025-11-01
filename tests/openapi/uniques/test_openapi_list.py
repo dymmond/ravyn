@@ -112,6 +112,7 @@ def test_open_api_annotated(test_app_client_factory):
         response = client.get("/openapi.json")
 
         assert response.status_code == 200, response.text
+
         assert response.json() == {
             "openapi": "3.1.0",
             "info": {

@@ -93,18 +93,7 @@ to use to start a Lilya application.
 
 What you should avoid doing?
 
-You can mix Lilya permissions with Ravyn permissions but we **cannot** guarantee that the flows
-will always work and the reason for that its because those are called in different cirncunstances.
-
-Lilya permissions operate on a Lilya level which is **always** called before Ravyn due to the fact
-that its the core but its **not always like this**.
-
-Usually it would be ok to have cascade permissions between Ravyn and Lilya but if you do have
-permissions on a **Gateway** level and **HTTPHandler**, because both serve different purposes but
-inherit from **Path** of Lilya, you will encounter conflicts.
+You cannot mix Lilya permissions with Ravyn permissions. Both are independent and combined can cause security concerns.
 
 Lilya permissions are called on the execution of the `__call__` of an ASGI app and Ravyn permissions
 on a `handle_dispatch` level.
-
-Ravyn has unit tests mixing both successfully but the advice you be: **Stick with one permission**
-**system and be consistent**, you do can mix both but you should test to make sure it follows your requirements.

@@ -22,6 +22,7 @@ def test_user_msgspec_openapi(test_client_factory):
         routes=[Gateway(handler=user_with_pydantic)], settings_module=AppTestSettings
     ) as client:
         response = client.get("/openapi.json")
+
         assert response.json() == {
             "openapi": "3.1.0",
             "info": {
