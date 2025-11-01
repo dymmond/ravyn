@@ -692,6 +692,10 @@ class BaseRouter(Dispatcher, LilyaRouter):
         else:
             self.permissions = {}
 
+        assert not (self.permissions and self.lilya_permissions), (
+            "Use either `Ravyn permissions` OR `Lilya permissions`, not both."
+        )
+
         self.routes: Any = new_routes
         self.middleware = middleware or []
         self.tags = tags or []
@@ -2718,6 +2722,10 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         else:
             self.permissions = {}
 
+        assert not (self.permissions and self.lilya_permissions), (
+            "Use either `Ravyn permissions` OR `Lilya permissions`, not both."
+        )
+
         self.before_request = list(before_request or [])
         self.after_request = list(after_request or [])
         self.interceptors: Sequence[Interceptor] = []
@@ -3151,6 +3159,10 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
             }
         else:
             self.permissions = {}
+
+        assert not (self.permissions and self.lilya_permissions), (
+            "Use either `Ravyn permissions` OR `Lilya permissions`, not both."
+        )
 
         self.middleware = middleware
         self.signature_model: Optional[Type[SignatureModel]] = None
@@ -3781,6 +3793,10 @@ class Include(Dispatcher, LilyaInclude):
             }
         else:
             self.permissions = {}
+
+        assert not (self.permissions and self.lilya_permissions), (
+            "Use either `Ravyn permissions` OR `Lilya permissions`, not both."
+        )
 
     def resolve_app_parent(self, app: Optional[Any]) -> Optional[Any]:
         """
