@@ -278,6 +278,7 @@ check_types = "mypy -p ravyn"
 features = ["all", "testing"]
 template = "test"
 installer = "pip"
+extra-dependencies = ["msgspec@git+https://github.com/jcrist/msgspec.git ; python_version >= '3.14.0'"]
 
 [tool.hatch.envs.hatch-test.env-vars]
 RAVYN_SETTINGS_MODULE = "tests.settings.AppTestSettings"
