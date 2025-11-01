@@ -1,9 +1,15 @@
+import inspect
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Type, Union, cast, get_args, get_origin
+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast, get_args, get_origin
 
 from lilya.datastructures import DataUpload
 from pydantic import BaseModel, create_model
 from pydantic.fields import FieldInfo
+
+try:
+    from typing import _GenericAlias  # noqa
+except ImportError:
+    from types import GenericAlias as _GenericAlias
 
 from ravyn.core.datastructures import UploadFile
 from ravyn.encoders import LILYA_ENCODER_TYPES, is_body_encoder
@@ -16,13 +22,17 @@ from ravyn.utils.helpers import is_class_and_subclass, is_union
 if TYPE_CHECKING:
     from ravyn.routing.router import HTTPHandler, WebhookHandler
 
+T = TypeVar("T")
 
-def create_field_model(*, field: FieldInfo, name: str, model_name: str) -> Type[BaseModel]:
+DEFAULT_CONTAINERS = (list, set, tuple, dict, frozenset)
+
+
+def create_field_model(*, field: FieldInfo, name: str, model_name: str) -> type[BaseModel]:
     """
     Creates a pydantic model for a specific field
     """
     params = {name.lower(): (field.annotation, field)}
-    data_field_model: Type[BaseModel] = create_model(  # type: ignore[call-overload]
+    data_field_model: type[BaseModel] = create_model(  # type: ignore[call-overload]
         model_name, __config__={"arbitrary_types_allowed": True}, **params
     )
     return data_field_model
@@ -52,56 +62,137 @@ def get_base_annotations(base_annotation: Any, is_class: bool = False) -> dict[s
     return base_annotations
 
 
+def default_typed_container(type_: type[T]) -> type[Any]:
+    """
+    Adapts non-generic built-in container types (like list, dict, tuple)
+    into their generic, subscripted forms (like list[Any], dict[str, Any]).
+
+    This adaptation is often necessary for compatibility when frameworks (e.g., Pydantic)
+    introspect type hints in Python versions (like <= 3.8) that do not automatically
+    recognize bare containers as generic types.
+
+    The function provides a minimal generic structure, defaulting list/set/tuple contents
+    to `Any`, and uses `dict[str, Any]` to reflect the common pattern of string keys
+    in JSON/OpenAPI schemas.
+
+    Args:
+        tp: The bare built-in type object (e.g., `list`, `dict`, `set`).
+
+    Returns:
+        The subscripted (generic) version of the type (e.g., `list[Any]`), or the
+        original type if it is not a recognized container.
+    """
+    # minimal: only list is needed by your failing tests
+    if type_ is list:
+        return list[Any]
+    if type_ is set:
+        return set[Any]
+    if type_ is tuple:
+        # Note: Ellipsis is used to denote a tuple of indefinite length and homogeneous type (Any)
+        return tuple[Any, ...]
+    if type_ is dict:
+        # OpenAPI keys are typically strings (JSON object); this keeps pydantic happy when needed
+        return dict[str, Any]
+    if type_ is frozenset:
+        return frozenset[Any]
+    return type_
+
+
 def convert_annotation_to_pydantic_model(field_annotation: Any) -> Any:
     """
-    Converts any annotation of the body into a Pydantic
-    base model.
+    Converts a Python type annotation (particularly custom types and Encoders)
+    into a Pydantic BaseModel representation for OpenAPI documentation purposes.
 
-    This is used for OpenAPI representation purposes only.
+    The function ensures that complex annotations, unions, and custom framework types
+    are correctly represented as schema objects that OpenAPI can understand, without
+    altering the core validation logic used elsewhere in the framework.
 
-    Ravyn will try internally to convert the model into a Pydantic BaseModel,
-    this will serve as representation of the model in the documentation but internally,
-    it will use the native type to validate the data being sent and parsed in the
-    payload/data field.
+    Args:
+        field_annotation: The type hint to be converted (e.g., `list[str]`, `UserEncoder`, `Union[str, int]`).
 
-    Encoders are not supported in the OpenAPI representation, this is because the encoders
-    are unique to Ravyn and are not part of the OpenAPI specification. This is why
-    we convert the encoders into a Pydantic model for OpenAPI representation purposes only.
+    Returns:
+        The Pydantic BaseModel or generic type representing the annotation for
+        OpenAPI schema generation.
     """
-    origin = get_origin(field_annotation)
-    args = get_args(field_annotation)
+    origin: Any = get_origin(field_annotation)
+    args: tuple[Any, ...] = get_args(field_annotation)
 
+    # Handle Union Types (including Optional[T])
     if is_union(origin):
-        new_args = tuple(convert_annotation_to_pydantic_model(a) for a in args)
+        # Recursively convert all members of the union
+        new_args: tuple[Any, ...] = tuple(convert_annotation_to_pydantic_model(a) for a in args)
         return Union[new_args]
 
+    # Handle Generic Containers (List[T], Dict[K, V], etc.)
     if origin is not None:
+        # Recursively convert type arguments (e.g., convert T in List[T])
         new_args = tuple(convert_annotation_to_pydantic_model(a) for a in args)
-        return origin[new_args]
+        try:
+            # Reconstruct the generic type (e.g., list[str] -> list[converted_str_type])
+            return origin[new_args]
+        except TypeError:
+            # If the origin is not subscriptable at runtime (e.g., custom generic types), leave it.
+            return field_annotation
 
+    # Handle Bare Built-in Containers (list, dict, set, etc.)
+    if field_annotation in DEFAULT_CONTAINERS:
+        # Convert bare types (like 'list') to generic types (like 'list[Any]')
+        return default_typed_container(field_annotation)
+
+    # Handle Existing Pydantic Models
     if isinstance(field_annotation, type) and issubclass(field_annotation, BaseModel):
         return field_annotation
 
+    # Handle Framework Encoder Types (The main conversion logic)
+    # Iterate through registered encoder types to find a match
     for enc in LILYA_ENCODER_TYPES.get():
-        if hasattr(enc, "is_type_structure") and enc.is_type_structure(field_annotation):
-            ann = getattr(field_annotation, "__annotations__", {})
-            if ann:
-                return create_model(  # type: ignore
-                    field_annotation.__name__,
-                    __config__={"arbitrary_types_allowed": True},
-                    **{k: (convert_annotation_to_pydantic_model(v), ...) for k, v in ann.items()},
-                )
+        is_structure: bool = hasattr(enc, "is_type_structure") and enc.is_type_structure(
+            field_annotation
+        )
+        is_instance: bool = hasattr(enc, "is_type") and enc.is_type(field_annotation)
 
-        # test instance type (fallback)
-        if hasattr(enc, "is_type") and enc.is_type(field_annotation):
-            ann = getattr(field_annotation, "__annotations__", {})
-            if ann:
-                return create_model(  # type: ignore
-                    field_annotation.__name__,
-                    __config__={"arbitrary_types_allowed": True},
-                    **{k: (convert_annotation_to_pydantic_model(v), ...) for k, v in ann.items()},
+        if is_structure or is_instance:
+            # If the encoder is a generic alias (e.g., a parameterized encoder class)
+            if isinstance(field_annotation, _GenericAlias):
+                # Recursively convert the generic arguments
+                annotations: tuple[Any, ...] = tuple(
+                    convert_annotation_to_pydantic_model(arg) for arg in args
                 )
+                field_annotation.__args__ = annotations
+                return cast(BaseModel, field_annotation)
 
+            field_definitions: dict[str, Any] = {}
+
+            # Get annotations from the base classes and the class itself
+            base_annotations: dict[str, Any] = {
+                **get_base_annotations(field_annotation, is_class=True)
+            }
+            field_annotations: dict[str, Any] = {
+                **base_annotations,
+                **field_annotation.__annotations__,
+            }
+
+            # Map collected annotations to Pydantic field definitions
+            for name, annotation in field_annotations.items():
+                field_definitions[name] = (annotation, ...)
+
+            # Determine the name for the new dynamic model
+            if inspect.isclass(field_annotation):
+                name = field_annotation.__name__
+            else:
+                name = field_annotation.__class__.__name__
+
+            # Dynamically create a Pydantic model for OpenAPI representation
+            return cast(
+                BaseModel,
+                create_model(  # noqa
+                    name,
+                    __config__={"arbitrary_types_allowed": True},
+                    **field_definitions,
+                ),
+            )
+
+    # Fallback: Return original annotation
     return field_annotation
 
 

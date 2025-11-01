@@ -5,12 +5,16 @@ hide:
 
 # Release Notes
 
-## 0.2.5
+## 0.3.0
 
 ### Added
 
 - `runserver_theme` to `Ravyn` settings and `runserver` directive. This allows you to customise the theme of the
 `ravyn runserver` command.
+
+### Changed
+
+- Rewritten the internals for OpenAPI representation models with Pydantic and compatible with Python 3.14+.
 
 ### Fixed
 

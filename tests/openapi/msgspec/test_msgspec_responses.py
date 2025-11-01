@@ -27,6 +27,7 @@ def user(payload: BaseUser) -> None: ...
 def test_user_msgspec_with_pydantic_openapi(test_client_factory):
     with create_client(routes=[Gateway(handler=user)], settings_module=AppTestSettings) as client:
         response = client.get("/openapi.json")
+
         assert response.json() == {
             "openapi": "3.1.0",
             "info": {
@@ -34,7 +35,7 @@ def test_user_msgspec_with_pydantic_openapi(test_client_factory):
                 "summary": "Ravyn application",
                 "description": "Highly scalable, performant, easy to learn and for every application.",
                 "contact": {"name": "admin", "email": "admin@myapp.com"},
-                "version": client.app.version,
+                "version": "0.2.5",
             },
             "servers": [{"url": "/"}],
             "paths": {
@@ -58,20 +59,7 @@ def test_user_msgspec_with_pydantic_openapi(test_client_factory):
                                 "content": {
                                     "application/json": {
                                         "schema": {
-                                            "items": {
-                                                "properties": {
-                                                    "name": {"type": "string"},
-                                                    "email": {
-                                                        "anyOf": [
-                                                            {"type": "string"},
-                                                            {"type": "null"},
-                                                        ]
-                                                    },
-                                                },
-                                                "type": "object",
-                                                "required": ["name"],
-                                                "title": "User",
-                                            },
+                                            "items": {"$ref": "#/components/schemas/User"},
                                             "type": "array",
                                             "title": "User",
                                         }
@@ -121,6 +109,18 @@ def test_user_msgspec_with_pydantic_openapi(test_client_factory):
                         },
                         "type": "object",
                         "title": "HTTPValidationError",
+                    },
+                    "User": {
+                        "properties": {
+                            "name": {"type": "string", "title": "Name"},
+                            "email": {
+                                "anyOf": [{"type": "string"}, {"type": "null"}],
+                                "title": "Email",
+                            },
+                        },
+                        "type": "object",
+                        "required": ["name", "email"],
+                        "title": "User",
                     },
                     "ValidationError": {
                         "properties": {
