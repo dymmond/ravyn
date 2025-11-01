@@ -28,7 +28,7 @@ def test_send_file_from_path_as_inline(test_client_factory):
     response = client.get("/file")
     assert response.status_code == 200
     assert response.text == "hello world"
-    assert "Content-Disposition" not in response.headers
+    assert response.headers["content-disposition"] == "inline"
 
     os.remove(tmp_path)
 

@@ -46,7 +46,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
-    "lilya[standard]>=0.22.1",
+    "lilya[standard]>=0.22.9",
     "pydantic-settings>=2.9.0",
     "orjson>=3.8.5,<4.0.0",
     "msgspec>=0.18.5,<1.0.0",

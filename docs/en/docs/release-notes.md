@@ -15,6 +15,8 @@ hide:
 ### Fixed
 
 - Regression in runserver with a path provided.
+- Fix permissions operations AND,OR,NOT
+by [@egorvavilov](https://github.com/egorvavilov). [PR #627](https://github.com/dymmond/ravyn/pull/627).
 
 ## 0.2.4
 

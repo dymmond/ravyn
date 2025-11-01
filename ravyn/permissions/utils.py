@@ -1,3 +1,4 @@
+from inspect import isclass
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
 from lilya.permissions.base import DefinePermission
@@ -54,8 +55,6 @@ def is_ravyn_permission(permission: Union["BasePermission", Any]) -> bool:
     Returns:
         bool: True if the permission is an instance or subclass of BasePermission, False otherwise.
     """
-    from inspect import isclass
-
     from ravyn.permissions import BasePermission
     from ravyn.permissions.base import BaseOperationHolder
 

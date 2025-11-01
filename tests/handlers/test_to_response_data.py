@@ -259,7 +259,7 @@ async def test_to_response_returning_file_response() -> None:
 
         assert isinstance(response, FileResponse)
         assert response.stat_result
-        assert response.path == current_file_path
+        assert response.path == str(current_file_path)
         assert response.filename == filename
         assert response.headers["local-header"] == "123"
         assert response.headers["response-header"] == "abc"
