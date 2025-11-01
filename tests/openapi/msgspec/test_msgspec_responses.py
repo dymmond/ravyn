@@ -35,7 +35,7 @@ def test_user_msgspec_with_pydantic_openapi(test_client_factory):
                 "summary": "Ravyn application",
                 "description": "Highly scalable, performant, easy to learn and for every application.",
                 "contact": {"name": "admin", "email": "admin@myapp.com"},
-                "version": "0.2.5",
+                "version": client.app.version,
             },
             "servers": [{"url": "/"}],
             "paths": {

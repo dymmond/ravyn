@@ -1,4 +1,5 @@
 import inspect
+import sys
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast, get_args, get_origin
 
@@ -116,6 +117,11 @@ def convert_annotation_to_pydantic_model(field_annotation: Any) -> Any:
     """
     origin: Any = get_origin(field_annotation)
     args: tuple[Any, ...] = get_args(field_annotation)
+
+    if sys.version_info <= (3, 12):
+        # For backwards compatibility
+        if not hasattr(field_annotation, "__annotations__"):
+            return field_annotation
 
     # Handle Union Types (including Optional[T])
     if is_union(origin):
