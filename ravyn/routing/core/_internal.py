@@ -1,11 +1,5 @@
-import inspect
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Type, Union, cast, get_args
-
-try:
-    from typing import _GenericAlias  # noqa
-except ImportError:
-    from types import GenericAlias as _GenericAlias
+from typing import TYPE_CHECKING, Any, Type, Union, cast, get_args, get_origin
 
 from lilya.datastructures import DataUpload
 from pydantic import BaseModel, create_model
@@ -17,7 +11,7 @@ from ravyn.openapi.params import ResponseParam
 from ravyn.params import Body
 from ravyn.utils.constants import DATA, PAYLOAD
 from ravyn.utils.enums import EncodingType
-from ravyn.utils.helpers import is_class_and_subclass
+from ravyn.utils.helpers import is_class_and_subclass, is_union
 
 if TYPE_CHECKING:
     from ravyn.routing.router import HTTPHandler, WebhookHandler
@@ -74,34 +68,40 @@ def convert_annotation_to_pydantic_model(field_annotation: Any) -> Any:
     are unique to Ravyn and are not part of the OpenAPI specification. This is why
     we convert the encoders into a Pydantic model for OpenAPI representation purposes only.
     """
-    annotation_args = get_args(field_annotation)
-    if isinstance(field_annotation, _GenericAlias):
-        annotations = tuple(convert_annotation_to_pydantic_model(arg) for arg in annotation_args)
-        field_annotation.__args__ = annotations
+    origin = get_origin(field_annotation)
+    args = get_args(field_annotation)
+
+    if is_union(origin):
+        new_args = tuple(convert_annotation_to_pydantic_model(a) for a in args)
+        return Union[new_args]
+
+    if origin is not None:
+        new_args = tuple(convert_annotation_to_pydantic_model(a) for a in args)
+        return origin[new_args]
+
+    if isinstance(field_annotation, type) and issubclass(field_annotation, BaseModel):
         return field_annotation
 
-    if (
-        not isinstance(field_annotation, BaseModel)
-        # call before encoder check, because this test is faster
-        and inspect.isclass(field_annotation)
-        and any(encoder.is_type(field_annotation) for encoder in LILYA_ENCODER_TYPES.get())
-    ):
-        field_definitions: dict[str, Any] = {}
+    for enc in LILYA_ENCODER_TYPES.get():
+        if hasattr(enc, "is_type_structure") and enc.is_type_structure(field_annotation):
+            ann = getattr(field_annotation, "__annotations__", {})
+            if ann:
+                return create_model(  # type: ignore
+                    field_annotation.__name__,
+                    __config__={"arbitrary_types_allowed": True},
+                    **{k: (convert_annotation_to_pydantic_model(v), ...) for k, v in ann.items()},
+                )
 
-        # Get any possible annotations from the base classes
-        # This can be useful for inheritance with custom encoders
-        base_annotations: dict[str, Any] = {**get_base_annotations(field_annotation)}
-        field_annotations = {
-            **base_annotations,
-            **field_annotation.__annotations__,
-        }
-        for name, annotation in field_annotations.items():
-            field_definitions[name] = (annotation, ...)
-        return create_model(
-            field_annotation.__name__,
-            __config__={"arbitrary_types_allowed": True},
-            **field_definitions,
-        )
+        # test instance type (fallback)
+        if hasattr(enc, "is_type") and enc.is_type(field_annotation):
+            ann = getattr(field_annotation, "__annotations__", {})
+            if ann:
+                return create_model(  # type: ignore
+                    field_annotation.__name__,
+                    __config__={"arbitrary_types_allowed": True},
+                    **{k: (convert_annotation_to_pydantic_model(v), ...) for k, v in ann.items()},
+                )
+
     return field_annotation
 
 
