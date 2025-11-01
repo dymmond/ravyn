@@ -42,7 +42,7 @@ class LilyaPermDeny(PermissionProtocol):
         raise PermissionDenied()
 
 
-def test_mix_permissions_with_native_ravyn() -> None:
+def test_permissions_with_native_ravyn() -> None:
     @get(path="/secret", permissions=[LilyaDeny])
     def my_http_route_handler() -> None: ...
 
@@ -64,6 +64,37 @@ def test_two_permissions_mixed_same_level_raises_error() -> None:
 
         @get(path="/secret", permissions=[RavynPermission, LilyaDeny])
         def my_http_route_handler() -> None: ...
+
+
+def test_two_permissions_mixed_fails() -> None:
+    with pytest.raises(AssertionError):
+        with create_client(routes=[], permissions=[RavynPermission, LilyaDeny]):
+            ...
+
+
+def test_two_permissions_mixed_on_include_fails() -> None:
+    with pytest.raises(AssertionError):
+        with create_client(routes=[Include(permissions=[RavynPermission, LilyaDeny])]):
+            ...
+
+
+def test_two_permissions_mixed_on_gateway_fails() -> None:
+    @get()
+    def my_http_route_handler() -> None: ...
+
+    with pytest.raises(AssertionError):
+        with create_client(
+            routes=[
+                Include(
+                    routes=[
+                        Gateway(
+                            handler=my_http_route_handler, permissions=[RavynPermission, LilyaDeny]
+                        )
+                    ]
+                )
+            ]
+        ):
+            ...
 
 
 @pytest.mark.parametrize("path", ["/secret", "", "/"])

@@ -447,6 +447,10 @@ class Gateway(LilyaPath, Dispatcher, BaseMiddleware, GatewayUtil):
         else:
             self.lilya_permissions = {}
 
+        assert not (self.permissions and self.lilya_permissions), (
+            "Use either `Ravyn permissions` OR `Lilya permissions`, not both."
+        )
+
         # Filter out the ravyn unique permissions
         if self.__base_permissions__:
             self.permissions: Any = {
@@ -764,6 +768,10 @@ class WebSocketGateway(LilyaWebSocketPath, Dispatcher, BaseMiddleware):
                 }
         else:
             self.lilya_permissions = {}
+
+        assert not (self.permissions and self.lilya_permissions), (
+            "Use either `Ravyn permissions` OR `Lilya permissions`, not both."
+        )
 
         # Filter out the ravyn unique permissions
         if self.__base_permissions__:

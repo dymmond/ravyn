@@ -17,6 +17,7 @@ hide:
 - Regression in runserver with a path provided.
 - Fix permissions operations AND,OR,NOT
 by [@egorvavilov](https://github.com/egorvavilov). [PR #627](https://github.com/dymmond/ravyn/pull/627).
+- Lilya permissions and Ravyn permissions cannot be combined and now Ravyn raises an assertation error when it happens.
 
 ## 0.2.4
 

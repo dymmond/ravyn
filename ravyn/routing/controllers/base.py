@@ -365,6 +365,10 @@ class BaseController:
         else:
             self.lilya_permissions = {}
 
+        assert not (self.permissions and self.lilya_permissions), (
+            "Use either `Ravyn permissions` OR `Lilya permissions`, not both."
+        )
+
     def __handle_base_permissions(self) -> None:
         """
         Handles the inheritance of permissions from base classes.

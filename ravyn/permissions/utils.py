@@ -73,7 +73,11 @@ def is_lilya_permission(permission: Union[DefinePermission, Any]) -> bool:
     Returns:
         bool: True if the permission is an instance of DefinePermission, False otherwise.
     """
-    return isinstance(permission, DefinePermission)
+    return (
+        isinstance(permission, DefinePermission)
+        or not is_ravyn_permission(permission)
+        and not isinstance(permission, AsyncCallable)
+    )
 
 
 def wrap_permission(

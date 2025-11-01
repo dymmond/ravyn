@@ -1696,6 +1696,10 @@ class Application(BaseLilya):
             if is_ravyn_permission(permission)
         ]
 
+        assert not (self.permissions and self.__lilya_permissions__), (
+            "Use either `Ravyn permissions` OR `Lilya permissions`, not both."
+        )
+
         self.before_request_callbacks = (
             self.load_settings_value("before_request", before_request) or []
         )

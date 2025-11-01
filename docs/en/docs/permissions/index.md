@@ -37,7 +37,7 @@ class EditProfilePermission(PermissionProtocol):
         raise NotAuthorized()
 ```
 
-Both systems offer flexibility and can be used based on your project's requirements and both can
-be combined.
+Both systems offer flexibility and can be used based on your project's requirements and both **cannot be combined**. You
+should either use one or the other but not both.
 
 Its entirely up to you.
