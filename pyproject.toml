@@ -272,7 +272,7 @@ check_types = "mypy -p ravyn"
 
 #[[tool.hatch.envs.hatch-test.matrix]]
 #python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
-#python = ["3.11"]
+#python = ["3.10"]
 
 [tool.hatch.envs.hatch-test]
 features = ["all", "testing"]
