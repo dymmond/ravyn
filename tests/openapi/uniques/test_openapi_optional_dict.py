@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 
 from ravyn import Gateway, JSONResponse, get
 from ravyn.testclient import create_client
+from tests.openapi.utils import normalize_openapi
 
 
 @get("/dict")
@@ -15,7 +16,9 @@ def test_open_api(test_app_client_factory):
 
         assert response.status_code == 200, response.text
 
-        assert response.json() == {
+        got = normalize_openapi(response.json())
+
+        assert got == {
             "openapi": "3.1.0",
             "info": {
                 "title": "Ravyn",
