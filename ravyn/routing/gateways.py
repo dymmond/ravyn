@@ -22,15 +22,83 @@ if TYPE_CHECKING:  # pragma: no cover
     from ravyn.types import Dependencies, ExceptionHandlerMap, Middleware, ParentType
 
 
-class BaseMiddleware:
-    def handle_middleware(
-        self, handler: Any, base_middleware: list["Middleware"]
-    ) -> list["Middleware"]:
+class _GatewayCommon:
+    """
+    Internal mixin with the shared mechanics used by HTTP/WebSocket/Webhook gateways.
+    Keeps configuration and compilation behavior identical while removing duplication.
+    """
+
+    @staticmethod
+    def is_class_based(
+        handler: "HTTPHandler | WebSocketHandler | ParentType | BaseController",
+    ) -> bool:
+        """Checks if the handler object or class is a subclass or instance of BaseController."""
+        return bool(
+            is_class_and_subclass(handler, BaseController) or isinstance(handler, BaseController)
+        )
+
+    @staticmethod
+    def is_handler(handler: Callable[..., Any]) -> bool:
+        """Checks if the callable is a standalone function/method and NOT a BaseController instance/subclass."""
+        return bool(
+            not is_class_and_subclass(handler, BaseController)
+            and not isinstance(handler, BaseController)
+        )
+
+    def generate_operation_id(
+        self,
+        name: str | None,
+        handler: "HTTPHandler | WebSocketHandler | BaseController",
+    ) -> str:
         """
-        Handles both types of middlewares for Gateway and WebSocketGateway
+        Generates a unique, normalized operation ID suitable for OpenAPI specification.
+
+        The ID is constructed from the handler's base name/class name and the route path,
+        often appended with the primary HTTP method.
+
+        Args:
+            name: The explicit name given to the route (if any).
+            handler: The handler object (HTTPHandler, WebSocketHandler, or BaseController instance).
+
+        Returns:
+            A cleaned string suitable for use as an OpenAPI operationId.
+        """
+        if self.is_class_based(getattr(handler, "parent", None) or handler):
+            base: str = handler.parent.__class__.__name__.lower()
+        else:
+            base = name or getattr(handler, "name", "") or ""
+
+        path_fmt: str = getattr(handler, "path_format", "") or ""
+
+        # Remove non-word characters and combine base and path format
+        operation_id: str = re.sub(r"\W", "_", f"{base}{path_fmt}")
+
+        # Append the primary method (if available)
+        methods: list[str] = list(
+            getattr(handler, "methods", []) or getattr(handler, "http_methods", []) or []
+        )
+        if methods:
+            operation_id = f"{operation_id}_{methods[0].lower()}"
+
+        return operation_id
+
+    @staticmethod
+    def handle_middleware(handler: Any, base_middleware: list["Middleware"]) -> list["Middleware"]:
+        """
+        Normalizes a list of middleware classes/instances into a list of `DefineMiddleware` instances.
+
+        Merges `handler`-defined middleware with `Gateway`-level middleware.
+
+        Args:
+            handler: The route handler object.
+            base_middleware: The list of middleware defined at the Gateway level.
+
+        Returns:
+            A list of `Middleware` objects, all wrapped in `DefineMiddleware` if necessary.
         """
         _middleware: list["Middleware"] = []
 
+        # Merge handler middleware if handler is not a Controller
         if not is_class_and_subclass(handler, BaseController) and not isinstance(
             handler, BaseController
         ):
@@ -43,45 +111,211 @@ class BaseMiddleware:
                 _middleware.append(DefineMiddleware(middleware))  # type: ignore
         return _middleware
 
+    @staticmethod
+    def _instantiate_if_controller(
+        handler: "Callable[..., Any] | BaseController",
+        parent: "ParentType | None",
+    ) -> Callable[..., Any]:
+        """
+        Instantiates a BaseController class handler and binds the parent router.
 
-class GatewayUtil:
-    def is_class_based(
-        self, handler: Union["HTTPHandler", "WebSocketHandler", "ParentType"]
-    ) -> bool:
-        return bool(
-            is_class_and_subclass(handler, BaseController) or isinstance(handler, BaseController)
-        )
+        Args:
+            handler: The route handler (function, method, or controller class/instance).
+            parent: The parent router/app object.
 
-    def is_handler(self, handler: Callable[..., Any]) -> bool:
-        return bool(
-            not is_class_and_subclass(handler, BaseController)
-            and not isinstance(handler, BaseController)
-        )
+        Returns:
+            The instantiated handler callable (either the original function or the controller instance).
+        """
+        if is_class_and_subclass(handler, BaseController):
+            # Instantiate the controller class
+            return cast(Callable[..., Any], handler(parent=parent))  # type: ignore
+        return cast(Callable[..., Any], handler)
 
-    def generate_operation_id(
-        self,
-        name: Union[str, None],
-        handler: Union["HTTPHandler", "WebSocketHandler", BaseController],
+    @staticmethod
+    def _resolve_path(
+        base_path: str | None,
+        handler_path: str,
+        *,
+        is_from_router: bool,
     ) -> str:
         """
-        Generates an unique operation if for the handler.
+        Combines the router's base path and the handler's path, then cleans the result.
 
-        We need to be able to handle with edge cases when a view does not default a path like `/format` and a default name needs to be passed when its a class based view.
+        Args:
+            base_path: The path inherited from the parent router.
+            handler_path: The path segment defined on the handler itself.
+            is_from_router: True if the handler path is implicitly just the base path.
+
+        Returns:
+            The clean, final path string.
         """
-        if self.is_class_based(handler.parent):
-            operation_id = handler.parent.__class__.__name__.lower() + handler.path_format
+        path: str = base_path or "/"
+        if is_from_router:
+            return clean_path(path)
+        return clean_path(path + handler_path)
+
+    @staticmethod
+    def _resolve_name(
+        name: str | None,
+        handler: Any,
+    ) -> str:
+        """
+        Determines the final, canonical name of the route.
+
+        Args:
+            name: The explicit name provided to the Gateway/route.
+            handler: The route handler object.
+
+        Returns:
+            The resolved name string.
+        """
+        if name:
+            # Explicit name takes precedence and is combined with handler name if present
+            if not isinstance(handler, BaseController) and getattr(handler, "name", None):
+                return ":".join([name, handler.name])
+            return name
+
+        # Fallback: derive name from handler function or class name
+        if not isinstance(handler, BaseController):
+            base: str = getattr(handler, "name", None) or clean_string(handler.fn.__name__)
         else:
-            operation_id = name + handler.path_format
+            base = clean_string(handler.__class__.__name__)
+        return base
 
-        operation_id = re.sub(r"\W", "_", operation_id)
-        methods = list(handler.methods)
+    def _prepare_middleware(
+        self,
+        handler: Any,
+        middleware: list["Middleware"] | None,
+    ) -> list["Middleware"]:
+        """
+        Prepares and normalizes the final list of middleware for the route.
+        """
+        return self.handle_middleware(handler=handler, base_middleware=middleware or [])
 
-        assert handler.methods
-        operation_id = f"{operation_id}_{methods[0].lower()}"
-        return operation_id
+    @staticmethod
+    def _apply_events(
+        handler: Any,
+        before_request: Sequence[Callable[[], Any]] | None,
+        after_request: Sequence[Callable[[], Any]] | None,
+    ) -> None:
+        """
+        Merges handler-defined `before_request` and `after_request` events with
+        events passed to the Gateway.
+
+        Gateway events are prepended (`before_request`) or appended (`after_request`).
+        """
+        if before_request:
+            if getattr(handler, "before_request", None) is None:
+                handler.before_request = []
+            for before in before_request:
+                handler.before_request.insert(0, before)
+
+        if after_request:
+            if getattr(handler, "after_request", None) is None:
+                handler.after_request = []
+            for after in after_request:
+                handler.after_request.append(after)
+
+    @staticmethod
+    def _apply_interceptors(handler: Any, interceptors: Sequence["Interceptor"] | None) -> None:
+        """
+        Merges handler-defined interceptors with those passed to the Gateway.
+
+        Gateway-level interceptors are prepended to ensure they run before handler-defined ones.
+        """
+        if not interceptors:
+            return
+
+        if not getattr(handler, "interceptors", None):
+            handler.interceptors = list(interceptors)
+            return
+
+        # Prepend so Gateway-level interceptors run before handler-defined ones
+        for interceptor in interceptors:
+            handler.interceptors.insert(0, interceptor)
+
+    @staticmethod
+    def _prepare_permissions(
+        handler: Any,
+        permissions: Sequence["Permission"] | None,
+    ) -> tuple[dict[int, "Middleware"], dict[int, "Permission"]]:
+        """
+        Prepares, wraps, and merges permissions into the handler's internal `lilya_permissions`
+        (wrapped in middleware) and `permissions` (Ravyn native) dictionaries.
+
+        Ensures that Lilya and Ravyn permissions are **not mixed** on the same Gateway.
+
+        Args:
+            handler: The route handler object.
+            permissions: Permissions defined at the Gateway level.
+
+        Returns:
+            A tuple containing: (lilya_permissions_dict, ravyn_permissions_dict)
+
+        Raises:
+            AssertionError: If both Lilya-style and Ravyn-style permissions are simultaneously used.
+        """
+        base_permissions: Sequence["Permission"] = permissions or []
+
+        lilya_wrapped: list["Middleware"] = [  # noqa
+            wrap_permission(permission)
+            for permission in base_permissions
+            if is_lilya_permission(permission)
+        ]
+        lilya_permissions: dict[int, "Middleware"] = dict(enumerate(lilya_wrapped))
+
+        if lilya_permissions:
+            if not getattr(handler, "lilya_permissions", None):
+                handler.lilya_permissions = lilya_permissions
+            else:
+                offset: int = len(lilya_permissions)
+                existing: dict[int, "Middleware"] = {
+                    idx + offset: perm
+                    for idx, perm in enumerate(handler.lilya_permissions.values())
+                }
+
+                # New permissions run first (lower index)
+                handler.lilya_permissions = {**lilya_permissions, **existing}
+        else:
+            lilya_permissions = {}
+
+        # Ravyn Permissions (Native)
+        ravyn_wrapped: dict[int, "Permission"] = {
+            idx: wrap_permission(p)
+            for idx, p in enumerate(base_permissions)
+            if is_ravyn_permission(p)
+        }
+
+        if ravyn_wrapped:
+            if not getattr(handler, "permissions", None):
+                handler.permissions = ravyn_wrapped
+            else:
+                offset = len(ravyn_wrapped)
+                existing = {
+                    idx + offset: perm for idx, perm in enumerate(handler.permissions.values())
+                }
+                # New permissions run first (lower index)
+                handler.permissions = {**ravyn_wrapped, **existing}
+        else:
+            ravyn_wrapped = {}
+
+        # Cannot mix both simultaneously on the same Gateway definition
+        assert not (ravyn_wrapped and lilya_permissions), (
+            "Use either `Ravyn permissions` OR `Lilya permissions`, not both."
+        )
+
+        return lilya_permissions, ravyn_wrapped
+
+    @staticmethod
+    def _compile(handler: Any, path: str) -> None:
+        """
+        Compiles the path string into a regular expression, path format string,
+        and parameter convertors, storing them on the handler object.
+        """
+        handler.path_regex, handler.path_format, handler.param_convertors, _ = compile_path(path)
 
 
-class Gateway(LilyaPath, Dispatcher, BaseMiddleware, GatewayUtil):
+class Gateway(LilyaPath, Dispatcher, _GatewayCommon):
     """
     `Gateway` object class used by Ravyn routes.
 
@@ -121,6 +355,12 @@ class Gateway(LilyaPath, Dispatcher, BaseMiddleware, GatewayUtil):
         "operation_id",
         "before_request",
         "after_request",
+        "lilya_permissions",
+        "security",
+        "methods",
+        "response_class",
+        "response_cookies",
+        "response_headers",
     )
 
     def __init__(
@@ -348,156 +588,57 @@ class Gateway(LilyaPath, Dispatcher, BaseMiddleware, GatewayUtil):
             ),
         ] = None,
     ) -> None:
-        if not path:
-            path = "/"
-        if is_class_and_subclass(handler, BaseController):
-            handler = handler(parent=self)
+        raw_handler = handler
+        handler = self._instantiate_if_controller(raw_handler, self)  # type: ignore
 
-        if not is_from_router:
-            self.path = clean_path(path + handler.path)
-        else:
-            self.path = clean_path(path)
-
-        self.methods = getattr(handler, "http_methods", None)
-
-        if not name:
-            if not isinstance(handler, BaseController):
-                name = handler.name or clean_string(handler.fn.__name__)
-            else:
-                name = clean_string(handler.__class__.__name__)
-
-        else:
-            route_name_list = [name]
-            if not isinstance(handler, BaseController) and handler.name:
-                route_name_list.append(handler.name)
-                name = ":".join(route_name_list)
-
-        # Handle middleware
-        self.middleware = middleware or []
-        self._middleware: list["Middleware"] = self.handle_middleware(
-            handler=handler, base_middleware=self.middleware
+        self.path = self._resolve_path(
+            path, getattr(handler, "path", "/"), is_from_router=is_from_router
         )
+        self.methods = getattr(handler, "http_methods", None)
+        resolved_name = self._resolve_name(name, handler)
 
-        self.__base_permissions__ = permissions or []
-
-        self.__lilya_permissions__ = [
-            wrap_permission(permission)
-            for permission in self.__base_permissions__ or []
-            if is_lilya_permission(permission)
-        ]
+        prepared_middleware = self._prepare_middleware(handler, middleware)
+        lilya_permissions, _ = self._prepare_permissions(handler, permissions)
 
         super().__init__(
             path=self.path,
             handler=cast(Callable, handler),
             include_in_schema=include_in_schema,
-            name=name,
+            name=resolved_name,
             methods=self.methods,
-            middleware=self._middleware,
+            middleware=prepared_middleware,
             exception_handlers=exception_handlers,
-            permissions=self.__lilya_permissions__,  # type: ignore
+            permissions=lilya_permissions or {},  # type: ignore
         )
-        """
-        A "bridge" to a handler and router mapping functionality.
-        Since the default Lilya Route handler does not understand the Ravyn handlers,
-        the Gateway bridges both functionalities and adds an extra "flair" to be compliant with both class based views and decorated function views.
-        """
-        self.before_request = before_request if before_request is not None else []
-        self.after_request = after_request if after_request is not None else []
 
-        if self.before_request:
-            if handler.before_request is None:
-                handler.before_request = []
+        self._apply_events(handler, before_request, after_request)
+        self._apply_interceptors(handler, interceptors)
 
-            for before in self.before_request:
-                handler.before_request.insert(0, before)
-
-        if self.after_request:
-            if handler.after_request is None:
-                handler.after_request = []
-
-            for after in self.after_request:
-                handler.after_request.append(after)
-
-        self.name = name
+        self.before_request = list(before_request or [])
+        self.after_request = list(after_request or [])
+        self.name = resolved_name
         self.handler = cast("Callable", handler)
         self.dependencies = dependencies or {}  # type: ignore
-        self.interceptors: Sequence["Interceptor"] = interceptors or []
-
-        if self.interceptors:
-            if not handler.interceptors:
-                handler.interceptors = self.interceptors
-            else:
-                for interceptor in self.interceptors:
-                    handler.interceptors.insert(0, interceptor)
-
-        # Filter out the lilya unique permissions
-        if self.__lilya_permissions__:
-            self.lilya_permissions: Any = dict(enumerate(self.__lilya_permissions__))
-            if not self.handler.lilya_permissions:
-                self.handler.lilya_permissions = self.lilya_permissions
-            else:
-                handler_lilya_permissions = {
-                    index + len(self.lilya_permissions): permission
-                    for index, permission in enumerate(self.lilya_permissions.values())
-                }
-                self.handler.lilya_permissions = {
-                    **self.lilya_permissions,
-                    **handler_lilya_permissions,
-                }
-        else:
-            self.lilya_permissions = {}
-
-        assert not (self.permissions and self.lilya_permissions), (
-            "Use either `Ravyn permissions` OR `Lilya permissions`, not both."
-        )
-
-        # Filter out the ravyn unique permissions
-        if self.__base_permissions__:
-            self.permissions: Any = {
-                index: wrap_permission(permission)
-                for index, permission in enumerate(permissions)
-                if is_ravyn_permission(permission)
-            }
-
-            if not self.handler.permissions:
-                self.handler.permissions = self.permissions
-            else:
-                handler_permissions = {
-                    index + len(self.permissions): permission
-                    for index, permission in enumerate(self.permissions.values())
-                }
-                self.handler.permissions = {
-                    **self.permissions,
-                    **handler_permissions,
-                }
-        else:
-            self.permissions = {}
-
-        self.response_class = None
-        self.response_cookies = None
-        self.response_headers = None
+        self.interceptors = list(interceptors or [])
         self.deprecated = deprecated
         self.parent = parent
         self.security = security
-        self.tags = tags or []
-        (handler.path_regex, handler.path_format, handler.param_convertors, _) = compile_path(
-            self.path
-        )
+        self.tags = list(tags or [])
+        self.response_class = None
+        self.response_cookies = None
+        self.response_headers = None
         self.operation_id = operation_id
+        self.lilya_permissions = lilya_permissions or {}
+        self.include_in_schema = include_in_schema
+
+        self._compile(handler, self.path)
 
         if self.is_handler(self.handler):
-            if self.operation_id or handler.operation_id is not None:
-                handler_id = self.generate_operation_id(
-                    name=self.name or "",
-                    handler=self.handler,  # type: ignore
-                )
-                self.operation_id = f"{operation_id}_{handler_id}" if operation_id else handler_id
-
-            elif not handler.operation_id:
-                handler.operation_id = self.generate_operation_id(
-                    name=self.name or "",
-                    handler=self.handler,  # type: ignore
-                )
+            if self.operation_id or getattr(handler, "operation_id", None) is not None:
+                generated = self.generate_operation_id(self.name or "", self.handler)  # type: ignore
+                self.operation_id = f"{operation_id}_{generated}" if operation_id else generated
+            elif not getattr(handler, "operation_id", None):
+                handler.operation_id = self.generate_operation_id(self.name or "", self.handler)  # type: ignore
 
     async def handle_dispatch(self, scope: "Scope", receive: "Receive", send: "Send") -> None:
         """
@@ -506,7 +647,7 @@ class Gateway(LilyaPath, Dispatcher, BaseMiddleware, GatewayUtil):
         await self.app(scope, receive, send)
 
 
-class WebSocketGateway(LilyaWebSocketPath, Dispatcher, BaseMiddleware):
+class WebSocketGateway(LilyaWebSocketPath, Dispatcher, _GatewayCommon):
     """
     `WebSocketGateway` object class used by Ravyn routes.
 
@@ -548,6 +689,8 @@ class WebSocketGateway(LilyaWebSocketPath, Dispatcher, BaseMiddleware):
         "tags",
         "before_request",
         "after_request",
+        "lilya_permissions",
+        "include_in_schema",
     )
 
     def __init__(
@@ -675,142 +818,53 @@ class WebSocketGateway(LilyaWebSocketPath, Dispatcher, BaseMiddleware):
             ),
         ] = False,
     ) -> None:
-        if not path:
-            path = "/"
-        if is_class_and_subclass(handler, BaseController):
-            handler = handler(parent=self)
-        if not is_from_router:
-            self.path = clean_path(path + handler.path)
-        else:
-            self.path = clean_path(path)
+        raw_handler = handler
+        handler = self._instantiate_if_controller(raw_handler, self)  # type: ignore
 
-        if not name:
-            if not isinstance(handler, BaseController):
-                name = handler.name or clean_string(handler.fn.__name__)
-            else:
-                name = clean_string(handler.__class__.__name__)
-
-        else:
-            route_name_list = [name]
-            if not isinstance(handler, BaseController) and handler.name:
-                route_name_list.append(handler.name)
-                name = ":".join(route_name_list)
-
-        # Handle middleware
-        self.middleware = middleware or []
-        self._middleware: list["Middleware"] = self.handle_middleware(
-            handler=handler, base_middleware=self.middleware
+        self.path = self._resolve_path(
+            path, getattr(handler, "path", "/"), is_from_router=is_from_router
         )
-        self.is_middleware: bool = False
+        resolved_name = self._resolve_name(name, handler)
 
-        self.__base_permissions__ = permissions or []
-        self.__lilya_permissions__ = [
-            wrap_permission(permission)
-            for permission in self.__base_permissions__ or []
-            if is_lilya_permission(permission)
-        ]
+        prepared_middleware = self._prepare_middleware(handler, middleware)
+
+        lilya_permissions, _ = self._prepare_permissions(handler, permissions)
+
         super().__init__(
             path=self.path,
-            handler=cast("Callable", handler),
-            name=name,
-            middleware=self._middleware,
+            handler=cast(Callable, handler),
+            name=resolved_name,
+            middleware=prepared_middleware,
             exception_handlers=exception_handlers,
-            permissions=self.__lilya_permissions__,  # type: ignore
+            permissions=lilya_permissions or {},  # type: ignore
             before_request=before_request,
             after_request=after_request,
         )
-        """
-        A "bridge" to a handler and router mapping functionality.
-        Since the default Lilya Route handler does not understand the Ravyn handlers,
-        the Gateway bridges both functionalities and adds an extra "flair" to be compliant with both class based views and decorated function views.
-        """
-        self.before_request = before_request if before_request is not None else []
-        self.after_request = after_request if after_request is not None else []
 
-        if self.before_request:
-            if handler.before_request is None:
-                handler.before_request = []
+        self._apply_events(handler, before_request, after_request)
+        self._apply_interceptors(handler, interceptors)
 
-            for before in self.before_request:
-                handler.before_request.insert(0, before)
-
-        if self.after_request:
-            if handler.after_request is None:
-                handler.after_request = []
-
-            for after in self.after_request:
-                handler.after_request.append(after)
-
+        self.before_request = list(before_request or [])
+        self.after_request = list(after_request or [])
         self.handler = cast("Callable", handler)
         self.dependencies = dependencies or {}  # type: ignore
-        self.interceptors = interceptors or []
-
-        if self.interceptors:
-            if not handler.interceptors:
-                handler.interceptors = self.interceptors
-            else:
-                for interceptor in self.interceptors:
-                    handler.interceptors.insert(0, interceptor)
-
-        # Filter out the lilya unique permissions
-        if self.__lilya_permissions__:
-            self.lilya_permissions: Any = dict(enumerate(self.__lilya_permissions__))
-            if not self.handler.lilya_permissions:
-                self.handler.lilya_permissions = self.lilya_permissions
-            else:
-                handler_lilya_permissions = {
-                    index + len(self.lilya_permissions): permission
-                    for index, permission in enumerate(self.lilya_permissions.values())
-                }
-                self.handler.lilya_permissions = {
-                    **self.lilya_permissions,
-                    **handler_lilya_permissions,
-                }
-        else:
-            self.lilya_permissions = {}
-
-        assert not (self.permissions and self.lilya_permissions), (
-            "Use either `Ravyn permissions` OR `Lilya permissions`, not both."
-        )
-
-        # Filter out the ravyn unique permissions
-        if self.__base_permissions__:
-            self.permissions: Any = {
-                index: wrap_permission(permission)
-                for index, permission in enumerate(permissions)
-                if is_ravyn_permission(permission)
-            }
-
-            if not self.handler.permissions:
-                self.handler.permissions = self.permissions
-            else:
-                handler_permissions = {
-                    index + len(self.permissions): permission
-                    for index, permission in enumerate(self.permissions.values())
-                }
-                self.handler.permissions = {
-                    **self.permissions,
-                    **handler_permissions,
-                }
-        else:
-            self.permissions = {}
-
-        self.include_in_schema = False
+        self.interceptors = list(interceptors or [])
         self.parent = parent
-        (handler.path_regex, handler.path_format, handler.param_convertors, _) = compile_path(
-            self.path
-        )
+        self.name = resolved_name
+        self.lilya_permissions = lilya_permissions or {}
+        self.permissions = getattr(handler, "permissions", {}) or {}  # type: ignore
+        self.include_in_schema = False  # websockets are excluded by default
+
+        self._compile(handler, self.path)
 
     async def handle_dispatch(self, scope: "Scope", receive: "Receive", send: "Send") -> None:
         """
         Handles the interception of messages and calls from the API.
-        if self._middleware:
-            self.is_middleware = True
         """
         await self.app(scope, receive, send)
 
 
-class WebhookGateway(LilyaPath, Dispatcher, GatewayUtil):
+class WebhookGateway(LilyaPath, Dispatcher, _GatewayCommon):
     """
     `WebhookGateway` object class used by Ravyn routes.
 
@@ -840,6 +894,11 @@ class WebhookGateway(LilyaPath, Dispatcher, GatewayUtil):
         "tags",
         "before_request",
         "after_request",
+        "deprecated",
+        "methods",
+        "response_class",
+        "response_cookies",
+        "response_headers",
     )
 
     def __init__(
@@ -941,27 +1000,21 @@ class WebhookGateway(LilyaPath, Dispatcher, GatewayUtil):
             ),
         ] = None,
     ) -> None:
-        if is_class_and_subclass(handler, BaseController):
-            handler = handler(parent=self)  # type: ignore
+        raw_handler = handler
+        handler = self._instantiate_if_controller(raw_handler, self)  # type: ignore
 
-        self.path = handler.path
+        self.path = getattr(handler, "path", "/")
         self.methods = getattr(handler, "http_methods", None)
-
-        if not name:
-            if not isinstance(handler, BaseController):
-                name = clean_string(handler.fn.__name__)
-            else:
-                name = clean_string(handler.__class__.__name__)
+        resolved_name = self._resolve_name(name, handler)
 
         self.handler = cast("Callable", handler)
         self.include_in_schema = include_in_schema
-
-        self.name = name
-        self.dependencies: Any = {}
-        self.interceptors: Sequence["Interceptor"] = []
-        self.permissions: Sequence["Permission"] = []  # type: ignore
-        self.middleware: Any = []
-        self.exception_handlers: Any = {}
+        self.name = resolved_name
+        self.dependencies = {}
+        self.interceptors = []  # type: ignore
+        self.permissions = []
+        self.middleware = []
+        self.exception_handlers = {}
         self.response_class = None
         self.response_cookies = None
         self.response_headers = None
@@ -970,16 +1023,11 @@ class WebhookGateway(LilyaPath, Dispatcher, GatewayUtil):
         self.security = security
         self.before_request = before_request
         self.after_request = after_request
-        self.tags = tags or []
-        (handler.path_regex, handler.path_format, handler.param_convertors, _) = compile_path(
-            self.path
-        )
+        self.tags = list(tags or [])
+
+        self._compile(handler, self.path)
 
         if self.is_handler(self.handler):
             self.handler.name = self.name
-
-            if not handler.operation_id:
-                handler.operation_id = self.generate_operation_id(
-                    name=self.name,
-                    handler=self.handler,  # type: ignore
-                )
+            if not getattr(handler, "operation_id", None):
+                handler.operation_id = self.generate_operation_id(self.name, self.handler)  # type: ignore

@@ -5,6 +5,21 @@ hide:
 
 # Release Notes
 
+## 0.3.1
+
+### Added
+
+- Allow `XOR` and `NOR` operators in [permissions](./permissions/ravyn.md).
+
+### Changed
+
+- Cleanup `gateways.py` to make it maintainable and non redundant.
+
+### Fixed
+
+- Duplicate check on Gateway permissions and WebsocketGateway permissions.
+- Allowing async operators to work in permissions.
+
 ## 0.3.0
 
 ### Added
