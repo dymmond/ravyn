@@ -10,6 +10,7 @@ hide:
 ### Fixed
 
 - Duplicate check on Gateway permissions and WebsocketGateway permissions.
+- Allowing async operators to work in permissions.
 
 ## 0.3.0
 
