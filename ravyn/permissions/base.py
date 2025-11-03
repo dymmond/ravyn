@@ -1,6 +1,8 @@
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, cast
 
+from lilya.compat import is_async_callable
 from typing_extensions import Annotated, Doc
 
 from ravyn.exceptions import ImproperlyConfigured
@@ -10,6 +12,12 @@ if TYPE_CHECKING:
     from ravyn.types import APIGateHandler
 
 SAFE_METHODS = ("GET", "HEAD", "OPTIONS")
+
+
+async def maybe_awaitable(func: Callable[..., Any], *args: Any, **kwargs: Any) -> bool:
+    if is_async_callable(func):
+        return cast(bool, await func(*args, **kwargs))
+    return cast(bool, func(*args, **kwargs))
 
 
 class BaseOperationHolder:  # pragma: no cover
@@ -56,14 +64,15 @@ class AND:
         self.op1 = op1
         self.op2 = op2
 
-    def has_permission(
+    async def has_permission(
         self,
         request: "Request",
         controller: "APIGateHandler",
     ) -> bool:
-        return self.op1.has_permission(request, controller) and self.op2.has_permission(
-            request, controller
-        )
+        op1_result = await maybe_awaitable(self.op1.has_permission, request, controller)
+        if not op1_result:
+            return False
+        return await maybe_awaitable(self.op2.has_permission, request, controller)
 
 
 class OR:
@@ -71,26 +80,28 @@ class OR:
         self.op1 = op1
         self.op2 = op2
 
-    def has_permission(
+    async def has_permission(
         self,
         request: "Request",
         controller: "APIGateHandler",
     ) -> bool:
-        return self.op1.has_permission(request, controller) or self.op2.has_permission(
-            request, controller
-        )
+        op1_result = await maybe_awaitable(self.op1.has_permission, request, controller)
+        if op1_result:
+            return True
+        return await maybe_awaitable(self.op2.has_permission, request, controller)
 
 
 class NOT:
     def __init__(self, op1: "BasePermission") -> None:
         self.op1 = op1
 
-    def has_permission(
+    async def has_permission(
         self,
         request: "Request",
         controller: "APIGateHandler",
     ) -> bool:
-        return not self.op1.has_permission(request, controller)
+        result = await maybe_awaitable(self.op1.has_permission, request, controller)
+        return not result
 
 
 class BasePermissionMetaclass(BaseOperationHolder, type):  # type: ignore[misc,unused-ignore]
