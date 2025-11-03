@@ -11,6 +11,10 @@ hide:
 
 - Allow `XOR` and `NOR` operators in [permissions](./permissions/ravyn.md).
 
+### Changed
+
+- Cleanup `gateways.py` to make it maintainable and non redundant.
+
 ### Fixed
 
 - Duplicate check on Gateway permissions and WebsocketGateway permissions.

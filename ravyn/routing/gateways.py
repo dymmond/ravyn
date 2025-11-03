@@ -25,17 +25,21 @@ if TYPE_CHECKING:  # pragma: no cover
 class _GatewayCommon:
     """
     Internal mixin with the shared mechanics used by HTTP/WebSocket/Webhook gateways.
-    Keeps behavior identical while removing duplication.
+    Keeps configuration and compilation behavior identical while removing duplication.
     """
 
     @staticmethod
-    def is_class_based(handler: Union["HTTPHandler", "WebSocketHandler", "ParentType"]) -> bool:
+    def is_class_based(
+        handler: "HTTPHandler | WebSocketHandler | ParentType | BaseController",
+    ) -> bool:
+        """Checks if the handler object or class is a subclass or instance of BaseController."""
         return bool(
             is_class_and_subclass(handler, BaseController) or isinstance(handler, BaseController)
         )
 
     @staticmethod
     def is_handler(handler: Callable[..., Any]) -> bool:
+        """Checks if the callable is a standalone function/method and NOT a BaseController instance/subclass."""
         return bool(
             not is_class_and_subclass(handler, BaseController)
             and not isinstance(handler, BaseController)
@@ -43,37 +47,58 @@ class _GatewayCommon:
 
     def generate_operation_id(
         self,
-        name: Union[str, None],
-        handler: Union["HTTPHandler", "WebSocketHandler", BaseController],
+        name: str | None,
+        handler: "HTTPHandler | WebSocketHandler | BaseController",
     ) -> str:
         """
-        Generates a unique operation id for the handler.
+        Generates a unique, normalized operation ID suitable for OpenAPI specification.
 
-        Handles edge cases where the view does not default a path like `/format`
-        and a default name needs to be used for class-based views.
+        The ID is constructed from the handler's base name/class name and the route path,
+        often appended with the primary HTTP method.
+
+        Args:
+            name: The explicit name given to the route (if any).
+            handler: The handler object (HTTPHandler, WebSocketHandler, or BaseController instance).
+
+        Returns:
+            A cleaned string suitable for use as an OpenAPI operationId.
         """
         if self.is_class_based(getattr(handler, "parent", None) or handler):
-            base = handler.__class__.__name__.lower()
+            base: str = handler.parent.__class__.__name__.lower()
         else:
             base = name or getattr(handler, "name", "") or ""
 
-        path_fmt = getattr(handler, "path_format", "") or ""
-        operation_id = re.sub(r"\W", "_", f"{base}{path_fmt}")
+        path_fmt: str = getattr(handler, "path_format", "") or ""
 
-        methods = list(
+        # Remove non-word characters and combine base and path format
+        operation_id: str = re.sub(r"\W", "_", f"{base}{path_fmt}")
+
+        # Append the primary method (if available)
+        methods: list[str] = list(
             getattr(handler, "methods", []) or getattr(handler, "http_methods", []) or []
         )
         if methods:
             operation_id = f"{operation_id}_{methods[0].lower()}"
+
         return operation_id
 
     @staticmethod
     def handle_middleware(handler: Any, base_middleware: list["Middleware"]) -> list["Middleware"]:
         """
-        Handles both types of middlewares for Gateway and WebSocketGateway
+        Normalizes a list of middleware classes/instances into a list of `DefineMiddleware` instances.
+
+        Merges `handler`-defined middleware with `Gateway`-level middleware.
+
+        Args:
+            handler: The route handler object.
+            base_middleware: The list of middleware defined at the Gateway level.
+
+        Returns:
+            A list of `Middleware` objects, all wrapped in `DefineMiddleware` if necessary.
         """
         _middleware: list["Middleware"] = []
 
+        # Merge handler middleware if handler is not a Controller
         if not is_class_and_subclass(handler, BaseController) and not isinstance(
             handler, BaseController
         ):
@@ -88,37 +113,71 @@ class _GatewayCommon:
 
     @staticmethod
     def _instantiate_if_controller(
-        handler: Union[Callable[..., Any], Type[BaseController], BaseController],
-        parent: Optional["ParentType"],
+        handler: "Callable[..., Any] | BaseController",
+        parent: "ParentType | None",
     ) -> Callable[..., Any]:
+        """
+        Instantiates a BaseController class handler and binds the parent router.
+
+        Args:
+            handler: The route handler (function, method, or controller class/instance).
+            parent: The parent router/app object.
+
+        Returns:
+            The instantiated handler callable (either the original function or the controller instance).
+        """
         if is_class_and_subclass(handler, BaseController):
+            # Instantiate the controller class
             return cast(Callable[..., Any], handler(parent=parent))  # type: ignore
         return cast(Callable[..., Any], handler)
 
     @staticmethod
     def _resolve_path(
-        base_path: Optional[str],
+        base_path: str | None,
         handler_path: str,
         *,
         is_from_router: bool,
     ) -> str:
-        path = base_path or "/"
+        """
+        Combines the router's base path and the handler's path, then cleans the result.
+
+        Args:
+            base_path: The path inherited from the parent router.
+            handler_path: The path segment defined on the handler itself.
+            is_from_router: True if the handler path is implicitly just the base path.
+
+        Returns:
+            The clean, final path string.
+        """
+        path: str = base_path or "/"
         if is_from_router:
             return clean_path(path)
         return clean_path(path + handler_path)
 
     @staticmethod
     def _resolve_name(
-        name: Optional[str],
+        name: str | None,
         handler: Any,
     ) -> str:
+        """
+        Determines the final, canonical name of the route.
+
+        Args:
+            name: The explicit name provided to the Gateway/route.
+            handler: The route handler object.
+
+        Returns:
+            The resolved name string.
+        """
         if name:
+            # Explicit name takes precedence and is combined with handler name if present
             if not isinstance(handler, BaseController) and getattr(handler, "name", None):
                 return ":".join([name, handler.name])
             return name
 
+        # Fallback: derive name from handler function or class name
         if not isinstance(handler, BaseController):
-            base = getattr(handler, "name", None) or clean_string(handler.fn.__name__)
+            base: str = getattr(handler, "name", None) or clean_string(handler.fn.__name__)
         else:
             base = clean_string(handler.__class__.__name__)
         return base
@@ -126,16 +185,25 @@ class _GatewayCommon:
     def _prepare_middleware(
         self,
         handler: Any,
-        middleware: Optional[list["Middleware"]],
+        middleware: list["Middleware"] | None,
     ) -> list["Middleware"]:
+        """
+        Prepares and normalizes the final list of middleware for the route.
+        """
         return self.handle_middleware(handler=handler, base_middleware=middleware or [])
 
     @staticmethod
     def _apply_events(
         handler: Any,
-        before_request: Optional[Sequence[Callable[[], Any]]],
-        after_request: Optional[Sequence[Callable[[], Any]]],
+        before_request: Sequence[Callable[[], Any]] | None,
+        after_request: Sequence[Callable[[], Any]] | None,
     ) -> None:
+        """
+        Merges handler-defined `before_request` and `after_request` events with
+        events passed to the Gateway.
+
+        Gateway events are prepended (`before_request`) or appended (`after_request`).
+        """
         if before_request:
             if getattr(handler, "before_request", None) is None:
                 handler.before_request = []
@@ -149,9 +217,15 @@ class _GatewayCommon:
                 handler.after_request.append(after)
 
     @staticmethod
-    def _apply_interceptors(handler: Any, interceptors: Optional[Sequence["Interceptor"]]) -> None:
+    def _apply_interceptors(handler: Any, interceptors: Sequence["Interceptor"] | None) -> None:
+        """
+        Merges handler-defined interceptors with those passed to the Gateway.
+
+        Gateway-level interceptors are prepended to ensure they run before handler-defined ones.
+        """
         if not interceptors:
             return
+
         if not getattr(handler, "interceptors", None):
             handler.interceptors = list(interceptors)
             return
@@ -163,37 +237,50 @@ class _GatewayCommon:
     @staticmethod
     def _prepare_permissions(
         handler: Any,
-        permissions: Optional[Sequence["Permission"]],
-    ) -> tuple[dict[int, Any], dict[int, Any]]:
+        permissions: Sequence["Permission"] | None,
+    ) -> tuple[dict[int, "Middleware"], dict[int, "Permission"]]:
         """
-        Returns (lilya_permissions_dict, ravyn_permissions_dict) after wrapping and merging
-        into the handler's existing permission dicts.
-        """
-        base_permissions = permissions or []
+        Prepares, wraps, and merges permissions into the handler's internal `lilya_permissions`
+        (wrapped in middleware) and `permissions` (Ravyn native) dictionaries.
 
-        # Lilya-style permissions (wrapped)
-        lilya_wrapped = [
+        Ensures that Lilya and Ravyn permissions are **not mixed** on the same Gateway.
+
+        Args:
+            handler: The route handler object.
+            permissions: Permissions defined at the Gateway level.
+
+        Returns:
+            A tuple containing: (lilya_permissions_dict, ravyn_permissions_dict)
+
+        Raises:
+            AssertionError: If both Lilya-style and Ravyn-style permissions are simultaneously used.
+        """
+        base_permissions: Sequence["Permission"] = permissions or []
+
+        lilya_wrapped: list["Middleware"] = [  # noqa
             wrap_permission(permission)
             for permission in base_permissions
             if is_lilya_permission(permission)
         ]
-        lilya_permissions = dict(enumerate(lilya_wrapped))
+        lilya_permissions: dict[int, "Middleware"] = dict(enumerate(lilya_wrapped))
 
-        # Merge into handler.lilya_permissions if present
         if lilya_permissions:
             if not getattr(handler, "lilya_permissions", None):
                 handler.lilya_permissions = lilya_permissions
             else:
-                offset = len(lilya_permissions)
-                existing = {
+                offset: int = len(lilya_permissions)
+                existing: dict[int, "Middleware"] = {
                     idx + offset: perm
                     for idx, perm in enumerate(handler.lilya_permissions.values())
                 }
+
+                # New permissions run first (lower index)
                 handler.lilya_permissions = {**lilya_permissions, **existing}
         else:
             lilya_permissions = {}
 
-        ravyn_wrapped = {
+        # Ravyn Permissions (Native)
+        ravyn_wrapped: dict[int, "Permission"] = {
             idx: wrap_permission(p)
             for idx, p in enumerate(base_permissions)
             if is_ravyn_permission(p)
@@ -207,6 +294,7 @@ class _GatewayCommon:
                 existing = {
                     idx + offset: perm for idx, perm in enumerate(handler.permissions.values())
                 }
+                # New permissions run first (lower index)
                 handler.permissions = {**ravyn_wrapped, **existing}
         else:
             ravyn_wrapped = {}
@@ -220,6 +308,10 @@ class _GatewayCommon:
 
     @staticmethod
     def _compile(handler: Any, path: str) -> None:
+        """
+        Compiles the path string into a regular expression, path format string,
+        and parameter convertors, storing them on the handler object.
+        """
         handler.path_regex, handler.path_format, handler.param_convertors, _ = compile_path(path)
 
 
@@ -506,7 +598,6 @@ class Gateway(LilyaPath, Dispatcher, _GatewayCommon):
         resolved_name = self._resolve_name(name, handler)
 
         prepared_middleware = self._prepare_middleware(handler, middleware)
-
         lilya_permissions, _ = self._prepare_permissions(handler, permissions)
 
         super().__init__(
