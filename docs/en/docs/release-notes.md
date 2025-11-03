@@ -7,6 +7,10 @@ hide:
 
 ## 0.3.1
 
+### Added
+
+- Allow `XOR` and `NOR` operators in [permissions](./permissions/ravyn.md).
+
 ### Fixed
 
 - Duplicate check on Gateway permissions and WebsocketGateway permissions.

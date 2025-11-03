@@ -58,6 +58,25 @@ class BaseOperationHolder:
         """Handles ~P1 (NOT)."""
         return SingleOperand(NOT, self)  # type: ignore
 
+    def __xor__(self, other: Any) -> "OperandHolder":
+        """Handles P1 ^ P2 (Logical XOR)."""
+        return OperandHolder(XOR, self, other)
+
+    def __rxor__(self, other: Any) -> "OperandHolder":
+        """Handles P2 ^ P1 (Reflected XOR)."""
+        return OperandHolder(XOR, other, self)
+
+    def __sub__(self, other: Any) -> "OperandHolder":
+        """Handles P1 - P2 (Used for NOR, typically P1 - P2 is NOT (P1 OR P2))."""
+        # This is a common, non-standard mapping for NOT(OR) or NOT(AND)
+        # Assuming P1 - P2 means NOT(P1 OR P2) (NOR)
+        return OperandHolder(NOR, self, other)
+
+    def __rsub__(self, other: Any) -> "OperandHolder":
+        """Handles P2 - P1 (Reflected subtraction, used for NOR composition)."""
+        # Assuming P2 - P1 means NOT(P2 OR P1) (NOR)
+        return OperandHolder(NOR, other, self)
+
 
 class SingleOperand(BaseOperationHolder):
     """
@@ -83,14 +102,14 @@ class SingleOperand(BaseOperationHolder):
 
 class OperandHolder(BaseOperationHolder):
     """
-    A callable wrapper for binary logical operations (like AND, OR).
+    A callable wrapper for binary logical operations (like AND, OR, XOR, NOR).
 
     When called, it instantiates both inner permissions and the operator class.
     """
 
     def __init__(
         self,
-        operator_class: type["AND | OR"],
+        operator_class: type["AND | OR | NOR | XOR"],
         op1_class: BaseOperationHolder,
         op2_class: BaseOperationHolder,
     ) -> None:
@@ -100,11 +119,11 @@ class OperandHolder(BaseOperationHolder):
             op1_class: The class of the left-hand permission.
             op2_class: The class of the right-hand permission.
         """
-        self.operator_class: type[AND | OR] = operator_class
+        self.operator_class: type[AND | OR | NOR | XOR] = operator_class
         self.op1_class: BaseOperationHolder = op1_class
         self.op2_class: BaseOperationHolder = op2_class
 
-    def __call__(self, *args: Any, **kwargs: Any) -> "AND | OR":
+    def __call__(self, *args: Any, **kwargs: Any) -> "AND | OR | XOR | NOR":
         """Instantiates the permissions and wraps them in the AND/OR operator."""
         op1: BasePermission = self.op1_class(*args, **kwargs)  # type: ignore
         op2: BasePermission = self.op2_class(*args, **kwargs)  # type: ignore
@@ -200,6 +219,73 @@ class NOT:
         """
         result: bool = await maybe_awaitable(self.op1.has_permission, request, controller)
         return not result
+
+
+class XOR:
+    """
+    Represents a logical XOR (Exclusive OR) operation between two permission instances.
+    Returns True only if exactly one of the permissions is granted.
+    """
+
+    def __init__(self, op1: "BasePermission", op2: "BasePermission") -> None:
+        """
+        Args:
+            op1: The left-hand permission instance.
+            op2: The right-hand permission instance.
+        """
+        self.op1: BasePermission = op1
+        self.op2: BasePermission = op2
+
+    async def has_permission(
+        self,
+        request: "Request",
+        controller: "APIGateHandler",
+    ) -> bool:
+        """
+        Checks if EXACTLY ONE permission grants access.
+
+        Returns:
+            True if (op1 is True AND op2 is False) OR (op1 is False AND op2 is True).
+        """
+        op1_result: bool = await maybe_awaitable(self.op1.has_permission, request, controller)
+        op2_result: bool = await maybe_awaitable(self.op2.has_permission, request, controller)
+
+        # XOR logic: (A or B) and not (A and B)
+        return op1_result != op2_result
+
+
+class NOR:
+    """
+    Represents a logical NOR (Not OR) operation between two permission instances.
+    Returns True only if NEITHER permission is granted.
+    """
+
+    def __init__(self, op1: "BasePermission", op2: "BasePermission") -> None:
+        """
+        Args:
+            op1: The left-hand permission instance.
+            op2: The right-hand permission instance.
+        """
+        self.op1: BasePermission = op1
+        self.op2: BasePermission = op2
+
+    async def has_permission(
+        self,
+        request: "Request",
+        controller: "APIGateHandler",
+    ) -> bool:
+        """
+        Checks if NEITHER permission grants access.
+
+        Returns:
+            True if both permissions are False, False otherwise.
+        """
+        # Execute both checks
+        op1_result: bool = await maybe_awaitable(self.op1.has_permission, request, controller)
+        op2_result: bool = await maybe_awaitable(self.op2.has_permission, request, controller)
+
+        # NOR logic: not (A or B)
+        return not (op1_result or op2_result)
 
 
 class BasePermissionMetaclass(BaseOperationHolder, type):
