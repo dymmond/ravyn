@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.3.1
+
+### Fixed
+
+- Duplicate check on Gateway permissions and WebsocketGateway permissions.
+
 ## 0.3.0
 
 ### Added

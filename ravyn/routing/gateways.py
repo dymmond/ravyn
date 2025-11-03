@@ -438,7 +438,7 @@ class Gateway(LilyaPath, Dispatcher, BaseMiddleware, GatewayUtil):
             else:
                 handler_lilya_permissions = {
                     index + len(self.lilya_permissions): permission
-                    for index, permission in enumerate(self.lilya_permissions.values())
+                    for index, permission in enumerate(self.handler.lilya_permissions.values())
                 }
                 self.handler.lilya_permissions = {
                     **self.lilya_permissions,
@@ -464,7 +464,7 @@ class Gateway(LilyaPath, Dispatcher, BaseMiddleware, GatewayUtil):
             else:
                 handler_permissions = {
                     index + len(self.permissions): permission
-                    for index, permission in enumerate(self.permissions.values())
+                    for index, permission in enumerate(self.handler.permissions.values())
                 }
                 self.handler.permissions = {
                     **self.permissions,
@@ -760,7 +760,7 @@ class WebSocketGateway(LilyaWebSocketPath, Dispatcher, BaseMiddleware):
             else:
                 handler_lilya_permissions = {
                     index + len(self.lilya_permissions): permission
-                    for index, permission in enumerate(self.lilya_permissions.values())
+                    for index, permission in enumerate(self.handler.lilya_permissions.values())
                 }
                 self.handler.lilya_permissions = {
                     **self.lilya_permissions,
@@ -786,7 +786,7 @@ class WebSocketGateway(LilyaWebSocketPath, Dispatcher, BaseMiddleware):
             else:
                 handler_permissions = {
                     index + len(self.permissions): permission
-                    for index, permission in enumerate(self.permissions.values())
+                    for index, permission in enumerate(self.handler.permissions.values())
                 }
                 self.handler.permissions = {
                     **self.permissions,
