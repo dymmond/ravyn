@@ -674,6 +674,8 @@ class BaseRouter(Dispatcher, LilyaRouter):
         self.exception_handlers = exception_handlers or {}
         self.interceptors: Sequence[Interceptor] = interceptors or []
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
+        self._permissions_cache: dict[int, Any] | VoidType = Void
+        self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
 
         # Filter out the lilya unique permissions
         if self.__lilya_permissions__:
@@ -768,24 +770,39 @@ class BaseRouter(Dispatcher, LilyaRouter):
         This method ensures that the permissions are set correctly
         and that they are compatible with the Lilya permissions system.
         """
-        if self.parent and self.parent.permissions:
-            # If the parent has permissions, we need to merge them with the current permissions
-            self.permissions.update(
-                {
-                    index + len(self.permissions): wrap_permission(permission)
-                    for index, permission in enumerate(self.parent.permissions)
-                    if is_ravyn_permission(permission)
-                }
+        # Use cached permissions if already computed
+        if self._permissions_cache is not Void or self._lilya_permissions_cache is not Void:
+            effective_permissions = (
+                self._permissions_cache if self._permissions_cache is not Void else {}
             )
+            effective_lilya_permissions = (
+                self._lilya_permissions_cache if self._lilya_permissions_cache is not Void else {}
+            )
+        else:
+            if self.parent and self.parent.permissions:
+                # If the parent has permissions, we need to merge them with the current permissions
+                self.permissions.update(
+                    {
+                        index + len(self.permissions): wrap_permission(permission)
+                        for index, permission in enumerate(self.parent.permissions)
+                        if is_ravyn_permission(permission)
+                    }
+                )
 
-        if not self.permissions and not self.lilya_permissions:
+            effective_permissions = self.permissions
+            effective_lilya_permissions = self.lilya_permissions
+            # Cache the computed permissions
+            self._permissions_cache = effective_permissions or Void
+            self._lilya_permissions_cache = effective_lilya_permissions or Void
+
+        if not effective_permissions and not effective_lilya_permissions:
             return
 
         connection = Connection(scope=scope, receive=receive)
 
-        if self.lilya_permissions:
+        if effective_lilya_permissions:
             await self.dispatch_allow_connection(
-                self.lilya_permissions,
+                effective_lilya_permissions,
                 connection,
                 scope,
                 receive,
@@ -794,7 +811,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
             )
         else:
             await self.dispatch_allow_connection(
-                self.permissions,
+                effective_permissions,
                 connection,
                 scope,
                 receive,
@@ -2670,6 +2687,8 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         self._dependencies: Dependencies = {}
         self._response_handler: Union[Callable[[Any], Awaitable[LilyaResponse]], VoidType] = Void
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
+        self._permissions_cache: dict[int, Any] | VoidType = Void
+        self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
 
         self.parent: ParentType = None
         self.path = path
@@ -2784,25 +2803,41 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         This method ensures that the permissions are set correctly
         and that they are compatible with the Lilya permissions system.
         """
-        if self.parent and self.parent.permissions:
-            if not self.permissions:
-                # If the parent has permissions, we need to merge them with the current permissions
-                self.permissions.update(self.parent.permissions)
-            else:
-                # If the parent has permissions, we need to merge them with the current permissions
-                all_perms = list(self.parent.permissions.values())
-                for perm in self.permissions.values():
-                    all_perms.append(perm)
-                self.permissions = dict(enumerate(all_perms))  #
+        # Use cached permissions if already computed
+        if self._permissions_cache is not Void or self._lilya_permissions_cache is not Void:
+            effective_permissions = (
+                self._permissions_cache if self._permissions_cache is not Void else {}
+            )
+            effective_lilya_permissions = (
+                self._lilya_permissions_cache if self._lilya_permissions_cache is not Void else {}
+            )
+        else:
+            if self.parent and self.parent.permissions:
+                if not self.permissions:
+                    # If the parent has permissions, we need to merge them with the current permissions
+                    self.permissions.update(self.parent.permissions)
+                else:
+                    # If the parent has permissions, we need to merge them with the current permissions
+                    all_perms = list(self.parent.permissions.values())
+                    for perm in self.permissions.values():
+                        all_perms.append(perm)
+                    self.permissions = dict(enumerate(all_perms))  #
 
-        if not self.permissions and not self.lilya_permissions:
+            effective_permissions = self.permissions if self.permissions else {}
+            effective_lilya_permissions = self.lilya_permissions if self.lilya_permissions else {}
+
+            # Cache the computed permissions
+            self._permissions_cache = effective_permissions or Void
+            self._lilya_permissions_cache = effective_lilya_permissions or Void
+
+        if not effective_permissions and not effective_lilya_permissions:
             return
 
         connection = Connection(scope=scope, receive=receive)
 
-        if self.lilya_permissions:
+        if effective_lilya_permissions:
             await self.dispatch_allow_connection(
-                self.lilya_permissions,
+                effective_lilya_permissions,
                 connection,
                 scope,
                 receive,
@@ -2812,7 +2847,7 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         else:
             dispatch_call = super().handle_dispatch
             await self.dispatch_allow_connection(
-                self.permissions,
+                effective_permissions,
                 connection,
                 scope,
                 receive,
@@ -3102,6 +3137,8 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         "after_request",
         "__type__",
         "_interceptors",
+        "_permissions_cache",
+        "_lilya_permissions_cache",
     )
 
     def __init__(
@@ -3146,6 +3183,8 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         self._dependencies: Dependencies = {}
         self._response_handler: Union[Callable[[Any], Awaitable[LilyaResponse]], VoidType] = Void
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
+        self._permissions_cache: dict[int, Any] | VoidType = Void
+        self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
         self.interceptors: Sequence[Interceptor] = []
         self.handler = handler
         self.parent: ParentType = None
@@ -3209,25 +3248,43 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         This method ensures that the permissions are set correctly
         and that they are compatible with the Lilya permissions system.
         """
-        if self.parent and self.parent.permissions:
-            if not self.permissions:
-                # If the parent has permissions, we need to merge them with the current permissions
-                self.permissions.update(self.parent.permissions)
+        # Use cached permissions if already computed
+        if self._permissions_cache is not Void or self._lilya_permissions_cache is not Void:
+            effective_permissions = (
+                self._permissions_cache if self._permissions_cache is not Void else {}
+            )
+            effective_lilya_permissions = (
+                self._lilya_permissions_cache if self._lilya_permissions_cache is not Void else {}
+            )
+        else:
+            if self.parent and self.parent.permissions:
+                parent_perms = self.parent.permissions.copy()
             else:
-                # If the parent has permissions, we need to merge them with the current permissions
-                all_perms = list(self.parent.permissions.values())
-                for perm in self.permissions.values():
-                    all_perms.append(perm)
-                self.permissions = dict(enumerate(all_perms))
+                parent_perms = {}
 
-        if not self.permissions and not self.lilya_permissions:
+            effective_permissions = {}
+            if self.permissions:
+                all_perms = list(parent_perms.values()) + list(self.permissions.values())
+                effective_permissions = dict(enumerate(all_perms))
+            elif parent_perms:
+                effective_permissions = parent_perms.copy()
+
+            effective_lilya_permissions = (
+                self.lilya_permissions.copy() if self.lilya_permissions else {}
+            )
+
+            # Cache the computed permissions
+            self._permissions_cache = effective_permissions or Void
+            self._lilya_permissions_cache = effective_lilya_permissions or Void
+
+        if not effective_permissions and not effective_lilya_permissions:
             return
 
         connection = WebSocket(scope=scope, receive=receive, send=send)
 
-        if self.lilya_permissions:
+        if effective_lilya_permissions:
             await self.dispatch_allow_connection(
-                self.lilya_permissions,
+                effective_lilya_permissions,
                 connection,
                 scope,
                 receive,
@@ -3237,7 +3294,7 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         else:
             dispatch_call = super().handle_dispatch
             await self.dispatch_allow_connection(
-                self.permissions,
+                effective_permissions,
                 connection,
                 scope,
                 receive,
@@ -3755,6 +3812,8 @@ class Include(Dispatcher, LilyaInclude):
         self.dependencies = dependencies or {}  # type: ignore
         self.interceptors: Sequence[Interceptor] = interceptors or []
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
+        self._permissions_cache: dict[int, Any] | VoidType = Void
+        self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
         self.response_class = None
         self.response_cookies = None
         self.response_headers = None
@@ -3951,14 +4010,31 @@ class Include(Dispatcher, LilyaInclude):
         This method ensures that the permissions are set correctly
         and that they are compatible with the Lilya permissions system.
         """
-        if not self.permissions and not self.lilya_permissions:
+        # Use cached permissions if already computed
+        if self._permissions_cache is not Void or self._lilya_permissions_cache is not Void:
+            effective_permissions = (
+                self._permissions_cache if self._permissions_cache is not Void else {}
+            )
+            effective_lilya_permissions = (
+                self._lilya_permissions_cache if self._lilya_permissions_cache is not Void else {}
+            )
+        else:
+            effective_permissions = self.permissions.copy() if self.permissions else {}
+            effective_lilya_permissions = (
+                self.lilya_permissions.copy() if self.lilya_permissions else {}
+            )
+            # Cache the computed permissions
+            self._permissions_cache = effective_permissions or Void
+            self._lilya_permissions_cache = effective_lilya_permissions or Void
+
+        if not effective_permissions and not effective_lilya_permissions:
             return
 
         connection = Connection(scope=scope, receive=receive)
 
-        if self.lilya_permissions:
+        if effective_lilya_permissions:
             await self.dispatch_allow_connection(
-                self.lilya_permissions,
+                effective_lilya_permissions,
                 connection,
                 scope,
                 receive,
@@ -3968,7 +4044,7 @@ class Include(Dispatcher, LilyaInclude):
         else:
             dispatch_call = super().handle_dispatch
             await self.dispatch_allow_connection(
-                self.permissions,
+                effective_permissions,
                 connection,
                 scope,
                 receive,

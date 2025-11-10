@@ -5,6 +5,19 @@ hide:
 
 # Release Notes
 
+## 0.3.2
+
+### Changed
+
+- Unified lazy caching mechanism for permission evaluation across `WebSocketHandler`, `Include`, and `BaseRouter`.
+- `handle_permissions()` now caches the effective permissions on first evaluation instead of mutating per-request state.
+- Internal `__slots__` updated for clarity and memory optimization.
+
+### Fixed
+
+- Avoided redundant recomputation of permissions and `lilya_permissions` in nested routing structures.
+- Prevented potential state mutation during concurrent permission evaluation.
+
 ## 0.3.1
 
 ### Added
