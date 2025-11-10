@@ -129,6 +129,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
         "routing",
         "before_request",
         "after_request",
+        "_interceptors",
     )
 
     def __init__(
@@ -672,6 +673,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
         self.dependencies = dependencies or {}  # type: ignore
         self.exception_handlers = exception_handlers or {}
         self.interceptors: Sequence[Interceptor] = interceptors or []
+        self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
 
         # Filter out the lilya unique permissions
         if self.__lilya_permissions__:
@@ -740,24 +742,25 @@ class BaseRouter(Dispatcher, LilyaRouter):
         self.routes = self.reorder_routes()
 
     async def handle_interceptors(self, scope: "Scope", receive: "Receive", send: "Send") -> None:
-        """
-        Handles the interceptors for the Router.
-        This method ensures that the interceptors are set correctly
-        and that they are compatible with the Lilya interceptors system.
-        """
+        # Inherit interceptors from parent if any
         if self.parent and self.parent.interceptors:
             for parent_interceptor in self.parent.interceptors:
-                self.interceptors.insert(0, parent_interceptor)
+                if parent_interceptor not in self.interceptors:
+                    self.interceptors.insert(0, parent_interceptor)
 
-        if not self.interceptors:
+        # If no factories defined and no cache, nothing to do
+        if (self._interceptors is Void) and not self.interceptors:
             return
 
-        for obj in self.interceptors:
-            interceptor: "RavynInterceptor" = obj()
+        # Instantiate once and cache for reuse across requests
+        if self._interceptors is Void:
+            self._interceptors = [factory() for factory in self.interceptors]
+
+        for interceptor in self._interceptors:
             if is_async_callable(interceptor.intercept):
                 await interceptor.intercept(scope, receive, send)
             else:
-                await run_in_threadpool(interceptor.intercept, scope, receive, send)  # type: ignore
+                await run_in_threadpool(interceptor.intercept, scope, receive, send)
 
     async def handle_permissions(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -2665,11 +2668,12 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
 
         self._permissions: Union[list[Permission], VoidType] = Void
         self._dependencies: Dependencies = {}
-
         self._response_handler: Union[Callable[[Any], Awaitable[LilyaResponse]], VoidType] = Void
+        self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
 
         self.parent: ParentType = None
         self.path = path
+
         self.handler = handler
         self.summary = summary
         self.name = name
@@ -2760,15 +2764,19 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         This method ensures that the interceptors are set correctly
         and that they are compatible with the Lilya interceptors system.
         """
-        if not self.interceptors:
+        # If no factories defined and no cache, nothing to do
+        if (self._interceptors is Void) and not self.interceptors:
             return
 
-        for obj in self.interceptors:
-            interceptor: "RavynInterceptor" = obj()
+        # Instantiate once and cache for reuse across requests
+        if self._interceptors is Void:
+            self._interceptors = [factory() for factory in self.interceptors]
+
+        for interceptor in self._interceptors:
             if is_async_callable(interceptor.intercept):
                 await interceptor.intercept(scope, receive, send)
             else:
-                await run_in_threadpool(interceptor.intercept, scope, receive, send)  # type: ignore
+                await run_in_threadpool(interceptor.intercept, scope, receive, send)
 
     async def handle_permissions(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -3093,6 +3101,7 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         "before_request",
         "after_request",
         "__type__",
+        "_interceptors",
     )
 
     def __init__(
@@ -3136,6 +3145,7 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         self._lilya_permissions: Union[list[DefinePermission], VoidType] = Void
         self._dependencies: Dependencies = {}
         self._response_handler: Union[Callable[[Any], Awaitable[LilyaResponse]], VoidType] = Void
+        self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
         self.interceptors: Sequence[Interceptor] = []
         self.handler = handler
         self.parent: ParentType = None
@@ -3179,15 +3189,19 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         This method ensures that the interceptors are set correctly
         and that they are compatible with the Lilya interceptors system.
         """
-        if not self.interceptors:
+        # If no factories defined and no cache, nothing to do
+        if (self._interceptors is Void) and not self.interceptors:
             return
 
-        for obj in self.interceptors:
-            interceptor: "RavynInterceptor" = obj()
+        # Instantiate once and cache for reuse across requests
+        if self._interceptors is Void:
+            self._interceptors = [factory() for factory in self.interceptors]
+
+        for interceptor in self._interceptors:
             if is_async_callable(interceptor.intercept):
                 await interceptor.intercept(scope, receive, send)
             else:
-                await run_in_threadpool(interceptor.intercept, scope, receive, send)  # type: ignore
+                await run_in_threadpool(interceptor.intercept, scope, receive, send)
 
     async def handle_permissions(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -3362,6 +3376,7 @@ class Include(Dispatcher, LilyaInclude):
         "redirect_slashes",
         "before_request",
         "after_request",
+        "_interceptors",
     )
 
     def __init__(
@@ -3739,6 +3754,7 @@ class Include(Dispatcher, LilyaInclude):
 
         self.dependencies = dependencies or {}  # type: ignore
         self.interceptors: Sequence[Interceptor] = interceptors or []
+        self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
         self.response_class = None
         self.response_cookies = None
         self.response_headers = None
@@ -3915,15 +3931,19 @@ class Include(Dispatcher, LilyaInclude):
         This method ensures that the interceptors are set correctly
         and that they are compatible with the Lilya interceptors system.
         """
-        if not self.interceptors:
+        # If no factories defined and no cache, nothing to do
+        if (self._interceptors is Void) and not self.interceptors:
             return
 
-        for obj in self.interceptors:
-            interceptor: "RavynInterceptor" = obj()
+        # Instantiate once and cache for reuse across requests
+        if self._interceptors is Void:
+            self._interceptors = [factory() for factory in self.interceptors]
+
+        for interceptor in self._interceptors:
             if is_async_callable(interceptor.intercept):
                 await interceptor.intercept(scope, receive, send)
             else:
-                await run_in_threadpool(interceptor.intercept, scope, receive, send)  # type: ignore
+                await run_in_threadpool(interceptor.intercept, scope, receive, send)
 
     async def handle_permissions(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
