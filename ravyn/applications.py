@@ -1625,7 +1625,6 @@ class Application(BaseLilya):
         self.on_startup = self.load_settings_value("on_startup", on_startup)
         self.on_shutdown = self.load_settings_value("on_shutdown", on_shutdown)
         self.lifespan = self.load_settings_value("lifespan", lifespan)
-        self.tags = self.load_settings_value("tags", security)
         self.include_in_schema = self.load_settings_value(
             "include_in_schema", include_in_schema, is_boolean=True
         )
@@ -1796,7 +1795,7 @@ class Application(BaseLilya):
         """
         Creates the signature model for the webhooks.
         """
-        webhooks = []
+        built_webhooks: list[gateways.WebhookGateway] = []
         for route in self.webhooks:
             if not isinstance(route, gateways.WebhookGateway):
                 raise ImproperlyConfigured(
@@ -1808,7 +1807,7 @@ class Application(BaseLilya):
             ):
                 if not route.handler.parent:
                     route.handler.parent = route
-                    webhooks.append(route)
+                    built_webhooks.append(route)
             else:
                 if not route.handler.parent:  # pragma: no cover
                     route(parent=self)  # type: ignore
@@ -1828,12 +1827,12 @@ class Application(BaseLilya):
                     )
                     gate.include_in_schema = include_in_schema
 
-                    webhooks.append(gate)
+                    built_webhooks.append(gate)
                 self.webhooks.pop(self.webhooks.index(route))
 
-        for route in webhooks:
+        for route in built_webhooks:
             self.router.create_signature_models(route)
-        self.webhooks = webhooks
+        self.webhooks = built_webhooks
 
     def activate_scheduler(self) -> None:
         """

@@ -66,10 +66,10 @@ class BaseController:
         "route_map",
         "operation_id",
         "methods",
-        "interceptors",
         "security",
         "before_request",
         "after_request",
+        "_filtered_handler_names",
     )
 
     path: Annotated[
@@ -332,6 +332,7 @@ class BaseController:
         self.route_map: dict[str, Tuple["HTTPHandler", "TransformerModel"]] = {}
         self.operation_id: Optional[str] = None
         self.methods: list[str] = []
+        self._filtered_handler_names: Optional[list[str]] = None
 
         self.__base_permissions__ = self.permissions or []
 
@@ -398,6 +399,10 @@ class BaseController:
         """
         Filters out the names of the functions that are not part of the handler itself.
         """
+        # Fast path: reuse cached handler names
+        if self._filtered_handler_names is not None:
+            return self._filtered_handler_names
+
         from ravyn.routing.router import HTTPHandler, WebhookHandler, WebSocketHandler
 
         filtered_handlers = [
@@ -412,6 +417,7 @@ class BaseController:
                     (HTTPHandler, WebSocketHandler, WebhookHandler),
                 ):
                     route_handlers.append(handler_name)
+        self._filtered_handler_names = route_handlers
         return route_handlers
 
     def get_route_handlers(
