@@ -3057,6 +3057,8 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
 
     async def to_response(self, app: "Ravyn", data: Any) -> LilyaResponse:
         response_handler = self.get_response_for_handler()
+        if isinstance(data, LilyaResponse):
+            return data
         return await response_handler(app=app, data=data)  # type: ignore[call-arg]
 
 

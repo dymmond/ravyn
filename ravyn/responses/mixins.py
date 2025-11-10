@@ -17,7 +17,7 @@ class ORJSONTransformMixin:
         if transform_kwargs is None:
             transform_kwargs = {}
         else:
-            transform_kwargs.copy()
+            transform_kwargs = transform_kwargs.copy()
         transform_kwargs.setdefault(
             "json_encode_fn",
             partial(
