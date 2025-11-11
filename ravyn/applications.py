@@ -2126,7 +2126,7 @@ class Application(BaseLilya):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -2245,7 +2245,7 @@ class Application(BaseLilya):
             Optional[str],
             Doc(
                 """
-                The name for the WebSocketGateway. The name can be reversed by `path_for()`.
+                The name for the WebSocketGateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -2390,7 +2390,7 @@ class Application(BaseLilya):
         self,
         path: str,
         child: Annotated[
-            "ChildRavyn",
+            "ChildRavyn | Ravyn",
             Doc(
                 """
                 The [ChildRavyn](https://ravyn.dev/routing/router/#child-ravyn-application) instance
@@ -2428,8 +2428,71 @@ class Application(BaseLilya):
         app.add_child_ravyn(path"/child", child=child)
         ```
         """
-        if not isinstance(child, ChildRavyn):
+        if not isinstance(child, (Ravyn, ChildRavyn)):
             raise ImproperlyConfigured("The child must be an instance of a ChildRavyn.")
+
+        self.router.routes.append(
+            Include(
+                path=path,
+                name=name,
+                app=child,
+                parent=self.router,
+                dependencies=dependencies,
+                middleware=cast("list[Middleware]", middleware),
+                exception_handlers=exception_handlers,
+                interceptors=interceptors,
+                permissions=permissions,
+                include_in_schema=include_in_schema,
+                deprecated=deprecated,
+                security=security,
+                before_request=before_request,
+                after_request=after_request,
+            )
+        )
+        self.activate_openapi()
+
+    def add_asgi_app(
+        self,
+        path: str,
+        child: Annotated[
+            ASGIApp | Any,
+            Doc(
+                """
+                Add any ASGI application instance (FastAPI, Starlette, Litestar...)
+                to be added.
+                """
+            ),
+        ],
+        name: Optional[str] = None,
+        middleware: Optional[Sequence["Middleware"]] = None,
+        dependencies: Optional["Dependencies"] = None,
+        exception_handlers: Optional["ExceptionHandlerMap"] = None,
+        interceptors: Optional[list["Interceptor"]] = None,
+        permissions: Optional[list["Permission"]] = None,
+        include_in_schema: Optional[bool] = True,
+        deprecated: Optional[bool] = None,
+        security: Optional[list["SecurityScheme"]] = None,
+        before_request: Union[Sequence[Callable[..., Any]], None] = None,
+        after_request: Union[Sequence[Callable[..., Any]], None] = None,
+    ) -> None:
+        """
+        Adds a [ChildRavyn](https://ravyn.dev/routing/router/#child-ravyn-application) directly to the active application router.
+
+        **Example**
+
+        ```python
+        from ravyn import get, Include, ChildRavyn, Ravyn
+
+        @get(status_code=status_code)
+        async def hello(self) -> str:
+            return "Hello, World!"
+
+        child = ChildRavyn(routes=[Gateway(handler=hello)])
+
+        app = Ravyn()
+        app.add_child_ravyn(path"/child", child=child)
+        ```
+        """
 
         self.router.routes.append(
             Include(
@@ -2882,7 +2945,7 @@ class Ravyn(RoutingMethodsMixin, Application):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -2950,7 +3013,7 @@ class Ravyn(RoutingMethodsMixin, Application):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,

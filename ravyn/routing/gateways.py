@@ -400,7 +400,7 @@ class Gateway(LilyaPath, Dispatcher, _GatewayCommon):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -732,7 +732,7 @@ class WebSocketGateway(LilyaWebSocketPath, Dispatcher, _GatewayCommon):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,

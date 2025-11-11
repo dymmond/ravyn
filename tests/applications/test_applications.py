@@ -148,7 +148,7 @@ def client(test_client_factory):
 
 
 def test_url_path_for():
-    assert app.path_for("func_homepage") == "/func"
+    assert app.url_path_for("func_homepage") == "/func"
 
 
 def test_func_route(client):
