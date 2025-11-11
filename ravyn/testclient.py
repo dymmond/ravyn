@@ -77,6 +77,10 @@ class RavynTestClient(TestClient):
     def __enter__(self, *args: Any, **kwargs: dict[str, Any]) -> "RavynTestClient":
         return cast("RavynTestClient", super().__enter__(*args, **kwargs))
 
+    @property
+    def routes(self) -> list[Any]:
+        return getattr(self.app, "routes", [])
+
 
 def create_client(
     routes: Union["APIGateHandler", list["APIGateHandler"]],

@@ -191,3 +191,8 @@ functions on an application top level. Exception handler callables should be of 
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
 * **include_in_schema** - Boolean if this ChildRavyn should be included in the OpenAPI Schema.
 * **deprecated** - Boolean if this ChildRavyn should be marked as deprecated.
+
+### add_asgi_app()
+
+These are the same of [add_child_ravyn](#add_child_ravyn) but here you can add any of your favourite ASGI apps such as
+FastAPI or Starlette or any other.
