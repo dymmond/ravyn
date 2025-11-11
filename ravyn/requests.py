@@ -69,3 +69,7 @@ class Request(LilyaRequest):
     def path_for(self, __name: str, **path_params: Any) -> Any:
         url: URL = super().path_for(__name, **path_params)
         return str(url)
+
+    def url_path_for(self, __name: str, **path_params: Any) -> Any:
+        url: URL = super().url_path_for(__name, **path_params)
+        return str(url)

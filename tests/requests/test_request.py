@@ -39,7 +39,7 @@ def test_request_resolve_url() -> None:
 
     @get(path="/test")
     def root(request: Request) -> dict:
-        return {"url": request.path_for("proxy")}
+        return {"url": request.url_path_for("proxy")}
 
     with create_client(
         routes=[

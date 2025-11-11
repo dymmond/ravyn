@@ -5,6 +5,21 @@ hide:
 
 # Release Notes
 
+## 0.3.3
+
+### Changed
+
+- Started full support for url_for instead of path_for.
+
+!!! Warning
+    `path_for` will be deprecated in future versions in favor of `url_path_for`.
+    If you want to avoid any break, please start updating from `path_for` to `url_path_for` as soon as possible. Same interface.
+
+#### Breaking
+
+To make sure you don't hit performance issues, we are moving directly to `url_path_for`, so if you use those you simply
+need to update from `path_for` to `url_path_for`. We understand this is breaking but it is required for the upcoming features.
+
 ## 0.3.2
 
 ### Changed

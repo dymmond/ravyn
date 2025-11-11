@@ -333,7 +333,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -857,6 +857,22 @@ class BaseRouter(Dispatcher, LilyaRouter):
 
         raise NoMatchFound(name, path_params)
 
+    def url_path_for(self, name: str, **path_params: Any) -> URLPath:
+        for route in self.routes or []:
+            try:
+                return cast("URLPath", route.url_path_for(name, **path_params))
+            except NoMatchFound:
+                ...
+
+            if isinstance(route, (Gateway, WebSocketGateway)):
+                handler = cast("Union[HTTPHandler, WebSocketHandler]", route.handler)
+                try:
+                    return handler.url_path_for(name, **path_params)
+                except NoMatchFound:
+                    ...
+
+        raise NoMatchFound(name, path_params)
+
     def add_event_handler(self, event_type: str, func: Callable) -> None:  # pragma: no cover
         assert event_type in ("startup", "shutdown")
 
@@ -991,7 +1007,7 @@ class RoutingMethodsMixin:
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -1099,7 +1115,7 @@ class RoutingMethodsMixin:
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -1207,7 +1223,7 @@ class RoutingMethodsMixin:
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -1315,7 +1331,7 @@ class RoutingMethodsMixin:
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -1423,7 +1439,7 @@ class RoutingMethodsMixin:
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -1531,7 +1547,7 @@ class RoutingMethodsMixin:
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -1639,7 +1655,7 @@ class RoutingMethodsMixin:
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -1747,7 +1763,7 @@ class RoutingMethodsMixin:
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -1867,7 +1883,7 @@ class RoutingMethodsMixin:
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -1922,7 +1938,7 @@ class RoutingMethodsMixin:
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -2160,7 +2176,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -2265,7 +2281,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -2436,7 +2452,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -2511,7 +2527,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -3154,7 +3170,7 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -3520,7 +3536,7 @@ class Include(Dispatcher, LilyaInclude):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,

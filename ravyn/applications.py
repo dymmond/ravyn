@@ -2126,7 +2126,7 @@ class Application(BaseLilya):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -2245,7 +2245,7 @@ class Application(BaseLilya):
             Optional[str],
             Doc(
                 """
-                The name for the WebSocketGateway. The name can be reversed by `path_for()`.
+                The name for the WebSocketGateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -2882,7 +2882,7 @@ class Ravyn(RoutingMethodsMixin, Application):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
@@ -2950,7 +2950,7 @@ class Ravyn(RoutingMethodsMixin, Application):
             Optional[str],
             Doc(
                 """
-                The name for the Gateway. The name can be reversed by `path_for()`.
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
                 """
             ),
         ] = None,
