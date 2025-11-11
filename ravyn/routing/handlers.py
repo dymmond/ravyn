@@ -65,7 +65,7 @@ def get(
         Optional[str],
         Doc(
             """
-            The name for the Gateway. The name can be reversed by `path_for()`.
+            The name for the Gateway. The name can be reversed by `url_for()`.
             """
         ),
     ] = None,
@@ -492,7 +492,7 @@ def head(
         Optional[str],
         Doc(
             """
-            The name for the Gateway. The name can be reversed by `path_for()`.
+            The name for the Gateway. The name can be reversed by `url_for()`.
             """
         ),
     ] = None,
@@ -809,7 +809,7 @@ def post(
         Optional[str],
         Doc(
             """
-            The name for the Gateway. The name can be reversed by `path_for()`.
+            The name for the Gateway. The name can be reversed by `url_for()`.
             """
         ),
     ] = None,
@@ -1249,7 +1249,7 @@ def put(
         Optional[str],
         Doc(
             """
-            The name for the Gateway. The name can be reversed by `path_for()`.
+            The name for the Gateway. The name can be reversed by `url_for()`.
             """
         ),
     ] = None,
@@ -1688,7 +1688,7 @@ def patch(
         Optional[str],
         Doc(
             """
-            The name for the Gateway. The name can be reversed by `path_for()`.
+            The name for the Gateway. The name can be reversed by `url_for()`.
             """
         ),
     ] = None,
@@ -2127,7 +2127,7 @@ def delete(
         Optional[str],
         Doc(
             """
-            The name for the Gateway. The name can be reversed by `path_for()`.
+            The name for the Gateway. The name can be reversed by `url_for()`.
             """
         ),
     ] = None,
@@ -2550,7 +2550,7 @@ def options(
         Optional[str],
         Doc(
             """
-            The name for the Gateway. The name can be reversed by `path_for()`.
+            The name for the Gateway. The name can be reversed by `url_for()`.
             """
         ),
     ] = None,
@@ -2855,7 +2855,7 @@ def trace(
         Optional[str],
         Doc(
             """
-            The name for the Gateway. The name can be reversed by `path_for()`.
+            The name for the Gateway. The name can be reversed by `url_for()`.
             """
         ),
     ] = None,
@@ -3172,7 +3172,7 @@ def route(
         Optional[str],
         Doc(
             """
-            The name for the Gateway. The name can be reversed by `path_for()`.
+            The name for the Gateway. The name can be reversed by `url_for()`.
             """
         ),
     ] = None,
@@ -3645,7 +3645,7 @@ def websocket(
         Optional[str],
         Doc(
             """
-            The name for the Gateway. The name can be reversed by `path_for()`.
+            The name for the Gateway. The name can be reversed by `url_for()`.
             """
         ),
     ] = None,

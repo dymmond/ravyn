@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.3.3
+
+### Changed
+
+- Started full support for url_for instead of path_for.
+
+!!! Warning
+    `path_for` will be deprecated in future versions in favor of `url_for`.
+    If you want to avoid any break, please start updating from `path_for` to `url_for` as soon as possible. Same interface.
+
 ## 0.3.2
 
 ### Changed

@@ -66,6 +66,6 @@ class Request(LilyaRequest):
             self._json = loads(body)
         return self._json
 
-    def path_for(self, __name: str, **path_params: Any) -> Any:
-        url: URL = super().path_for(__name, **path_params)
+    def url_for(self, __name: str, **path_params: Any) -> Any:
+        url: URL = super().url_for(__name, **path_params)
         return str(url)

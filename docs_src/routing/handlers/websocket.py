@@ -5,7 +5,7 @@ from ravyn.applications import Ravyn
 @websocket(path="/")
 async def websocket_endpoint_switch(socket: WebSocket) -> None:
     await socket.accept()
-    await socket.send_json({"URL": str(socket.path_for("websocket_endpoint"))})
+    await socket.send_json({"URL": str(socket.url_for("websocket_endpoint"))})
     await socket.close()
 
 
