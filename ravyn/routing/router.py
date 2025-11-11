@@ -842,6 +842,11 @@ class BaseRouter(Dispatcher, LilyaRouter):
         await response(scope, receive, send)
 
     def path_for(self, name: str, **path_params: Any) -> URLPath:
+        warnings.warn(
+            "Ravyn `path_for` is deprecated and will be removed in a future version. Use url_path_for instead.",
+            UserWarning,
+            stacklevel=2,
+        )
         for route in self.routes or []:
             try:
                 return cast("URLPath", route.path_for(name, **path_params))
