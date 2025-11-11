@@ -1,11 +1,14 @@
 from fastapi import FastAPI
 from lilya import status
+from lilya.compat import reverse
 from litestar import Litestar, get
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from starlette.routing import Route
+from starlette.routing import Mount, Route
+from starlette.testclient import TestClient
 
+from ravyn import Gateway, Include, Ravyn, get as rget
 from ravyn.testclient import create_client
 
 
@@ -106,3 +109,58 @@ def test_add_asgi_litestar_app() -> None:
 
         assert response.text == "Hello, world!"
         assert response.status_code == 200
+
+
+def test_test_asgi_path_mixed_from_ravyn_down() -> None:
+    """
+    Adds a Starlette application to the main app.
+    """
+    with create_client(
+        routes=[
+            Include(
+                "/test",
+                app=Starlette(
+                    routes=[
+                        Route("/starlette", route_one, name="star"),
+                    ]
+                ),
+                name="test",
+            )
+        ]
+    ) as client:
+        url = reverse("test:star", app=client.app)
+
+        response = client.get(url)
+        assert response.json() == {"test": 1}
+        assert response.status_code == status.HTTP_202_ACCEPTED
+
+
+def test_test_asgi_path_mixed_from_starlette_down() -> None:
+    """
+    Adds a Starlette application to the main app.
+    """
+
+    @rget("/ravyn")
+    async def route_four() -> dict:
+        return {"test": 4}
+
+    app = Starlette(
+        routes=[
+            Mount(
+                "/test",
+                app=Ravyn(
+                    routes=[
+                        Gateway(handler=route_four, name="ravyn"),
+                    ]
+                ),
+                name="test",
+            )
+        ]
+    )
+
+    url = reverse("test:ravyn", app=app)
+    client = TestClient(app)
+
+    response = client.get(url)
+    assert response.json() == {"test": 4}
+    assert response.status_code == 200
