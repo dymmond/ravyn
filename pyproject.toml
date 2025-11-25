@@ -49,7 +49,7 @@ dependencies = [
     "lilya[standard]>=0.22.15",
     "pydantic-settings>=2.9.0",
     "orjson>=3.8.5,<4.0.0",
-    "msgspec>=0.18.5,<1.0.0",
+    "msgspec>=0.20.0,<0.21.0",
     "monkay>=0.5.0"
 ]
 keywords = [
@@ -280,7 +280,7 @@ check_types = "mypy -p ravyn"
 features = ["all", "testing"]
 template = "test"
 installer = "pip"
-extra-dependencies = ["msgspec@git+https://github.com/jcrist/msgspec.git ; python_version >= '3.14.0'"]
+#extra-dependencies = ["msgspec@git+https://github.com/jcrist/msgspec.git ; python_version >= '3.14.0'"]
 
 [tool.hatch.envs.hatch-test.env-vars]
 RAVYN_SETTINGS_MODULE = "tests.settings.AppTestSettings"
