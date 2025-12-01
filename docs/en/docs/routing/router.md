@@ -171,6 +171,11 @@ functions on an application top level. Exception handler callables should be of 
 {!> ../../../docs_src/routing/router/add_child_ravyn.py!}
 ```
 
+### add_asgi_app()
+
+The same as the [add_child_ravyn](#add_child_ravyn) but not restrained only to Ravyn or ChildRavyn. This means
+you can call this helper and add any other ASGI application (FastAPI, Starlette, Litestar...) and it will fit automatically.
+
 #### Parameters
 
 * **path** - The path for the child ravyn.
@@ -191,8 +196,3 @@ functions on an application top level. Exception handler callables should be of 
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
 * **include_in_schema** - Boolean if this ChildRavyn should be included in the OpenAPI Schema.
 * **deprecated** - Boolean if this ChildRavyn should be marked as deprecated.
-
-### add_asgi_app()
-
-These are the same of [add_child_ravyn](#add_child_ravyn) but here you can add any of your favourite ASGI apps such as
-FastAPI or Starlette or any other.
