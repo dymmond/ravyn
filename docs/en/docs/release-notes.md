@@ -5,6 +5,17 @@ hide:
 
 # Release Notes
 
+## 0.3.4
+
+### Added
+
+- - [add_asgi_app()](./routing/router.md#add_asgi_app) is now supported and serves as an utility if you want to add any ASGI
+compatible application into a Lilya/ChildLilya instance.
+
+### Changed
+
+- Remove noisy warning on loading directives.
+
 ## 0.3.3
 
 ### Changed

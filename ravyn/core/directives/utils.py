@@ -10,7 +10,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, Optional
 
-from sayer import error, warning
+from sayer import error
 
 from ravyn.core.directives.base import BaseDirective
 from ravyn.core.directives.exceptions import DirectiveError
@@ -231,7 +231,6 @@ def fetch_custom_directive_by_location(location: str) -> Any:
         raise
     except Exception as exc:  # be specific if you have custom exceptions
         message = f"Failed to load directive from {location}: {exc}"
-        warning(message)
         raise DirectiveError(message) from exc
 
     # Only accept classes explicitly marked as custom directives.

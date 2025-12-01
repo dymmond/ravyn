@@ -46,7 +46,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
-    "lilya[standard]>=0.22.15",
+    "lilya[standard]>=0.22.16",
     "pydantic-settings>=2.9.0",
     "orjson>=3.8.5,<4.0.0",
     "msgspec>=0.20.0,<0.21.0",
@@ -210,7 +210,7 @@ testing = [
     "grpcio-tools>=1.71.0",
     "litestar>=2.18.0",
     "mongoz>=0.13.0",
-    "mypy==1.18.2",
+    "mypy==1.19.0",
     "pytest>=7.1.3,<10.0.0",
     "pytest-cov>=4.1.0,<8.0.0",
     "pytest-asyncio>=0.26.0",
@@ -227,7 +227,7 @@ testing = [
 docs = [
     "a2wsgi>=1.9.0",
     "httpx>=0.25.0",
-    "lilya[standard]>=0.22.15",
+    "lilya[standard]>=0.22.16",
     "griffe-typingdoc>=0.2.2,<1.0",
     "mkdocs>=1.1.2,<2.0.0",
     "mkdocs-material>=9.4.4",
