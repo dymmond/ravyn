@@ -100,6 +100,11 @@ def task_two():  # pragma: no cover
 scheduler_config = AsynczConfig(tasks=scheduler_tasks())
 
 
+def test_access_original_function() -> None:
+    assert task_one.original.__name__ == "task_one"
+    assert task_two.original.__name__ == "task_two"
+
+
 def test_ravyn_starts_scheduler():
     app = Ravyn(scheduler_config=scheduler_config)
     assert app.scheduler_config.tasks == scheduler_tasks()

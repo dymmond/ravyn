@@ -1,5 +1,5 @@
 from datetime import datetime, timezone as dtimezone
-from typing import Any, Callable, Type, Union
+from typing import Any, Callable, cast
 
 from asyncz.schedulers import AsyncIOScheduler
 from asyncz.schedulers.types import SchedulerType
@@ -22,10 +22,10 @@ class AsynczConfig(SchedulerConfig):
 
     def __init__(
         self,
-        scheduler_class: Type[SchedulerType] = AsyncIOScheduler,
-        tasks: Union[dict[str, str]] = None,
-        timezone: Union[dtimezone, str, None] = None,
-        configurations: Union[dict[str, dict[str, str]], None] = None,
+        scheduler_class: type[SchedulerType] = AsyncIOScheduler,
+        tasks: dict[str, str] | None = None,
+        timezone: dtimezone | str | None = None,
+        configurations: dict[str, dict[str, str]] | None = None,
         **kwargs: dict[str, Any],
     ):
         """
@@ -80,9 +80,9 @@ class AsynczConfig(SchedulerConfig):
 
     def get_scheduler(
         self,
-        scheduler: Type[SchedulerType],
-        timezone: Union[dtimezone, str, None] = None,
-        configurations: Union[dict[str, Any], None] = None,
+        scheduler: type[SchedulerType],
+        timezone: dtimezone | str | None = None,
+        configurations: dict[str, Any] | None = None,
         **options: dict[str, Any],
     ) -> SchedulerType:
         """
@@ -137,18 +137,18 @@ class Task:
         self,
         fn: Any = None,
         *,
-        name: Union[str, None] = None,
-        trigger: Union[TriggerType, None] = None,
-        id: Union[str, None] = None,
-        mistrigger_grace_time: Union[int, Undefined, None] = undefined,
-        coalesce: Union[bool, Undefined] = undefined,
-        max_instances: Union[int, Undefined, None] = undefined,
-        next_run_time: Union[datetime, str, Undefined, None] = undefined,
-        store: Union[str, None] = None,
-        executor: Union[str, None] = None,
+        name: str | None = None,
+        trigger: TriggerType | None = None,
+        id: str | None = None,
+        mistrigger_grace_time: int | Undefined | None = undefined,
+        coalesce: bool | Undefined = undefined,
+        max_instances: int | Undefined | None = undefined,
+        next_run_time: datetime | str | Undefined | None = undefined,
+        store: str | None = None,
+        executor: str | None = None,
         replace_existing: bool = False,
-        args: Union[Any, None] = None,
-        kwargs: Union[dict[str, Any], None] = None,
+        args: Any | None = None,
+        kwargs: dict[str, Any] | None = None,
         is_enabled: bool = True,
     ) -> None:
         """
@@ -205,3 +205,10 @@ class Task:
             )
         except Exception as e:
             raise ImproperlyConfigured(str(e)) from e
+
+    @property
+    def original(self) -> SchedulerCallable:
+        """
+        Returns the original function from the scheduler wrapper.
+        """
+        return cast(SchedulerCallable, getattr(self.fn, "__wrapped__", self.fn))

@@ -30,7 +30,7 @@ def test_security_http_base():
 def test_security_http_base_no_credentials():
     with create_client(routes=[Gateway(handler=read_current_user)]) as client:
         response = client.get("/users/me")
-        assert response.status_code == 403, response.text
+        assert response.status_code == 401, response.text
         assert response.json() == {"detail": "Not authenticated"}
 
 
