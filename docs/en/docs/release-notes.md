@@ -16,6 +16,7 @@ compatible application into a Lilya/ChildLilya instance.
 
 - Remove noisy warning on loading directives.
 - Expose `original` property from the `@scheduler` wrapper.
+- Updated internal security to start raising 401 instead of 403 to be consistent with Not authenticated errors and when credentials are missing.
 
 ## 0.3.3
 
