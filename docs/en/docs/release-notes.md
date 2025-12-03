@@ -10,7 +10,7 @@ hide:
 ### Added
 
 - [add_asgi_app()](./routing/router.md#add_asgi_app) is now supported and serves as an utility if you want to add any ASGI
-compatible application into a Lilya/ChildLilya instance.
+compatible application into a Ravyn/ChildRavyn instance.
 
 ### Changed
 
