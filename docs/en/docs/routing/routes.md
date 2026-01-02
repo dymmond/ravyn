@@ -1,373 +1,629 @@
-# Routes
+# Routing
 
-Ravyn has a simple but highly effective routing system capable of handling from simple routes to the most
-complex ones.
+Ravyn's routing system scales from a single route to hundreds of organized endpoints. Whether you're building a quick prototype or an enterprise application, the routing system handles it elegantly.
 
-Using  an enterprise application as example, the routing system surely will not be something simple with
-20 or 40 direct routes, maybe it will have 200 or 300 routes where those are split by responsabilities,
-components and packages and imported also inside complex design systems.
-Ravyn handles with those cases without any kind of issues at all.
+## What You'll Learn
 
-Lilya routing system alone wasn't enough to serve all the complexities and cases for all sort of
-different APIs and systems, so Ravyn created its own.
+- How to create routes with Gateway and WebSocketGateway
+- Organizing routes with Include for scalable applications
+- Using path parameters and custom converters
+- Managing route priority and avoiding conflicts
+- Adding middleware, permissions, and dependencies to routes
 
-## Gateway
+## Quick Start
 
-A Gateway is an extension of the Route, really, but adds its own logic and handling capabilities, as well as its own
-validations, without compromising the core.
+Here's the simplest way to create routes:
 
-When a handler is passed instead of a Gateway/WebsocketGateway, it will be automatically mapped to the corresponding wrapper and added to the routes.
+```python
+from ravyn import Ravyn, get, post
 
-### Gateway and application
+app = Ravyn()
 
-In simple terms, a Gateway is not a direct route but instead is a "wrapper" of a [handler](./handlers.md)
-and maps that same handler with the application routing system.
+@app.get("/users")
+def list_users() -> dict:
+    return {"users": ["Alice", "Bob"]}
 
-This allows overwriting options of the specific handler route.
-If not required, you can just pass the handler, it is automatically wrapped in a plain Gateway.
-
-#### Parameters
-
-All the parameters and defaults are available in the [Gateway Reference](../references/routing/gateway.md).
-
-=== "In a nutshell"
-
-    ```python hl_lines="9"
-    {!> ../../../docs_src/routing/routes/gateway_nutshell.py!}
-    ```
-
-## WebSocketGateway
-
-Same principle as [Gateway](#gateway) with one particularity. Due to the nature of Lilya and websockets we
-decided not to interfere (for now) with what already works and therefore the only supported websockets are `async`.
-
-This allows overwriting options of the specific WebsocketHandler route.
-If not required, you can just pass the handler, it is automatically wrapped in a plain WebSocketGateway.
-
-### WebSocketGateway and application
-
-In simple terms, a WebSocketGateway is not a direct route but instead is a "wrapper" of a
-[websocket handler](./handlers.md) and maps that same handler with the application routing system.
-
-#### Parameters
-
-All the parameters and defaults are available in the [WebSocketGateway Reference](../references/routing/websocketgateway.md).
-
-=== "In a nutshell"
-
-    ```python hl_lines="15"
-    {!> ../../../docs_src/routing/routes/websocket_nutshell.py!}
-    ```
-
-## Include
-
-Includes are unique to Ravyn, very similar to the `Include` of Lilya but more powerful and with more control
-and feature and allows:
-
-1. Scalability without issues (thanks to Lilya).
-2. Clean routing design.
-3. Separation of concerns.
-4. Separation of routes.
-5. Reduction of the level of imports needed through files.
-6. Less human lead bugs.
-
-!!! Warning
-    Includes **DO NOT** take path parameters. E.g.: `Include('/include/{id:int}, routes=[...])`.
-
-### Include and application
-
-This is a very special object that allows the import of any routes from anywhere in the application.
-`Include` accepts the import via `namespace` or via `routes` list but not both.
-
-When using a `namespace`, the `Include` will look for the default `route_patterns` list in the imported
-namespace (object) unless a different `pattern` is specified.
-
-The patten only works if the imports are done via `namespace` and not via `routes` object.
-
-#### Parameters
-
-All the parameters and defaults are available in the [Include Reference](../references/routing/include.md).
-
-=== "Importing using namespace"
-
-    ```python title='myapp/urls.py' hl_lines="3"
-    {!> ../../../docs_src/routing/routes/include/with_namespace.py!}
-    ```
-
-=== "Importing using routes list"
-
-    ```python title='src/myapp/urls.py' hl_lines="5"
-    {!> ../../../docs_src/routing/routes/include/routes_list.py!}
-    ```
-
-#### Using a different pattern
-
-```python title="src/myapp/accounts/controllers.py"
-{!> ../../../docs_src/routing/routes/include/controllers.py!}
+@app.post("/users")
+def create_user(name: str) -> dict:
+    return {"created": name}
 ```
 
-```python title="src/myapp/accounts/urls.py" hl_lines="5"
-{!> ../../../docs_src/routing/routes/include/different_pattern.py!}
+That's it! Visit `/users` to see your route in action.
+
+---
+
+## Gateway: The Route Wrapper
+
+A `Gateway` wraps a handler function and maps it to a URL path. It's more powerful than simple decorators because it allows you to organize routes separately from handlers.
+
+### Basic Gateway
+
+```python
+from ravyn import Ravyn, Gateway, get
+
+@get()
+def welcome() -> dict:
+    return {"message": "Welcome!"}
+
+app = Ravyn(
+    routes=[
+        Gateway("/", handler=welcome)
+    ]
+)
 ```
 
-=== "Importing using namespace"
+### Gateway with Path Parameters
 
-    ```python title='src/myapp/urls.py' hl_lines="3"
-    {!> ../../../docs_src/routing/routes/include/namespace.py!}
-    ```
+```python
+from ravyn import Ravyn, Gateway, get
 
-#### Include and application instance
+@get()
+def get_user(user_id: int) -> dict:
+    return {"user_id": user_id, "name": "Alice"}
 
-The `Include` can be very helpful mostly when the goal is to avoid a lot of imports and massive list
-of objects to be passed into one single object. This can be particularly useful to make a clean start
-Ravyn object as well.
-
-**Example**:
-
-```python title='src/urls.py' hl_lines="3"
-{!> ../../../docs_src/routing/routes/include/app/urls.py!}
+app = Ravyn(
+    routes=[
+        Gateway("/users/{user_id:int}", handler=get_user)
+    ]
+)
 ```
 
-```python title='src/app.py' hl_lines="3"
-{!> ../../../docs_src/routing/routes/include/app/app.py!}
+!!! tip
+    If you don't provide a path to `Gateway`, it defaults to `/`. The handler's decorator can also specify a path that gets appended to the Gateway path.
+
+### Automatic Gateway Wrapping
+
+You can pass handlers directly—Ravyn automatically wraps them in a Gateway:
+
+```python
+from ravyn import Ravyn, get
+
+@get("/users")
+def list_users() -> dict:
+    return {"users": []}
+
+# These are equivalent:
+app1 = Ravyn(routes=[list_users])  # Auto-wrapped
+app2 = Ravyn(routes=[Gateway("/users", handler=list_users)])  # Explicit
 ```
+
+**Reference:** See all [Gateway parameters](../references/routing/gateway.md).
+
+---
+
+## WebSocketGateway: Real-Time Communication
+
+For WebSocket connections, use `WebSocketGateway`. WebSocket handlers must be `async`.
+
+```python
+from ravyn import Ravyn, WebSocketGateway, websocket, Websocket
+
+@websocket()
+async def chat_socket(socket: Websocket) -> None:
+    await socket.accept()
+    message = await socket.receive_json()
+    await socket.send_json({"echo": message})
+    await socket.close()
+
+app = Ravyn(
+    routes=[
+        WebSocketGateway("/chat", handler=chat_socket)
+    ]
+)
+```
+
+**Reference:** See all [WebSocketGateway parameters](../references/routing/websocketgateway.md).
+
+---
+
+## Include: Organize Routes at Scale
+
+`Include` is Ravyn's secret weapon for organizing large applications. It lets you split routes across multiple files and import them cleanly.
+
+!!! warning
+    `Include` **does NOT** support path parameters. Don't use `Include('/api/{id:int}', ...)`.
+
+### Why Use Include?
+
+1. **Scalability** - Manage hundreds of routes without chaos
+2. **Clean Design** - Separate concerns by feature/module
+3. **Reduced Imports** - Import entire route modules at once
+4. **Fewer Bugs** - Less manual route registration
+
+### Include with Namespace
+
+The most common pattern—import routes from a module:
+
+```python
+# accounts/urls.py
+from ravyn import Gateway
+from .controllers import list_accounts, create_account
+
+route_patterns = [
+    Gateway("/", handler=list_accounts),
+    Gateway("/create", handler=create_account),
+]
+```
+
+```python
+# app.py
+from ravyn import Ravyn, Include
+
+app = Ravyn(
+    routes=[
+        Include("/accounts", namespace="myapp.accounts.urls")
+    ]
+)
+```
+
+This creates:
+
+- `GET /accounts/` → list_accounts
+- `POST /accounts/create` → create_account
+
+!!! tip
+    By default, `Include` looks for a `route_patterns` list in the namespace. You can change this with the `pattern` parameter.
+
+### Include with Routes List
+
+Pass routes directly instead of using a namespace:
+
+```python
+from ravyn import Ravyn, Include, Gateway
+from myapp.accounts.controllers import list_accounts
+
+app = Ravyn(
+    routes=[
+        Include("/accounts", routes=[
+            Gateway("/", handler=list_accounts)
+        ])
+    ]
+)
+```
+
+### Custom Pattern Name
+
+Use a different variable name instead of `route_patterns`:
+
+```python
+# accounts/urls.py
+my_custom_routes = [  # Not 'route_patterns'
+    Gateway("/", handler=list_accounts),
+]
+```
+
+```python
+# app.py
+app = Ravyn(
+    routes=[
+        Include("/accounts", namespace="myapp.accounts.urls", pattern="my_custom_routes")
+    ]
+)
+```
+
+**Reference:** See all [Include parameters](../references/routing/include.md).
+
+---
 
 ## Nested Routes
 
-When complexity increses and the level of routes increases as well, `Include` allows nested routes in a clean fashion.
+`Include` supports nesting for complex applications:
 
-=== "Simple Nested"
+### Simple Nesting
 
-    ```python hl_lines="9"
-    {!> ../../../docs_src/routing/routes/include/nested/simple.py!}
-    ```
+```python
+from ravyn import Ravyn, Include
 
-=== "Complex Nested Routes"
+app = Ravyn(
+    routes=[
+        Include("/api", routes=[
+            Include("/v1", namespace="myapp.api.v1.urls"),
+            Include("/v2", namespace="myapp.api.v2.urls"),
+        ])
+    ]
+)
+```
 
-    ```python hl_lines="10-41"
-    {!> ../../../docs_src/routing/routes/include/nested/complex.py!}
-    ```
+This creates:
 
-`Include` supports as many nested routes with different paths and Gateways, WebSocketGateways and Includes as you
-desire to have. Once the application starts, the routes are assembled and it will not impact the performance, thanks
-to Lilya.
+- `/api/v1/...` routes
+- `/api/v2/...` routes
 
-Nested routes also allows all the functionalities on each level, from middleware, permissions and exception handlers
-to dependencies.
+### Complex Nesting with Features
 
-### Application routes
+Each level can have its own middleware, permissions, dependencies, and exception handlers:
+
+```python
+from ravyn import Ravyn, Include, Gateway
+from lilya.middleware import DefineMiddleware
+from myapp.middleware import LoggingMiddleware, AuthMiddleware
+
+app = Ravyn(
+    routes=[
+        Include("/api", 
+            middleware=[DefineMiddleware(LoggingMiddleware)],
+            routes=[
+                Include("/v1",
+                    middleware=[DefineMiddleware(AuthMiddleware)],
+                    namespace="myapp.api.v1.urls"
+                )
+            ]
+        )
+    ]
+)
+```
+
+Middleware executes in order: `LoggingMiddleware` → `AuthMiddleware` → handler.
+
+---
+
+## Path Parameters
+
+Capture dynamic values from URLs using path parameters.
+
+### Basic Path Parameters
+
+```python
+from ravyn import Gateway, get
+
+@get()
+def get_customer(customer_id: str) -> dict:
+    return {"customer_id": customer_id}
+
+Gateway("/customers/{customer_id}", handler=get_customer)
+```
+
+### Type Converters
+
+Ravyn supports these built-in converters:
+
+| Converter | Python Type | Example |
+|-----------|-------------|---------|
+| `str` | `str` (default) | `/users/{name}` |
+| `int` | `int` | `/users/{id:int}` |
+| `float` | `float` | `/prices/{amount:float}` |
+| `uuid` | `uuid.UUID` | `/items/{item_id:uuid}` |
+| `path` | `str` (with `/`) | `/files/{filepath:path}` |
+
+```python
+from ravyn import Gateway, get
+
+@get()
+def get_user(user_id: int) -> dict:  # Receives int, not str
+    return {"user_id": user_id}
+
+@get()
+def get_file(filepath: str) -> dict:  # Can include slashes
+    return {"filepath": filepath}
+
+app = Ravyn(routes=[
+    Gateway("/users/{user_id:int}", handler=get_user),
+    Gateway("/files/{filepath:path}", handler=get_file),
+])
+```
+
+### Custom Converters
+
+Create your own path converters:
+
+```python
+import datetime
+from lilya.routing.converters import Converter, register_converter
+
+class DateTimeConverter(Converter):
+    regex = r"\d{4}-\d{2}-\d{2}"
+    
+    def convert(self, value: str) -> datetime.datetime:
+        return datetime.datetime.strptime(value, "%Y-%m-%d")
+    
+    def to_string(self, value: datetime.datetime) -> str:
+        return value.strftime("%Y-%m-%d")
+
+# Register it
+register_converter("datetime", DateTimeConverter)
+
+# Use it
+@get()
+def sales_report(date: datetime.datetime) -> dict:
+    return {"date": date.isoformat()}
+
+Gateway("/sales/{date:datetime}", handler=sales_report)
+```
+
+> [!INFO]
+> Path parameters are also available in `request.path_params` dictionary.
+
+---
+
+## Route Priority
+
+Routes are matched in the order they're defined. **More specific routes must come first.**
+
+### Correct Order
+
+```python
+from ravyn import Ravyn, Gateway, get
+
+@get()
+def special_user() -> dict:
+    return {"type": "special"}
+
+@get()
+def get_user(user_id: int) -> dict:
+    return {"user_id": user_id}
+
+# Correct - specific route first
+app = Ravyn(routes=[
+    Gateway("/users/special", handler=special_user),  # Matches first
+    Gateway("/users/{user_id:int}", handler=get_user),  # Matches after
+])
+```
+
+### Incorrect Order
+
+```python
+# Wrong - generic route first
+app = Ravyn(routes=[
+    Gateway("/users/{user_id:int}", handler=get_user),  # Matches everything!
+    Gateway("/users/special", handler=special_user),  # Never reached
+])
+```
 
 !!! warning
-    Be very careful when using the `Include` directly in the Ravyn(routes[]), importing without a `path` may incur
-    in some routes not being properly mapped.
+    Ravyn does some automatic sorting (routes with only `/` path go last), but you should still order routes from most specific to least specific.
 
-**Only applied to the application routes**:
+---
 
-If you decide to do this:
+## Adding Features to Routes
 
-```python hl_lines="5 6"
-{!> ../../../docs_src/routing/routes/careful/example1.py!}
-```
+All route objects (Gateway, WebSocketGateway, Include) support middleware, permissions, dependencies, and exception handlers.
 
-**Be careful!**
-
-What is actually happening?
-
-1. Importing the `src.urls` without path, it will default to `/`.
-2. Importing the `accounts.v1.urls` without path, it will default to `/`.
-
-Because `accounts.v1.urls` was the last being imported without a path and matching the same path `/` as `src.urls`,
-internally the system by the time of loading up the routes, it will **only** register the `src.urls` ignoring
-completely the `accounts.v1.urls`.
-
-**One possible solution**:
-
-```python hl_lines="5 6"
-{!> ../../../docs_src/routing/routes/solution1.py !}
-```
-
-The same is applied to the nested routes [nested routes](#application-routes).
-
-Example:
-
-```python hl_lines="5-12"
-{!> ../../../docs_src/routing/routes/solution2.py !}
-```
-
-Another Example:
-
-```python hl_lines="18-33"
-{!> ../../../docs_src/routing/routes/solution3.py !}
-```
-
-The path is `/` for both `src.urls` and `accounts.v1.urls` and unique with their prefixes.
-
-!!! Info
-    If you are wondering why `Flask` in the examples then the answer is simple. **Ravyn supports the integration with
-    other wsgi frameworks but more details can be [found here](../wsgi.md)**.
-
-!!! Tip
-    If you encounter a scenario where you need to have the same prefix for many paths (as per examples),
-    simply create a [nested route](#nested-routes) and that's it.
-
-!!! Check
-    Remember, the route paths are registered only once and there is no "override". First in, first registered.
-    This is feature came from Lilya and there is a reason why it is like this and we decided not to break it since
-    it was designed to be hierarchical, from the top to bottom.
-
-## Routes priority
-
-The [application routes](#application-routes) in simple terms are simply prioritised. Since **Ravyn** uses
-Lilya under the hood that also means that the incoming paths are matched agains each [Gateway](#gateway),
-[WebSocketGateway](#websocketgateway) and [Include](#include) in order.
-
-In cases where more than one, let's say Gateway could match an incoming path, you should ensure that more specifc
-routes are listed before general cases.
-
-Example:
+### Middleware
 
 ```python
-{!> ../../../docs_src/routing/routes/routes_priority.py !}
+from ravyn import Ravyn, Include, Gateway, get
+from lilya.middleware import DefineMiddleware
+from myapp.middleware import LoggingMiddleware, AuthMiddleware
+
+@get()
+def handler() -> dict:
+    return {"message": "success"}
+
+app = Ravyn(
+    routes=[
+        Include("/api",
+            middleware=[DefineMiddleware(LoggingMiddleware)],
+            routes=[
+                Gateway("/test", 
+                    handler=handler,
+                    middleware=[DefineMiddleware(AuthMiddleware)]
+                )
+            ]
+        )
+    ]
+)
 ```
 
-!!! warning
-    The way the routes are assembled is very important and you always need to pay attention. **Ravyn** in a
-    very high level does some sorting on the base routes of the application making sure that the routes where the **only
-    path is `/`**, are the last ones being evaluated but this might be updated in the future and it does not
-    stop you from following the [routes priority](#routes-priority) in any way from the beginning.
+Execution order: App middleware → `LoggingMiddleware` → `AuthMiddleware` → handler.
 
-## Path parameters
+Learn more in [Middleware](../middleware/index.md).
 
-Paths can use templating style for path components. The path params are only applied to [Gateway](#gateway) and
-[WebSocketGateway](#websocketgateway) and **not applied** to [Include](#include).
+### Exception Handlers
 
 ```python
-@get('/example')
-async def customer(customer_id: Union[int, str]) -> None:
-    ...
+from ravyn import Ravyn, Gateway, get
+from ravyn.exceptions import NotAuthorized
 
+def handle_not_authorized(request, exc):
+    return JSONResponse({"error": "Not authorized"}, status_code=401)
 
-@get('/')
-async def floating_point(number: float) -> None:
-    ...
+@get()
+def protected() -> dict:
+    raise NotAuthorized("No access")
 
-Gateway('/customers/{customer_id}', handler=customer)
+app = Ravyn(
+    routes=[
+        Gateway("/protected", 
+            handler=protected,
+            exception_handlers={NotAuthorized: handle_not_authorized}
+        )
+    ]
+)
 ```
 
-By default this will capture characters up to the end of the path of the next '/' and also are joint to the path
-of a handler. In the example above, it will become `/customers/{customer_id}/example`.
+Learn more in [Exception Handlers](../exception-handlers.md).
 
-Transformers can be used to modify what is being captured. The current available transformers are the same ones used
-by Lilya as well.
-
-* `str` returns a string, and is the default.
-* `int` returns a Python integer.
-* `float` returns a Python float.
-* `uuid` returns a Python `uuid.UUID` instance.
-* `path` returns the rest of the path, including any additional `/` characters.
-
-As per standard, the transformers are used by prefixing them with a colon:
+### Dependencies
 
 ```python
-Gateway('/customers/{customer_id:int}', handler=customer)
-Gateway('/floating-point/{number:float}', handler=floating_point)
-Gateway('/uploaded/{rest_of_path:path}', handler=uploaded)
+from ravyn import Ravyn, Gateway, Inject, Injects, get
+
+def get_database():
+    return {"db": "connected"}
+
+@get()
+def users(db: dict = Injects()) -> dict:
+    return {"users": [], "db": db}
+
+app = Ravyn(
+    routes=[
+        Gateway("/users", 
+            handler=users,
+            dependencies={"db": Inject(get_database)}
+        )
+    ]
+)
 ```
 
-### Custom transformers
+Learn more in [Dependencies](../dependencies.md).
 
-If a need for a different transformer that is not defined or available, you can also create your own. Using the same
-example as Lilya since it works with **Ravyn**.
+### Permissions
 
 ```python
-{!> ../../../docs_src/routing/routes/converter_example.py !}
+from ravyn import Ravyn, Gateway, get
+from ravyn.permissions import IsAuthenticated
+
+@get(permissions=[IsAuthenticated])
+def protected() -> dict:
+    return {"message": "You're authenticated!"}
+
+app = Ravyn(
+    routes=[
+        Gateway("/protected", handler=protected)
+    ]
+)
 ```
 
-With the custom transformer created you can now use it.
+Learn more in [Permissions](../permissions/index.md).
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Include Without Path Causes Route Conflicts
+
+**Problem:** Multiple `Include` statements without paths override each other.
 
 ```python
-Gateway('/sells/{date:datetime}', handler=sell)
+# Wrong - both default to '/'
+app = Ravyn(routes=[
+    Include(namespace="myapp.urls"),  # Path defaults to '/'
+    Include(namespace="accounts.urls"),  # Also defaults to '/'
+    # Only one will be registered!
+])
 ```
 
-!!! Info
-    The request parameters are available also in the request, via `request.path_params` dictionary.
+**Solution:** Always specify paths for `Include`:
 
-## Middleware, exception Handlers, dependencies and permissions
-
-### Examples
-
-The following examples are applied to [Gateway](#gateway), [WebSocketGateway](#websocketgateway)
-and [Include](#include).
-
-We will be using Gateway for it can be replaced by any of the above as it is common among them.
-
-#### Middleware
-
-As specified before, the [middleware](../middleware/middleware.md) of a Gateway are read from top down,
-from the parent to the very handler and the same is applied to [exception handlers](../exception-handlers.md),
-[dependencies](../dependencies.md) and [permissions](../permissions/index.md).
-
-```python hl_lines="23 29-30"
-{!> ../../../docs_src/routing/routes/middleware.py !}
+```python
+# Correct
+app = Ravyn(routes=[
+    Include("/api", namespace="myapp.urls"),
+    Include("/accounts", namespace="accounts.urls"),
+])
 ```
 
-The above example illustrates the various levels where a middleware can be implemented and because it follows an
-parent order, the order is:
+### Pitfall 2: Generic Routes Before Specific Routes
 
-1. Default application built-in middleware.
-2. `BaseRequestLoggingMiddleware`.
-3. `ExampleMiddleware`.
-4. `RequestLoggingMiddlewareProtocol`.
+**Problem:** Generic route matches everything, specific route never reached.
 
-More than one middleware can be added to each list.
-
-#### Exception Handlers
-
-```python hl_lines="19 28-30 33"
-{!> ../../../docs_src/routing/routes/exception_handlers.py !}
+```python
+# Wrong
+app = Ravyn(routes=[
+    Gateway("/users/{id:int}", handler=get_user),  # Catches /users/me
+    Gateway("/users/me", handler=current_user),  # Never reached!
+])
 ```
 
-The above example illustrates the various levels where the exception handlers can be implemented and follows a
-parent order where the order is:
+**Solution:** Put specific routes first:
 
-1. Default application built-in exception handlers.
-2. `RavynAPIException : http_ravyn_handler`.
-3. `InternalServerError : http_internal_server_error_handler`.
-4. `NotAuthorized: http_not_authorized_handler`.
-
-More than one exception handler can be added to each mapping.
-
-#### Dependencies
-
-```python hl_lines="16 22 23"
-{!> ../../../docs_src/routing/routes/dependencies.py !}
+```python
+# Correct
+app = Ravyn(routes=[
+    Gateway("/users/me", handler=current_user),  # Checked first
+    Gateway("/users/{id:int}", handler=get_user),  # Checked second
+])
 ```
 
-The above example illustrates the various levels where the dependencies can be implemented and follows an
-parent order where the order is:
+### Pitfall 3: Using Path Parameters in Include
 
-1. `first : first_dependency`.
-2. `second : second_dependency`.
-3. `third: third_dependency`.
+**Problem:** `Include` doesn't support path parameters.
 
-More than one dependency can be added to each mapping.
-
-#### Permissions
-
-Permissions are a must in **every** application. It is very hard to control flows of APIs only with
-dependency injection as that can be very hard to maintain in the future whereas with a permission based
-system, that can be done in the cleanest way possible. More on [permissions](../permissions/index.md) and how
-to use them.
-
-```python hl_lines="14 19 33 35"
-{!> ../../../docs_src/routing/routes/permissions.py !}
+```python
+# Wrong
+app = Ravyn(routes=[
+    Include("/users/{user_id:int}", namespace="myapp.users.urls")
+])
 ```
 
-The above example illustrates the various levels where the permissions can be implemented and follows an
-parent order where the order is:
+**Solution:** Use path parameters in `Gateway`, not `Include`:
 
-1. `AllowAny`- From the application level.
-2. `DenyAll`- From the Gateway.
-3. `AllowAny`, `IsAdmin` - From the handlers.
+```python
+# Correct
+# myapp/users/urls.py
+route_patterns = [
+    Gateway("/{user_id:int}/profile", handler=get_profile),
+    Gateway("/{user_id:int}/settings", handler=get_settings),
+]
 
-More than one permission can be added to each list.
+# app.py
+app = Ravyn(routes=[
+    Include("/users", namespace="myapp.users.urls")
+])
+# Creates: /users/{user_id:int}/profile, /users/{user_id:int}/settings
+```
+
+### Pitfall 4: Forgetting Async for WebSockets
+
+**Problem:** WebSocket handler is not async.
+
+```python
+# Wrong
+@websocket()
+def chat(socket: Websocket):  # Missing 'async'
+    await socket.accept()  # SyntaxError!
+```
+
+**Solution:** WebSocket handlers must be async:
+
+```python
+# Correct
+@websocket()
+async def chat(socket: Websocket):  # Added 'async'
+    await socket.accept()
+```
+
+---
+
+## Route Organization Patterns
+
+### Pattern 1: Feature-Based (Recommended)
+
+```
+myapp/
+├── app.py
+├── urls.py
+├── accounts/
+│   ├── controllers.py
+│   └── urls.py
+├── products/
+│   ├── controllers.py
+│   └── urls.py
+└── orders/
+    ├── controllers.py
+    └── urls.py
+```
+
+### Pattern 2: API Versioning
+
+```
+myapp/
+├── app.py
+└── api/
+    ├── v1/
+    │   ├── urls.py
+    │   └── endpoints/
+    └── v2/
+        ├── urls.py
+        └── endpoints/
+```
+
+```python
+# app.py
+app = Ravyn(routes=[
+    Include("/api/v1", namespace="myapp.api.v1.urls"),
+    Include("/api/v2", namespace="myapp.api.v2.urls"),
+])
+```
+
+---
+
+## Next Steps
+
+Now that you understand routing, explore:
+
+- [Handlers](./handlers.md) - Different handler types and patterns
+- [Dependencies](../dependencies.md) - Inject dependencies into routes
+- [Middleware](../middleware/index.md) - Add request/response processing
+- [Permissions](../permissions/index.md) - Secure your routes
+- [Application Levels](../application/levels.md) - Understand the hierarchy

@@ -1,173 +1,471 @@
 # Webhooks
 
-OpenAPI Webhooks are those cases where you want to tell your API users that your application
-could/should/would call **their** own application, for example, sending a request with specific
-bits of data, usually to **notify** them of some type of event.
+Create webhook endpoints to receive and process events from external services.
 
-This also means that instead of your users sending requests to your APIs, it is your application
-**sendind requests** to their application.
+## What You'll Learn
 
-This process is called **webhook**.
+- What webhooks are
+- Creating webhook endpoints
+- Validating webhook signatures
+- Best practices for webhooks
 
-## Ravyn webhooks
-
-Ravyn provides a way of declaring these webhooks in the OpenAPI specification. It is very, very
-similar to the way the [Gateway](routes.md#gateway) is declared but **dedicated to webhooks**.
-
-The process usually is that you define in your code, as normal, what is the message that you will
-send, in other words, **the body of the request**.
-
-You also define in some way at which moments your app will send those requests or events.
-
-Your users on the other hand, define some way (web dashboard, for instance) the URL where your
-application should send those requests.
-
-The way the logic how to register the URLs for the webhooks and the code to performs the said
-actions is entirely up to you.
-
-## Documenting Ravyn webhooks with OpenAPI
-
-As mentioned before, the way of doing it is very similar to the way you declare
-[Gateway](routes.md#gateway) but for this purpose, webhooks have a **special dedicated** object or
-objects to do make it happen, the [WebhookGateway](#webhookgateway).
-
-Also, the webhooks **are not *hooked* into the application routing system**, instead, they are
-placed in the `webhooks` list.
-
-```python hl_lines="3"
-from ravyn import Ravyn
-
-app = Ravyn(webhooks=[...])
-```
-
-### WebhookGateway
-
-As the name indicated, the `WebhookGateway` is the main object where you declare the hooks for
-the OpenAPI specification and **unlike the Gateway**, it does not declare a `path` (example, `/event`),
-instead, it only needs to receive the **name** of the action.
-
-Like the Gateway, the **WebhookGateway** also expects a [handler](#handlers) but
-**not the same handler as you usually use for the routes**, a special **webhook handler**.
-
-#### How to import it
-
-You can import them directly:
+## Quick Start
 
 ```python
-from ravyn import WebhookGateway
+from ravyn import Ravyn, post
+
+@post("/webhooks/stripe")
+async def stripe_webhook(data: dict) -> dict:
+    event_type = data.get("type")
+    
+    if event_type == "payment.succeeded":
+        # Process payment
+        pass
+    
+    return {"received": True}
+
+app = Ravyn(routes=[Gateway(handler=stripe_webhook)])
 ```
 
-Or you can use the full path.
+---
+
+## What are Webhooks?
+
+**Webhooks** are HTTP callbacks that external services use to notify your application about events. Instead of polling for updates, services push data to your endpoint.
+
+### Common Use Cases
+
+- **Payment Processing** - Stripe, PayPal notifications
+
+- **Git Events** - GitHub, GitLab push events
+
+- **Communication** - Slack, Discord messages
+
+- **CRM Updates** - Salesforce, HubSpot changes
+
+- **Monitoring** - Alert notifications
+
+---
+
+## Creating Webhook Endpoints
+
+### Basic Webhook
 
 ```python
-from ravyn.routing.gateways import WebhookGateway
+from ravyn import post
+
+@post("/webhooks/github")
+async def github_webhook(data: dict) -> dict:
+    event = data.get("action")
+    repository = data.get("repository", {}).get("name")
+    
+    print(f"GitHub event: {event} on {repository}")
+    
+    return {"status": "received"}
 ```
 
-#### Parameters
-
-All the parameters and defaults are available in the [WebhookGateway Reference](../references/routing/websocketgateway.md).
-
-### Handlers
-
-The handlers for the **webhooks** are pretty much similar to the normal handlers used for routing
-but **dedicated** only to the **WebhookGateway**. The available handlers are:
-
-* **whget** - For the `GET`.
-* **whpost** - For the `POST`.
-* **whput** - For the `PUT`.
-* **whpatch** - For the `PATCH`.
-* **whdelete** - For the `DELETE`.
-* **whhead** - For the `HEAD`.
-* **whoptions** - For the `OPTION`.
-* **whtrace** - For the `TRACE`.
-* **whroute** - Used to specificy for which `http verbs` is available. This handler has the special
-`methods` attribute. E,g.:
-
-    ```python
-    from ravyn import whroute
-
-    @whroute(methods=["GET", "POST"])
-    ...
-    ```
-
-As you can already see, the handlers are very similar to the [routing handler](./handlers.md) but
-dedicated to this purpose and **all of them start with `wh`**.
-
-The `wh` at the beginning of each handler means **W**eb**H**ook.
-
-#### How to import them
-
-You can import them directly:
+### With Request Headers
 
 ```python
-from ravyn import (
-    whdelete,
-    whhead,
-    whget,
-    whoptions,
-    whpatch,
-    whpost,
-    whput,
-    whroute,
-    whtrace
+from ravyn import post, Request
+
+@post("/webhooks/stripe")
+async def stripe_webhook(request: Request) -> dict:
+    # Get signature from headers
+    signature = request.headers.get("stripe-signature")
+    
+    # Get raw body
+    body = await request.body()
+    
+    # Verify signature
+    if not verify_stripe_signature(body, signature):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+    
+    # Process webhook
+    data = await request.json()
+    return {"received": True}
+```
+
+---
+
+## Webhook Signature Verification
+
+### Stripe Example
+
+```python
+import hmac
+import hashlib
+from ravyn import post, Request, HTTPException
+
+STRIPE_WEBHOOK_SECRET = "whsec_..."
+
+@post("/webhooks/stripe")
+async def stripe_webhook(request: Request) -> dict:
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    
+    try:
+        # Verify signature
+        expected_sig = hmac.new(
+            STRIPE_WEBHOOK_SECRET.encode(),
+            payload,
+            hashlib.sha256
+        ).hexdigest()
+        
+        if not hmac.compare_digest(sig_header, expected_sig):
+            raise HTTPException(status_code=401, detail="Invalid signature")
+        
+        # Process event
+        event = await request.json()
+        handle_stripe_event(event)
+        
+        return {"status": "success"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+```
+
+### GitHub Example
+
+```python
+import hmac
+import hashlib
+from ravyn import post, Request, HTTPException
+
+GITHUB_WEBHOOK_SECRET = "your-secret"
+
+@post("/webhooks/github")
+async def github_webhook(request: Request) -> dict:
+    payload = await request.body()
+    signature = request.headers.get("x-hub-signature-256")
+    
+    # Verify signature
+    expected = "sha256=" + hmac.new(
+        GITHUB_WEBHOOK_SECRET.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    
+    if not hmac.compare_digest(signature, expected):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+    
+    # Process event
+    event = await request.json()
+    event_type = request.headers.get("x-github-event")
+    
+    if event_type == "push":
+        handle_push_event(event)
+    
+    return {"status": "received"}
+```
+
+---
+
+## Event Handling Patterns
+
+### Pattern 1: Event Router
+
+```python
+from ravyn import post, Request
+
+@post("/webhooks/stripe")
+async def stripe_webhook(request: Request) -> dict:
+    event = await request.json()
+    event_type = event.get("type")
+    
+    handlers = {
+        "payment_intent.succeeded": handle_payment_success,
+        "payment_intent.failed": handle_payment_failure,
+        "customer.created": handle_customer_created,
+    }
+    
+    handler = handlers.get(event_type)
+    if handler:
+        await handler(event)
+    
+    return {"received": True}
+
+async def handle_payment_success(event: dict):
+    payment_id = event["data"]["object"]["id"]
+    # Process successful payment
+    
+async def handle_payment_failure(event: dict):
+    # Handle failed payment
+    pass
+```
+
+### Pattern 2: Background Processing
+
+```python
+from ravyn import post, BackgroundTask
+
+@post("/webhooks/github")
+async def github_webhook(data: dict, background_tasks: BackgroundTask) -> dict:
+    # Queue for background processing
+    background_tasks.add_task(process_github_event, data)
+    
+    # Return immediately
+    return {"status": "queued"}
+
+async def process_github_event(data: dict):
+    # Heavy processing here
+    event_type = data.get("action")
+    # ... process event
+```
+
+### Pattern 3: Database Logging
+
+```python
+from ravyn import post
+
+@post("/webhooks/stripe")
+async def stripe_webhook(data: dict) -> dict:
+    # Log webhook to database
+    await WebhookLog.create(
+        source="stripe",
+        event_type=data.get("type"),
+        payload=data,
+        received_at=datetime.utcnow()
+    )
+    
+    # Process event
+    await process_stripe_event(data)
+    
+    return {"received": True}
+```
+
+---
+
+## Security Best Practices
+
+### 1. Always Verify Signatures
+
+```python
+# Good - signature verification
+@post("/webhooks/service")
+async def webhook(request: Request) -> dict:
+    if not verify_signature(request):
+        raise HTTPException(status_code=401)
+    
+    data = await request.json()
+    return {"received": True}
+```
+
+### 2. Use HTTPS Only
+
+```python
+# Good - enforce HTTPS
+from ravyn import post, Request, HTTPException
+
+@post("/webhooks/stripe")
+async def stripe_webhook(request: Request) -> dict:
+    if request.url.scheme != "https":
+        raise HTTPException(status_code=403, detail="HTTPS required")
+    
+    # Process webhook
+    return {"received": True}
+```
+
+### 3. Rate Limiting
+
+```python
+# Good - rate limiting
+from ravyn import post
+from ravyn.middleware import RateLimitMiddleware
+
+@post(
+    "/webhooks/github",
+    middleware=[RateLimitMiddleware(max_requests=100, window=60)]
 )
+async def github_webhook(data: dict) -> dict:
+    return {"received": True}
 ```
 
-Or via full path.
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Not Returning Quickly
+
+**Problem:** Long processing blocks webhook response.
 
 ```python
-from ravyn.routing.webhooks.handlers import (
-    whdelete,
-    whhead,
-    whget,
-    whoptions,
-    whpatch,
-    whpost,
-    whput,
-    whroute,
-    whtrace
-)
+# Wrong - slow processing
+@post("/webhooks/stripe")
+async def stripe_webhook(data: dict) -> dict:
+    await process_payment(data)  # Takes 30 seconds!
+    return {"received": True}
 ```
 
-## An Ravyn application with webhooks
-
-When you create an **Ravyn** application, as mentioned before, there is a `webhooks` attribute
-that you use to define your application `webhooks`, in a similar way you define the `routes`.
-
-```python hl_lines="6 21 16 28"
-{!> ../../../docs_src/routing/webhooks/example.py !}
-```
-
-Note how the `whpost` and `post` are declared inside the `webhooks` and `routes` respectively,
-**similar but not the same** and how the `whpost` **does not require** the `/` for the path.
-
-The webhooks you define **will end up** in the **OpenAPI** schema automatically.
-
-### Using the Controller to generate webhooks
-
-Since Ravyn supports class based views, that also means you can also use them to generate
-webhooks.
+**Solution:** Use background tasks:
 
 ```python
-{!> ../../../docs_src/routing/webhooks/cbv.py !}
+# Correct - background processing
+@post("/webhooks/stripe")
+async def stripe_webhook(data: dict, background_tasks: BackgroundTask) -> dict:
+    background_tasks.add_task(process_payment, data)
+    return {"received": True}  # Returns immediately
 ```
 
-## Important
+### Pitfall 2: Missing Signature Verification
 
-Notice that with webhooks you are actually not declaring a path (like `/user`). The text you pass
-there is just a `name` or an **identifier** of the webhook (name of the event).
+**Problem:** Anyone can send fake webhooks.
 
-This happens because it is expected that your users would actually define the proper URL path where
-they want to receive the webhook in some way.
+```python
+# Wrong - no verification
+@post("/webhooks/stripe")
+async def stripe_webhook(data: dict) -> dict:
+    process_payment(data)  # Vulnerable!
+    return {"received": True}
+```
 
-## Check out the docs
+**Solution:** Always verify signatures:
 
-Let us see how it would look like in the docs if we were declaring the webhooks from the examples.
+```python
+# Correct - verified
+@post("/webhooks/stripe")
+async def stripe_webhook(request: Request) -> dict:
+    if not verify_stripe_signature(request):
+        raise HTTPException(status_code=401)
+    
+    data = await request.json()
+    return {"received": True}
+```
 
-**First example, no Class Based Views**
+### Pitfall 3: Not Handling Retries
 
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1690305100/esmerald/webhooks/first-example_szu28y.png" title="First example" />
+**Problem:** Service retries on any error.
 
-**Second example, with Class Based Views**
+```python
+# Wrong - crashes on duplicate
+@post("/webhooks/stripe")
+async def stripe_webhook(data: dict) -> dict:
+    await Payment.create(id=data["id"])  # Fails on retry!
+    return {"received": True}
+```
 
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1690305101/esmerald/webhooks/second-example_hdqsif.png" title="First example" />
+**Solution:** Make idempotent:
+
+```python
+# Correct - idempotent
+@post("/webhooks/stripe")
+async def stripe_webhook(data: dict) -> dict:
+    payment_id = data["id"]
+    
+    # Check if already processed
+    existing = await Payment.get_or_none(id=payment_id)
+    if existing:
+        return {"received": True, "duplicate": True}
+    
+    # Process new webhook
+    await Payment.create(id=payment_id)
+    return {"received": True}
+```
+
+---
+
+## Testing Webhooks
+
+### Local Testing with ngrok
+
+```bash
+# Install ngrok
+npm install -g ngrok
+
+# Start your Ravyn app
+ravyn run
+
+# Expose local server
+ngrok http 8000
+
+# Use ngrok URL in webhook settings
+# https://abc123.ngrok.io/webhooks/stripe
+```
+
+### Mock Webhooks
+
+```python
+from ravyn import RavynTestClient
+
+def test_stripe_webhook():
+    with RavynTestClient(app) as client:
+        payload = {
+            "type": "payment_intent.succeeded",
+            "data": {"object": {"id": "pi_123"}}
+        }
+        
+        response = client.post("/webhooks/stripe", json=payload)
+        assert response.status_code == 200
+        assert response.json() == {"received": True}
+```
+
+---
+
+## Complete Example
+
+```python
+from ravyn import Ravyn, post, Request, HTTPException, BackgroundTask
+import hmac
+import hashlib
+
+WEBHOOK_SECRET = "your-secret-key"
+
+def verify_signature(request: Request, secret: str) -> bool:
+    """Verify webhook signature."""
+    signature = request.headers.get("x-webhook-signature")
+    if not signature:
+        return False
+    
+    payload = request.body()
+    expected = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(signature, expected)
+
+@post("/webhooks/payment")
+async def payment_webhook(
+    request: Request,
+    background_tasks: BackgroundTask
+) -> dict:
+    # Verify signature
+    if not verify_signature(request, WEBHOOK_SECRET):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+    
+    # Parse event
+    event = await request.json()
+    event_type = event.get("type")
+    
+    # Log webhook
+    await WebhookLog.create(
+        event_type=event_type,
+        payload=event
+    )
+    
+    # Process in background
+    background_tasks.add_task(process_payment_event, event)
+    
+    return {"status": "received", "event_type": event_type}
+
+async def process_payment_event(event: dict):
+    """Process payment event in background."""
+    event_type = event.get("type")
+    
+    if event_type == "payment.succeeded":
+        await handle_payment_success(event)
+    elif event_type == "payment.failed":
+        await handle_payment_failure(event)
+
+app = Ravyn(routes=[Gateway(handler=payment_webhook)])
+```
+
+---
+
+## Next Steps
+
+- [Handlers](./handlers.md) - HTTP method decorators
+- [Background Tasks](../background-tasks.md) - Async task processing
+- [Security](../security/index.md) - Authentication & authorization
+- [Testing](../testclient.md) - Test your webhooks
