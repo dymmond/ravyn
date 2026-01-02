@@ -1,14 +1,39 @@
 # Ravyn Permissions
 
-Authentication and authorization are a must in every application. Managing those via dependencies is extremely possible
-and also widely used but with **Ravyn** you have a clear separation of permissions although still allowing
-[inject](../dependencies.md) to happen as well.
+Ravyn's native permission system provides a clean, Django-inspired way to control access to your API endpoints. Define custom permissions, use built-in permissions, and apply them at any application level for fine-grained access control.
 
-Inspired by the same author of Django Rest Framework, Ravyn permissions are as simple as you want them to be and as complex
-as you design. For all tastes.
+## What You'll Learn
 
-!!! Note
-    This permission system is not the same as the [Lilya permission system](https://lilya.dev/permissions).
+- Creating custom permission classes
+- Using built-in permissions (IsAuthenticated, IsAdminUser, etc.)
+- Applying permissions at different levels
+- Async permission support
+- Permission inheritance and cascading
+- Integrating with Edgy user models
+
+## Quick Start
+
+```python
+from ravyn import Ravyn, get
+from ravyn.permissions import BasePermission, IsAuthenticated
+
+class IsOwner(BasePermission):
+    async def has_permission(self, request, controller):
+        # Custom logic to check if user owns the resource
+        user_id = request.path_params.get("user_id")
+        return request.user.id == user_id
+
+@get("/users/{user_id}/profile", permissions=[IsAuthenticated, IsOwner])
+def get_profile(user_id: int) -> dict:
+    return {"user_id": user_id, "data": "..."}
+
+app = Ravyn(
+    routes=[...],
+    permissions=[IsAuthenticated]  # Apply globally
+)
+```
+
+---
 
 ## BasePermission and custom permissions
 

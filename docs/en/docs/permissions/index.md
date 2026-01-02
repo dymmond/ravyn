@@ -1,6 +1,35 @@
 # Permissions
 
-Ravyn provides two different ways of declaring permissions: the Ravyn native system and the one provided by Lilya.
+Control who can access what in your Ravyn application. Permissions let you restrict endpoints based on user roles, authentication status, or custom logic. Perfect for building secure APIs with fine-grained access control.
+
+## What You'll Learn
+
+- What permissions are and when to use them
+- Authentication vs Authorization
+- Using Ravyn's native permission system
+- Using Lilya's permission protocol
+- Applying permissions at different levels
+- Creating custom permission classes
+
+## Quick Start
+
+```python
+from ravyn import Ravyn, get
+from ravyn.permissions import IsAuthenticated
+
+@get("/profile", permissions=[IsAuthenticated])
+def get_profile(request) -> dict:
+    return {"user": request.user.username}
+
+app = Ravyn(
+    routes=[...],
+    permissions=[IsAuthenticated]  # Apply globally
+)
+```
+
+---
+
+## Authentication vs Authorization
 
 ## Ravyn Native System
 
@@ -8,7 +37,6 @@ The Ravyn native system allows you to define permissions directly within your ap
 
 ```python
 from ravyn.permissions import Permission
-
 
 class ViewDashboardPermission(Permission):
     def has_permission(self, request, view):  # or async has_permission
@@ -26,7 +54,6 @@ from lilya.protocols.permissions import PermissionProtocol
 from lilya.types import ASGIApp
 
 from ravyn.exceptions import NotAuthorized
-
 
 class EditProfilePermission(PermissionProtocol):
     def __init__(self, app: ASGIapp, *args: Any, **kwargs: Any):

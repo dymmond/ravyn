@@ -1,22 +1,50 @@
 # Lilya Permissions
 
-Now if you are not familiar with [Lilya Permisions](https://www.lilya.dev/permissions) now it would
-be a good time to get acquainted.
+Use Lilya's Pure ASGI permission system in your Ravyn applications. These protocol-based permissions follow the ASGI specification and can be reused across any ASGI framework for maximum portability and flexibility.
 
-Historically speaking, [Ravyn Permissions](./ravyn.md) came first and offer a different design
-and feel than the Lilya ones.
+## What You'll Learn
 
-Lilya born after Ravyn to be the core and grew to be one of the most powerful frameworks out there,
-also came with permissions but in the concept of "Pure ASGI Permission".
+- What Lilya permissions are and how they differ from Ravyn permissions
+- Using the PermissionProtocol
+- Creating Pure ASGI permissions
+- Applying permissions at different application levels
+- Integrating with Ravyn settings
+- When to use Lilya vs Ravyn permissions
 
-## Relation with Ravyn
+## Quick Start
 
-Because Ravyn is built on top of Lilya and Lilya does in fact the heavy lifting of the core, it
-would make sense to provide **also** the integration with the permissions and the reason for that
-its because Lilya Pure ASGI Permissions can be reused in Ravyn or any other ASGI framework without
-any incompatibilities since it follows the ASGI specification.
+```python
+from ravyn import Ravyn, get
+from lilya.protocols.permissions import PermissionProtocol
+from lilya.types import ASGIApp, Scope, Receive, Send
+from ravyn.exceptions import NotAuthorized
 
-Now lets get into the good stuff and see how we can use it in Ravyn.
+class AdminOnlyPermission(PermissionProtocol):
+    def __init__(self, app: ASGIApp):
+        self.app = app
+    
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        # Check if user is admin
+        if not scope.get("user", {}).get("is_admin"):
+            raise NotAuthorized("Admin access required")
+        await self.app(scope, receive, send)
+
+@get("/admin/dashboard")
+def admin_dashboard() -> dict:
+    return {"data": "Admin dashboard"}
+
+app = Ravyn(
+    routes=[...],
+    permissions=[AdminOnlyPermission]
+)
+```
+
+!!! warning "Important"
+    Do not mix Lilya permissions with Ravyn permissions. Both are independent systems and combining them can cause security issues.
+
+---
+
+## Lilya vs Ravyn Permissions
 
 ## How to use it
 
@@ -66,7 +94,6 @@ ASGI interface directly. This involves creating a chain of ASGI applications tha
 
 ```python
 from lilya.types import ASGIApp, Scope, Receive, Send
-
 
 class MyPermission:
     def __init__(self, app: ASGIApp):
