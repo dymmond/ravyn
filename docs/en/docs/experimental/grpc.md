@@ -1,7 +1,7 @@
 # gRPC Integration in Ravyn (Experimental)
 
 !!! Warning
-    **⚠️ Experimental Feature**
+    **Experimental Feature**
 
     The gRPC integration in Ravyn is currently experimental and subject to change.
     While it is stable enough for real use-cases, APIs may evolve based on community feedback.
