@@ -4,7 +4,6 @@ Since [Mongoz](https://mongoz.tarsild.io) if from the same author of Ravyn, it g
 extra motivation for its use and therefore an example in how to use the
 [JWTAuthMiddleware](./middleware.md), even if in a very simplistic way, within your Ravyn application.
 
-
 Let us build a simple integration and application where we will be creating:
 
 - [Create user document](#create-user-document) by using the provided default from Ravyn.
@@ -129,7 +128,6 @@ Come on, give it a try, create your own version and then try to access the `home
 Let us see how we could access `/` using the current setup.
 
 For this will be using `httpx` but you are free to use whatever client you prefer.
-
 
 ### Steps
 

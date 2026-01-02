@@ -13,10 +13,8 @@ Use `Inject` to register a dependency and `Injects` to consume it:
 ```python
 from ravyn import get, Inject, Injects
 
-
 def get_token():
     return "super-secret-token"
-
 
 @get("/secure", dependencies={"token": Inject(get_token)})
 def secure(token: str = Injects()) -> dict:

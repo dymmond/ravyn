@@ -215,7 +215,6 @@ and you can acess via:
 * [http://127.0.0.1/elements](http://127.0.0.1/docs/elements)
 * [http://127.0.0.1/rapidoc](http://127.0.0.1/docs/rapidoc)
 
-
 ### Documentation in production
 
 By design, the docs will be always available but majority of the applications will not have the documentation

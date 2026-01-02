@@ -1,4 +1,4 @@
-# Complex Request Data in Ravyn: Advanced Guide
+# Complex Request Data in Ravyn
 
 Ravyn allows for highly flexible handling of request data. Since release 3.4+, Ravyn supports **multiple payloads**, letting you structure data more clearly. This feature makes your request data more organized and manageable, especially when dealing with multiple entities.
 
@@ -12,17 +12,14 @@ Ravyn allows you to declare multiple payloads in a handler, enabling better orga
 from pydantic import BaseModel, EmailStr
 from ravyn import Ravyn, Gateway, post
 
-
 class User(BaseModel):
     name: str
     email: EmailStr
     hobbies: list[str]  # Pydantic model handles type validation
 
-
 @post("/create")
 async def create_user(data: User) -> None:
     pass
-
 
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
@@ -49,21 +46,17 @@ Sometimes, you might want to send data that represents different entities (like 
 from pydantic import BaseModel, EmailStr
 from ravyn import Ravyn, Gateway, post
 
-
 class User(BaseModel):
     name: str
     email: EmailStr
-
 
 class Address(BaseModel):
     street_name: str
     post_code: str
 
-
 @post("/create")
 async def create_user(user: User, address: Address) -> None:
     pass
-
 
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
@@ -98,21 +91,17 @@ from pydantic import BaseModel, EmailStr
 from typing import Union
 from ravyn import Ravyn, Gateway, post
 
-
 class User(BaseModel):
     name: str
     email: EmailStr
-
 
 class Address(BaseModel):
     street_name: str
     post_code: str
 
-
 @post("/create")
 async def create_user(user: User, address: Union[Address, None] = None) -> None:
     pass
-
 
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
@@ -149,7 +138,7 @@ In this example, the `address` is optional. If it's not provided, Ravyn will sti
 
 ---
 
-## 🔄 Using Different Encoders
+## Using Different Encoders
 
 Ravyn supports multiple encoders, such as **Pydantic** and **Msgspec**. This allows you to mix and match encoders based on your data needs.
 
@@ -161,21 +150,17 @@ from msgspec import Struct
 from typing import Union
 from ravyn import Ravyn, Gateway, post
 
-
 class User(BaseModel):
     name: str
     email: EmailStr
-
 
 class Address(Struct):
     street_name: str
     post_code: str
 
-
 @post("/create")
 async def create_user(user: User, address: Union[Address, None] = None) -> None:
     pass
-
 
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
@@ -199,7 +184,7 @@ Ravyn automatically handles the encoder types (`Pydantic` for `User` and `Msgspe
 
 ---
 
-## ⚠️ Important Note on Complex Bodies
+## Important Note on Complex Bodies
 
 Once you add an extra body (like `address`), you must declare it explicitly in your handler.
 
@@ -210,21 +195,17 @@ from pydantic import BaseModel, EmailStr
 from typing import Union
 from ravyn import Ravyn, Gateway, post
 
-
 class User(BaseModel):
     name: str
     email: EmailStr
-
 
 class Address(BaseModel):
     street_name: str
     post_code: str
 
-
 @post("/create")
 async def create_user(data: User, address: Union[Address, None] = None) -> None:
     ...
-
 
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```

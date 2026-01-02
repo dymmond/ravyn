@@ -26,13 +26,13 @@ Ravyn is a feature-rich, highly extensible ASGI web framework that provides a cl
 
 | Feature                        | Ravyn | FastAPI | Django |
 |-------------------------------|----------|---------|--------|
-| Dependency Injection (DI)     | ✅        | ⚠️       | ❌      |
-| Controllers                   | ✅        | ❌       | ✅      |
-| Interceptors                  | ✅        | ❌       | ❌      |
-| Multi-tenancy support         | ✅ (Edgy) | ❌       | ⚠️      |
-| Async/Await Native            | ✅        | ✅       | ⚠️      |
-| Background Jobs Scheduler     | ✅ (Asyncz)| ❌      | ⚠️      |
-| gRPC + HTTP Hybrid            | ✅        | ❌       | ❌      |
+| Dependency Injection (DI)     | | | |
+| Controllers                   | | | |
+| Interceptors                  | | | |
+| Multi-tenancy support         | (Edgy) | | |
+| Async/Await Native            | | | |
+| Background Jobs Scheduler     | (Asyncz)| | |
+| gRPC + HTTP Hybrid            | | | |
 
 If you are looking for structured codebases, advanced routing, and full control over your application lifecycle, Ravyn is the way to go.
 
@@ -59,11 +59,9 @@ Let's build your first minimal Ravyn application.
 ```python
 from ravyn import Ravyn, get
 
-
 @get("/")
 def home() -> dict:
     return {"message": "Hello, Ravyn!"}
-
 
 app = Ravyn(routes=[home])
 ```

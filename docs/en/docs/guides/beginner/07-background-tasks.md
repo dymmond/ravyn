@@ -10,6 +10,7 @@ after sending a response.
 Background tasks are functions that run asynchronously **after** the response is returned to the client.
 
 They're perfect for:
+
 - Sending emails
 - Writing logs
 - Triggering external webhooks
@@ -24,11 +25,9 @@ Ravyn provides a simple interface for background execution:
 ```python
 from ravyn import BackgroundTask, get
 
-
 async def notify_user(email: str):
     # Imagine this sends an email
     await some_email_function(email)
-
 
 @get("/send-notification", background=BackgroundTask(notify_user, "user@example.com"))
 def send_notification() -> dict:
@@ -46,14 +45,11 @@ You can queue multiple tasks with `BackgroundTasks`:
 ```python
 from ravyn import BackgroundTasks, post
 
-
 async def cleanup(file_path: str):
     await remove_file(file_path)
 
-
 async def log_event(event_id: int):
     await save_log(event_id)
-
 
 @post("/submit", background=BackgroundTasks(
     tasks=[
@@ -90,6 +86,7 @@ def log():
 ## What's Next?
 
 You've now learned how to:
+
 - Add and run background tasks
 - Combine multiple tasks
 - Mix sync and async behavior

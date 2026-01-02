@@ -28,7 +28,6 @@ This is what a directive is.
     principle. There is an [excelent article](https://simpleisbetterthancomplex.com/tutorial/2018/08/27/how-to-create-custom-django-management-commands.html)
     about those if you want to get familiar with.
 
-
 ### Examples
 
 Imagine you need to deploy a database that will contain all the information about specific user
@@ -375,7 +374,6 @@ The connection string should be replaced with whatever is your detail.
 
 Now it is time to create the directive `createsuperuser`. As mentioned [above](#where-should-directives-be-placed-at),
 the directive shall be inside a `directives/operations` package.
-
 
 ```python title="myproject/directives/operations/createsuperuser.py"
 {!> ../../../docs_src/directives/example/createsuperuser.py !}

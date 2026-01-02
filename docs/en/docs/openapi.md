@@ -1,280 +1,530 @@
 ---
 hide:
+
   - navigation
 ---
 
-# OpenAPI
+# OpenAPI: Interactive API Documentation
 
-Ravyn as mentioned across the documentation supports natively the automatic generation of the
-API docs in three different ways:
+Ravyn automatically generates beautiful, interactive API documentation. Test your endpoints, authenticate, and explore your API—all from your browser.
 
-* **Swagger** - Defaults to `/docs/swagger`.
-* **Redoc** - Defaults to `/docs/redoc`.
-* **Stoplight** - Defaults to `/docs/elements`.
-* **Rapidoc** - `/docs/rapidoc`.
+## What You'll Learn
 
-!!! Tip
-    See the [OpenAPIConfig](./configurations/openapi/config.md) for more details how to take
-    advantage of the defaults provided and how to change them.
+- Accessing built-in API documentation
+- Documenting your endpoints
+- Adding authentication to docs
+- Using security schemes
+- Testing APIs in the browser
 
-## The OpenAPIConfig
-
-The [OpenAPIConfig](./configurations/openapi/config.md) configuration explains in more detail
-what and how to use it.
-
-### How to use it
-
-There are many things you can do with the OpenAPI, from simple calls to [authentication](#authentication-in-documentation)
-using the docs.
-
-Let us assume we have some apis for a `user` that will handle simple CRUD that belongs to a `blog`
-project.
-
-!!! Note
-    We will not be dwelling on the technicalities of the database models but for this example
-    it was used the [Edgy](./databases/edgy/motivation.md) contrib from Ravyn as it speeds
-    up the development.
-
-The APIs look like this:
+## Quick Start
 
 ```python
-{!> ../../../docs_src/openapi/apis.py !}
+from ravyn import Ravyn, get
+from ravyn.openapi.datastructures import OpenAPIResponse
+
+@get(
+    "/users",
+    tags=["Users"],
+    summary="List all users",
+    description="Returns a list of all users in the system",
+    responses={
+        200: OpenAPIResponse(model=list[dict], description="List of users"),
+        404: OpenAPIResponse(model=dict, description="No users found")
+    }
+)
+def list_users() -> list[dict]:
+    return [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
+
+app = Ravyn()
+app.add_route(list_users)
+
+# Visit http://localhost:8000/docs/swagger to see your docs!
 ```
 
-The `daos` and `schemas` are simply placed in different files but you get the gist of it.
+---
 
-!!! Tip
-    If you are not familiar with the DAO, have a look at the [official explanation](./protocols.md#dao)
-    and how you can also use it.
+## Built-In Documentation UIs
 
-Now it is time to see how it would look like using the official documentation.
+Ravyn provides **four** interactive documentation interfaces out of the box:
 
-#### Swagger
+| UI | URL | Best For |
+|----|-----|----------|
+| **Swagger** | `/docs/swagger` | Testing & exploration |
+| **Redoc** | `/docs/redoc` | Clean, readable docs |
+| **Stoplight** | `/docs/elements` | Modern design |
+| **Rapidoc** | `/docs/rapidoc` | Customizable interface |
 
-Accessing the default `/docs/swagger`, you should be able to see something like this:
+!!! tip
+    See [OpenAPIConfig](./configurations/openapi/config.md) to customize URLs and settings.
 
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1696587523/esmerald/openapi/swagger_izvbrm.png" title="Swagger" />
+---
 
-And expanding one of the APIs:
+## Documenting Endpoints
 
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1696587617/esmerald/openapi/swagger-expand_v3wjlh.png" title="Swagger" />
-
-Including the normal responses:
-
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1696587708/esmerald/openapi/details_jin7yr.png" title="Swagger" />
-
-#### Redoc
-
-What if you prefer redoc instead? Well, you can simply access the `/docs/redoc` and you should be
-able to see something like this:
-
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1696587859/esmerald/openapi/redoc_sp7t4f.png" title="ReDoc" />
-
-#### Stoplight
-
-Ravyn also offers the Stoplight elements documentation. Accessing `/docs/elements` you should
-be able to see something like this:
-
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1696588103/esmerald/openapi/stoplight_hjasoe.png" title="Stoplight" />
-
-## Authentication in documentation
-
-Now this is where the things get interesting. There are cases where the majority of your APIs will
-be behind some sort of authentication and permission system and to access the data of those APIs
-and **test them directly in your docs is a must**.
-
-Ravyn comes with a pre-defined set of utilities that you can simply add you your APIs and enable
-the authentication via documentation.
-
-The `security` attribute is what Ravyn looks for when generating the docs for you and there
-is where you can pass the definitions needed.
-
-### Supported authorizations
-
-* `HTTPBasic` - For basic authentication.
-* `HTTPBearer` - For the `Authorization` of a `HTTPBearer` token. Example: `JWT` token authentication.
-* `HTTPDigest` - For digest.
-* `APIKeyInCookie` - For any key passed in a `cookie` with a spefific `name`.
-* `APIKeyInHeader` - For any key passed in a `header` with a spefific `name`.
-* `APIKeyInQuery` - For any key passed in a `query` with a spefific `name`.
-* `OAuth2` - For OAuth2 authentication.
-* `OpenIdConnect` - OpenIdConnect authorization.
-dasda
-How to import them:
+### Basic Documentation
 
 ```python
-from ravyn.security.api_key import APIKeyInCookie, APIKeyInHeader, APIKeyInQuery
+from ravyn import get
+
+@get(
+    "/products",
+    tags=["Products"],
+    summary="Get all products",
+    description="Returns a list of all available products"
+)
+def get_products() -> list[dict]:
+    return [{"id": 1, "name": "Product 1"}]
+```
+
+### With Response Models
+
+```python
+from ravyn import get
+from ravyn.openapi.datastructures import OpenAPIResponse
+from pydantic import BaseModel
+
+class Product(BaseModel):
+    id: int
+    name: str
+    price: float
+
+class Error(BaseModel):
+    detail: str
+
+@get(
+    "/products/{product_id}",
+    tags=["Products"],
+    summary="Get product by ID",
+    responses={
+        200: OpenAPIResponse(model=Product, description="Product found"),
+        404: OpenAPIResponse(model=Error, description="Product not found")
+    }
+)
+def get_product(product_id: int) -> Product:
+    return Product(id=product_id, name="Product 1", price=99.99)
+```
+
+### Complete Example
+
+```python
+from ravyn import get, post, put, delete
+from ravyn.openapi.datastructures import OpenAPIResponse
+from pydantic import BaseModel
+
+class UserCreate(BaseModel):
+    name: str
+    email: str
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+
+@get(
+    "/users",
+    tags=["Users"],
+    summary="List all users",
+    description="Returns a paginated list of users",
+    responses={
+        200: OpenAPIResponse(model=list[User], description="List of users")
+    }
+)
+def list_users() -> list[User]:
+    return [User(id=1, name="Alice", email="alice@example.com")]
+
+@post(
+    "/users",
+    tags=["Users"],
+    summary="Create user",
+    description="Creates a new user in the system",
+    responses={
+        201: OpenAPIResponse(model=User, description="User created"),
+        400: OpenAPIResponse(model=dict, description="Invalid data")
+    }
+)
+def create_user(data: UserCreate) -> User:
+    return User(id=1, **data.dict())
+```
+
+---
+
+## Authentication in Documentation
+
+Add authentication to your docs so you can test protected endpoints.
+
+### Supported Security Schemes
+
+| Scheme | Use Case | Import |
+|--------|----------|--------|
+| `HTTPBasic` | Basic auth | `ravyn.security.http` |
+| `HTTPBearer` | JWT tokens | `ravyn.security.http` |
+| `HTTPDigest` | Digest auth | `ravyn.security.http` |
+| `APIKeyInHeader` | API keys in headers | `ravyn.security.api_key` |
+| `APIKeyInCookie` | API keys in cookies | `ravyn.security.api_key` |
+| `APIKeyInQuery` | API keys in query params | `ravyn.security.api_key` |
+| `OAuth2` | OAuth2 flow | `ravyn.security.oauth2` |
+| `OpenIdConnect` | OpenID Connect | `ravyn.security.open_id` |
+
+### Import Security Schemes
+
+```python
 from ravyn.security.http import HTTPBasic, HTTPBearer, HTTPDigest
+from ravyn.security.api_key import APIKeyInCookie, APIKeyInHeader, APIKeyInQuery
 from ravyn.security.oauth2 import OAuth2
 from ravyn.security.open_id import OpenIdConnect
 ```
 
-### HTTPBase
+---
 
-Every [supported authorization](#supported-authorizations) has the same `HTTPBase` which means
-if you want to build your own custom object, you can simply inherit from it and develop it.
+## Using Security Schemes
+
+### HTTPBearer (JWT Tokens)
 
 ```python
-from ravyn.security import HTTPBase
+from ravyn import get
+from ravyn.security.http import HTTPBearer
+
+@get(
+    "/protected",
+    summary="Protected endpoint",
+    security=[HTTPBearer]
+)
+def protected_route() -> dict:
+    return {"message": "You are authenticated!"}
 ```
 
-#### Parameters
+When you visit the docs, you'll see an "Authorize" button where you can enter your token.
 
-Every [supported authorization](#supported-authorizations) has in common the following parameters:
-
-* **type_** - The type of security scheme. Literal `apiKey`, `http`, `mutualTLS`, `oauth2` or `openIdConnect`.
-* **scheme_name** (Optional) - The name for the scheme to be shown in the docs.
-
-    <sup>Default: `__class__.__name__`</sup>
-
-* **scheme** - The name of the HTTP Authorization scheme to be used in the
-[Authorization header as defined in RFC7235](https://tools.ietf.org/html/rfc7235#section-5.1).
-Example: `Authorization`.
-* **scheme_name** (Optional) - The name of the header, query or cookie parameter to be used. This is should be used when using `APIKeyInCookie`, `APIKeyInHeader` or `APIKeyInQuery`.
-* **description** (Optional) - A description for the security scheme.
-
-### How to use it
-
-Now that we are more acquainted with the [supported authorization](#supported-authorizations), let
-us see how you could use them.
-
-Let us use the following API as example from before.
+### HTTPBasic (Username/Password)
 
 ```python
-from typing import List
+from ravyn.security.http import HTTPBasic
 
-from ravyn import Request, get
-from ravyn.core.datastructures import OpenAPIResponse
+@get(
+    "/admin",
+    summary="Admin endpoint",
+    security=[HTTPBasic]
+)
+def admin_route() -> dict:
+    return {"message": "Admin access"}
+```
 
-from .daos import UserDAO
-from .schemas import Error, UserOut
+### APIKeyInHeader
 
+```python
+from ravyn.security.api_key import APIKeyInHeader
+
+# Define the security scheme
+api_key_header = APIKeyInHeader(
+    name="X-API-Key",
+    scheme_name="API Key (Header)",
+    description="Enter your API key"
+)
+
+@get(
+    "/api/data",
+    summary="Get data",
+    security=[api_key_header]
+)
+def get_data() -> dict:
+    return {"data": "sensitive information"}
+```
+
+### APIKeyInQuery
+
+```python
+from ravyn.security.api_key import APIKeyInQuery
+
+api_key_query = APIKeyInQuery(
+    name="api_key",
+    scheme_name="API Key (Query)",
+    description="Pass API key as query parameter"
+)
+
+@get(
+    "/api/users",
+    summary="Get users",
+    security=[api_key_query]
+)
+def get_users() -> dict:
+    # Accessed as: /api/users?api_key=YOUR_KEY
+    return {"users": []}
+```
+
+### APIKeyInCookie
+
+```python
+from ravyn.security.api_key import APIKeyInCookie
+
+api_key_cookie = APIKeyInCookie(
+    name="session_id",
+    scheme_name="Session Cookie",
+    description="Session cookie for authentication"
+)
+
+@get(
+    "/dashboard",
+    summary="User dashboard",
+    security=[api_key_cookie]
+)
+def dashboard() -> dict:
+    return {"dashboard": "data"}
+```
+
+---
+
+## Multiple Security Schemes
+
+You can use multiple security schemes on the same endpoint:
+
+```python
+from ravyn import get
+from ravyn.security.http import HTTPBearer
+from ravyn.security.api_key import APIKeyInHeader
+
+bearer_auth = HTTPBearer(scheme_name="JWT Token")
+api_key_auth = APIKeyInHeader(name="X-API-Key", scheme_name="API Key")
+
+@get(
+    "/secure",
+    summary="Secure endpoint",
+    security=[bearer_auth, api_key_auth]
+)
+def secure_endpoint() -> dict:
+    return {"message": "Authenticated with multiple methods"}
+```
+
+---
+
+## Application-Level Security
+
+Apply security to all routes in an Include or the entire app:
+
+### Include-Level
+
+```python
+from ravyn import Ravyn, Include, get
+from ravyn.security.http import HTTPBearer
+
+@get("/users")
+def list_users() -> dict:
+    return {"users": []}
+
+@get("/products")
+def list_products() -> dict:
+    return {"products": []}
+
+# All routes in this Include require authentication
+api_routes = Include(
+    "/api",
+    routes=[
+        Gateway(handler=list_users),
+        Gateway(handler=list_products)
+    ],
+    security=[HTTPBearer]
+)
+
+app = Ravyn(routes=[api_routes])
+```
+
+### App-Level
+
+```python
+from ravyn import Ravyn
+from ravyn.security.http import HTTPBearer
+
+# All routes in the app require authentication
+app = Ravyn(
+    routes=[...],
+    security=[HTTPBearer]
+)
+```
+
+---
+
+## OAuth2 Authentication
+
+For complex OAuth2 flows, see the [Security section](./security/index.md) for detailed examples.
+
+```python
+from ravyn.security.oauth2 import OAuth2
+
+oauth2_scheme = OAuth2(
+    flows={
+        "password": {
+            "tokenUrl": "/token",
+            "scopes": {
+                "read": "Read access",
+                "write": "Write access"
+            }
+        }
+    }
+)
+
+@get("/protected", security=[oauth2_scheme])
+def protected() -> dict:
+    return {"message": "OAuth2 protected"}
+```
+
+---
+
+## OpenID Connect
+
+```python
+from ravyn.security.open_id import OpenIdConnect
+
+openid_scheme = OpenIdConnect(
+    openIdConnectUrl="https://example.com/.well-known/openid-configuration",
+    scheme_name="OpenID Connect"
+)
+
+@get("/sso", security=[openid_scheme])
+def sso_endpoint() -> dict:
+    return {"message": "SSO authenticated"}
+```
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Missing Response Models
+
+**Problem:** Docs don't show response structure.
+
+```python
+# Wrong - no response documentation
+@get("/users")
+def list_users() -> dict:
+    return {"users": []}
+```
+
+**Solution:** Add OpenAPIResponse:
+
+```python
+# Correct
+from ravyn.openapi.datastructures import OpenAPIResponse
 
 @get(
     "/users",
-    tags=["User"],
-    description="List of all the users in the system",
-    summary="Lists all users",
     responses={
-        200: OpenAPIResponse(model=[UserOut]),
-        400: OpenAPIResponse(model=Error, description="Bad response"),
-    },
+        200: OpenAPIResponse(model=dict, description="List of users")
+    }
 )
-async def users(request: Request) -> List[UserOut]:
-    """
-    Lists all the users in the system.
-    """
-    users = UserDAO()
-    return await users.get_all()
+def list_users() -> dict:
+    return {"users": []}
 ```
 
-#### HTTPBasic
+### Pitfall 2: Security Not Showing in Docs
 
-**As an instance in case you need to pass extra parameters.**
+**Problem:** Authorize button doesn't appear.
 
 ```python
-{!> ../../../docs_src/openapi/basic/basic_inst.py !}
+# Wrong - security not configured
+@get("/protected")
+def protected() -> dict:
+    return {}
 ```
 
-#### HTTPBearer
-
-**As an instance in case you need to pass extra parameters.**
+**Solution:** Add security parameter:
 
 ```python
-{!> ../../../docs_src/openapi/bearer/basic_inst.py !}
+# Correct
+from ravyn.security.http import HTTPBearer
+
+@get("/protected", security=[HTTPBearer])
+def protected() -> dict:
+    return {}
 ```
 
-#### HTTPDigest
+### Pitfall 3: Wrong Security Scheme Type
 
-**As an instance in case you need to pass extra parameters.**
+**Problem:** Using wrong scheme for your auth method.
 
 ```python
-{!> ../../../docs_src/openapi/digest/basic_inst.py !}
+# Wrong - using HTTPBasic for JWT
+from ravyn.security.http import HTTPBasic
+
+@get("/jwt-protected", security=[HTTPBasic])
+def protected() -> dict:
+    return {}
 ```
 
-#### APIKeyInHeader
-
-**As an instance in case you need to pass extra parameters.**
+**Solution:** Use HTTPBearer for JWT:
 
 ```python
-{!> ../../../docs_src/openapi/api_header/basic_inst.py !}
+# Correct
+from ravyn.security.http import HTTPBearer
+
+@get("/jwt-protected", security=[HTTPBearer])
+def protected() -> dict:
+    return {}
 ```
 
-This now **should be the way** of declaring it there the name is `X_TOKEN_API` and this will
-automatically added in your API calls that declare it.
+---
 
-#### APIKeyInCookie
+## Best Practices
 
-**As an instance in case you need to pass extra parameters.**
+### 1. Use Tags to Organize
 
 ```python
-{!> ../../../docs_src/openapi/api_cookie/basic_inst.py !}
+# Good - organized by tags
+@get("/users", tags=["Users"])
+def list_users() -> dict:
+    pass
+
+@get("/products", tags=["Products"])
+def list_products() -> dict:
+    pass
 ```
 
-This now **should be the way** of declaring it there the name is `X_COOKIE_API` and this will
-automatically added in your API calls that declare it.
-
-#### APIKeyInQuery
-
-**As an instance in case you need to pass extra parameters.**
+### 2. Add Descriptions
 
 ```python
-{!> ../../../docs_src/openapi/api_query/basic_inst.py !}
+# Good - clear descriptions
+@get(
+    "/users/{user_id}",
+    summary="Get user by ID",
+    description="Retrieves a single user by their unique identifier"
+)
+def get_user(user_id: int) -> dict:
+    pass
 ```
 
-This now **should be the way** of declaring it there the name is `X_QUERY_API` and this will
-automatically added in your API calls that declare it by adding the `?X_QUERY_API=<VALUE>`.
-
-#### OAuth2
-
-Now this is an extremely complex and dedicated flow. Ravyn provides [detailed explanations and examples](./security/index.md)
-in its own security section, including how to use it in the OpenAPI documentation.
-
-#### OpenIdConnect
-
-The `openIdConnect` requires you to specify a `openIdConnectUrl` parameter.
-
-* **openIdConnectUrl** - OpenId Connect URL to discover OAuth2 configuration values.
-This MUST be in the form of a URL. The OpenID Connect standard requires the use of TLS.
-
-**As an instance in case you need to pass extra parameters.**
+### 3. Document All Responses
 
 ```python
-{!> ../../../docs_src/openapi/openid_connect/basic_inst.py !}
+# Good - all responses documented
+@get(
+    "/users/{user_id}",
+    responses={
+        200: OpenAPIResponse(model=User, description="User found"),
+        404: OpenAPIResponse(model=Error, description="User not found"),
+        500: OpenAPIResponse(model=Error, description="Server error")
+    }
+)
+def get_user(user_id: int) -> User:
+    pass
 ```
 
-### Combine them all
+---
 
-Is it possible to have more than one type in the APIs? **Of course!**.
+## Customizing OpenAPI
 
-```python
-{!> ../../../docs_src/openapi/all.py !}
-```
+See [OpenAPIConfig](./configurations/openapi/config.md) for:
 
-## Check the documentation
+- Changing documentation URLs
+- Customizing titles and descriptions
+- Adding contact information
+- Setting API version
+- Configuring servers
 
-With all the authentication methods added to your APIs you can now check the docs for something
-like this:
+---
 
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1696593769/esmerald/openapi/auth_button_knsd2s.png" title="Authorize" />
+## Next Steps
 
-The `Autorize` will show and you can simply use whatever authentication method you decided to
-have.
+Now that you understand OpenAPI documentation, explore:
 
-Let us see how it would look like if we have `APIKeyInHeader`, `APIKeyInCookie` and `APIKeyInQuery`.
-
-```python
-{!> ../../../docs_src/openapi/simple.py !}
-```
-
-You should see something like this when `Authorize` is called.
-
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1696595126/esmerald/openapi/auths_idjctb.png" title="Authorize" />
-
-Did you notice the `name` specified in each authorization object? Cool, right?.
-
-## Levels
-
-Like everything in Ravyn, you can specify the security on each [level of the application](./application/levels.md).
-Which means, you don't need to repeat yourself if for instance, all APIs of a given [Include](./routing/routes.md#include)
-require a [HTTPBearer](#httpbearer) token or any other.
+- [OpenAPIConfig](./configurations/openapi/config.md) - Customize docs
+- [Security](./security/index.md) - Authentication & authorization
+- [Responses](./responses.md) - Response types
+- [Requests](./requests.md) - Request handling
