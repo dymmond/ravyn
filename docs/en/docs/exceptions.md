@@ -1,198 +1,448 @@
 # Exceptions
 
-Ravyn comes with some built-in exceptions but also allows you to install
-[custom exception handlers](./exception-handlers.md) to deal with how you return responses when exceptions happen.
+Exceptions let you handle errors consistently across your application. Ravyn provides built-in exceptions for common scenarios and makes it easy to create custom ones.
 
-## HTTPException
+## What You'll Learn
 
-The `HTTPException` object serves as base that can be used for any handled exception from Ravyn.
+- Built-in Ravyn exceptions and when to use them
+- Creating custom exceptions
+- Raising exceptions with helpful error messages
+- Using ValidationError for clean error responses
+
+## Quick Start
 
 ```python
-from ravyn.exceptions import HTTPException
+from ravyn import Ravyn, get
+from ravyn.exceptions import NotFound, PermissionDenied
+
+@get("/users/{user_id}")
+def get_user(user_id: int) -> dict:
+    user = find_user(user_id)  # Your database lookup
+    
+    if not user:
+        raise NotFound("User not found")
+    
+    if not user.is_active:
+        raise PermissionDenied("User account is inactive")
+    
+    return {"user": user}
+
+app = Ravyn()
+app.add_route(get_user)
 ```
 
-### ImproperlyConfigured
+When raised, these exceptions automatically return proper HTTP status codes and JSON responses.
 
-The name might be familiar for some of the developers out there and it is intentional as it is also self explanatory.
-Inherits from the base [HTTPException](#httpexception) and it is raised when a misconfiguration occurs.
+---
+
+## Built-In Exceptions
+
+All Ravyn exceptions inherit from `HTTPException` and return JSON error responses.
+
+### Common Exceptions
+
+| Exception | Status Code | Use Case |
+|-----------|-------------|----------|
+| `NotFound` | 404 | Resource doesn't exist |
+| `NotAuthenticated` | 401 | User not logged in |
+| `NotAuthorized` | 401 | Authentication failed |
+| `PermissionDenied` | 403 | User lacks permission |
+| `ValidationError` | 400 | Invalid input data |
+| `MethodNotAllowed` | 405 | Wrong HTTP method |
+| `InternalServerError` | 500 | Server error |
+| `ServiceUnavailable` | 503 | Service down |
+| `ImproperlyConfigured` | 500 | Configuration error |
+
+### Import Exceptions
+
+```python
+from ravyn.exceptions import (
+    NotFound,
+    NotAuthenticated,
+    PermissionDenied,
+    ValidationError,
+    HTTPException
+)
+```
+
+---
+
+## Exception Details
+
+### NotFound (404)
+
+Raise when a resource doesn't exist:
+
+```python
+from ravyn import get
+from ravyn.exceptions import NotFound
+
+@get("/posts/{post_id}")
+def get_post(post_id: int) -> dict:
+    post = database.get_post(post_id)
+    
+    if not post:
+        raise NotFound(f"Post {post_id} not found")
+    
+    return {"post": post}
+```
+
+### NotAuthenticated (401)
+
+Raise when user needs to log in:
+
+```python
+from ravyn import get, Request
+from ravyn.exceptions import NotAuthenticated
+
+@get("/profile")
+def get_profile(request: Request) -> dict:
+    user = request.user  # From authentication middleware
+    
+    if not user:
+        raise NotAuthenticated("Please log in to view your profile")
+    
+    return {"user": user}
+```
+
+### PermissionDenied (403)
+
+Raise when user lacks permission:
+
+```python
+from ravyn import delete
+from ravyn.exceptions import PermissionDenied
+
+@delete("/posts/{post_id}")
+def delete_post(post_id: int, user: User) -> dict:
+    post = database.get_post(post_id)
+    
+    if post.author_id != user.id:
+        raise PermissionDenied("You can only delete your own posts")
+    
+    database.delete(post)
+    return {"deleted": True}
+```
+
+### ValidationError (400)
+
+Special exception for clean validation error responses:
+
+```python
+from ravyn import post
+from ravyn.exceptions import ValidationError
+from pydantic import BaseModel, model_validator
+
+class PasswordChange(BaseModel):
+    password: str
+    confirm_password: str
+    
+    @model_validator(mode="after")
+    def passwords_match(self):
+        if self.password != self.confirm_password:
+            raise ValidationError({"confirm_password": "Passwords do not match"})
+        return self
+
+@post("/change-password")
+def change_password(data: PasswordChange) -> dict:
+    return {"success": True}
+```
+
+**Response when validation fails:**
+
+```json
+{
+  "detail": {
+    "confirm_password": "Passwords do not match"
+  }
+}
+```
+
+### ValidationError Formats
+
+`ValidationError` accepts multiple formats:
+
+```python
+from ravyn.exceptions import ValidationError
+
+# String
+raise ValidationError("Invalid input")
+
+# Dict (recommended for field-specific errors)
+raise ValidationError({"email": "Email already exists"})
+
+# List
+raise ValidationError(["Error 1", "Error 2"])
+
+# Tuple
+raise ValidationError(("Error 1", "Error 2"))
+
+# Custom status code
+raise ValidationError("Unauthorized", status_code=401)
+```
+
+### InternalServerError (500)
+
+Used for server errors. Shows detailed traceback if `debug=True`:
+
+```python
+from ravyn import get
+from ravyn.exceptions import InternalServerError
+
+@get("/risky")
+def risky_operation() -> dict:
+    try:
+        result = perform_complex_operation()
+        return {"result": result}
+    except Exception as e:
+        raise InternalServerError(f"Operation failed: {str(e)}")
+```
+
+### ImproperlyConfigured (500)
+
+Raised when application is misconfigured:
 
 ```python
 from ravyn.exceptions import ImproperlyConfigured
+
+if not settings.secret_key:
+    raise ImproperlyConfigured("SECRET_KEY must be set in settings")
 ```
 
-Status code: 500
+---
 
-### NotAuthenticated
+## Creating Custom Exceptions
 
-Exception raised when an a resources that depends of an authenticated user does not exist.
+Create exceptions for your specific use cases:
 
 ```python
-from ravyn.exceptions import NotAuthenticated
+from ravyn import HTTPException
+
+class PaymentRequired(HTTPException):
+    status_code = 402
+    detail = "Payment required to access this resource"
+
+class RateLimitExceeded(HTTPException):
+    status_code = 429
+    detail = "Too many requests"
+
+class InvalidAPIKey(HTTPException):
+    status_code = 401
+    detail = "Invalid API key provided"
 ```
 
-Status code: 401
-
-### PermissionDenied
-
-Exception raised when a [permission](./permissions/index.md) fails. It can be used in any context also outside of the
-permissions context and it should be raised any time the access to a resource should be blocked.
+### Using Custom Exceptions
 
 ```python
-from ravyn.exceptions import PermissionDenied
+from ravyn import get
+
+@get("/premium-content")
+def premium_content(user: User) -> dict:
+    if not user.has_subscription:
+        raise PaymentRequired("Subscribe to access premium content")
+    
+    return {"content": "Premium data"}
+
+@get("/api/data")
+def api_endpoint(api_key: str) -> dict:
+    if not validate_api_key(api_key):
+        raise InvalidAPIKey()
+    
+    return {"data": "..."}
 ```
 
-Status code: 403
+---
 
-### ValidationErrorException
+## Exception Handlers
 
-`ValidationErrorException` is part of the Ravyn default `exception_handlers` by design and it is part of its core when
-a validation, for example, from pydantic models, occurs.
+Handle exceptions globally with custom handlers. See [Exception Handlers](./exception-handlers.md) for details.
 
-```python
-from ravyn.exceptions import ValidationErrorException
-```
-
-Status code: 400
-
-### NotAuthorized
-
-Exception raised when an authentication fails. It is very useful for any authentication middleware process and it is
-encouraged to be applied in any custom middleware handling with similar processes.
+### Quick Example
 
 ```python
-from ravyn.exceptions import NotAuthorized
-```
-
-Status code: 401
-
-### NotFound
-
-Classic and self explanatory exception. Useful when a resource is not found or a simple 404 needs to be raised.
-
-```python
+from ravyn import Ravyn
 from ravyn.exceptions import NotFound
+from ravyn.responses import JSONResponse
+
+def handle_not_found(request, exc):
+    return JSONResponse(
+        {"error": "Resource not found", "detail": str(exc)},
+        status_code=404
+    )
+
+app = Ravyn(
+    exception_handlers={
+        NotFound: handle_not_found
+    }
+)
 ```
 
-Status code: 404
+---
 
-### MethodNotAllowed
+## Common Pitfalls & Fixes
 
-Very useful exception to be used, as already is, to raise exceptions when an HTTP method is not allows on a given
-Gateway.
+### Pitfall 1: Not Providing Helpful Messages
+
+**Problem:** Generic error messages aren't helpful.
 
 ```python
-from ravyn.exceptions import MethodNotAllowed
+# Not helpful
+@get("/users/{user_id}")
+def get_user(user_id: int) -> dict:
+    user = find_user(user_id)
+    if not user:
+        raise NotFound()  # Generic message
 ```
 
-Status code: 405
-
-### InternalServerError
-
-Used internally for internal server error and it raises a descriptive message in the browser if `debug=True`.
+**Solution:** Provide specific, actionable messages:
 
 ```python
-from ravyn.exceptions import InternalServerError
+# Helpful
+@get("/users/{user_id}")
+def get_user(user_id: int) -> dict:
+    user = find_user(user_id)
+    if not user:
+        raise NotFound(f"User with ID {user_id} does not exist")
 ```
 
-Status code: 500
+### Pitfall 2: Using Wrong Exception Type
 
-### ServiceUnavailable
-
-It should be used to be raised when a resource is not available.
+**Problem:** Using NotAuthenticated when PermissionDenied is more appropriate.
 
 ```python
-from ravyn.exceptions import ServiceUnavailable
+# Wrong exception type
+@delete("/posts/{post_id}")
+def delete_post(post_id: int, user: User) -> dict:
+    post = get_post(post_id)
+    if post.author_id != user.id:
+        raise NotAuthenticated()  # User IS authenticated, just not authorized
 ```
 
-Status code: 503
-
-
-### ValidatorError
-
-This is a special exception that can be applied to anything in Ravyn. This allows to not only throw a normal
-exception but filter it out the "noise" that can be caused by using an external library and provide a simple response.
+**Solution:** Use the correct exception:
 
 ```python
-from ravyn.exceptions import ValidationError
+# Correct exception type
+@delete("/posts/{post_id}")
+def delete_post(post_id: int, user: User) -> dict:
+    post = get_post(post_id)
+    if post.author_id != user.id:
+        raise PermissionDenied("You can only delete your own posts")
 ```
 
-Status code: 400
+### Pitfall 3: Catching Exceptions Without Re-Raising
 
-#### Example
-
-Imagine you are using a library such as Pydantic (to simplify the example) and you want to throw a simple exception
-that does not rely on a `ValueError` but you also want to provide some details.
+**Problem:** Swallowing exceptions silently.
 
 ```python
-from ravyn import Ravyn, post
-from ravyn.exceptions import ValidationError
-
-from pydantic import BaseModel, model_validator
-
-
-class PasswordIn(BaseModel):
-    password: str
-    retype_password: str
-
-    @model_validator(mode="after")
-    def validate_value(self):
-        if self.password != self.retype_password
-            raise ValidationError({'password': "Passwords do not match"})
-        return self
-
-
-@post('/password')
-async def check(data: PasswordIn) -> None:
-    ...
+# Exception swallowed
+@get("/data")
+def get_data() -> dict:
+    try:
+        data = fetch_from_api()
+        return {"data": data}
+    except Exception:
+        return {}  # Error hidden from user!
 ```
 
-When a response fails, it should throw an error similar to this:
+**Solution:** Re-raise or return proper error:
+
+```python
+# Proper error handling
+@get("/data")
+def get_data() -> dict:
+    try:
+        data = fetch_from_api()
+        return {"data": data}
+    except ConnectionError as e:
+        raise ServiceUnavailable(f"External API unavailable: {str(e)}")
+    except Exception as e:
+        raise InternalServerError(f"Failed to fetch data: {str(e)}")
+```
+
+### Pitfall 4: ValidationError with Wrong Format
+
+**Problem:** Using ValidationError incorrectly.
+
+```python
+# Not structured for easy parsing
+raise ValidationError("Email is invalid and password is too short")
+```
+
+**Solution:** Use dict format for field-specific errors:
+
+```python
+# Structured and parseable
+raise ValidationError({
+    "email": "Invalid email format",
+    "password": "Password must be at least 8 characters"
+})
+```
+
+---
+
+## Exception Response Format
+
+All Ravyn exceptions return JSON in this format:
 
 ```json
-{"detail": {"password": "Passwords do not match"}}
+{
+  "detail": "Error message here"
+}
 ```
 
-This can be particularly useful mostly if you want to create custom error messages and to be easy to parse a response
-back to a client.
+For `ValidationError` with dict:
 
-You can use the `ValidationError` in different way. As a `list`, `tuple`, `str` and `dict` and you can also override the
-default `status_code`.
+```json
+{
+  "detail": {
+    "field_name": "Error message",
+    "another_field": "Another error"
+  }
+}
+```
+
+---
+
+## Best Practices
+
+### 1. Be Specific
 
 ```python
-from ravyn.exceptions import ValidationError
+# Vague
+raise NotFound("Not found")
 
-ValidationError("An error")  # as string
-ValidationError({"field": "an error"})  # as dict
-ValidationError(["An error", "another error"])  # as list
-ValidationError(("An error", "another error"))  # as tuple
-ValidationError("Not Authorized", status_code=401)  # override the status_code
+# Specific
+raise NotFound(f"Product with SKU '{sku}' not found")
 ```
 
-## Custom exceptions
-
-Every application has different needs, errors, operations and everything else. Although the default Ravyn exceptions
-work for generic and internal processing you might face an issue when it comes to handle some specifc, more narrow and
-unique to your application type of exception. This is very simple and also very possible.
+### 2. Use Appropriate Status Codes
 
 ```python
-{!> ../../../docs_src/exceptions/custom_exception.py !}
+# Wrong status code
+raise ValidationError("Unauthorized", status_code=500)
+
+# Correct status code
+raise NotAuthorized("Invalid credentials")
 ```
 
-The example above of course is forced to be like that for illustration purposes to raise the custom exception as the
-default if no `Optional` fields were declared would be handled by Ravyn `ValidationErrorException` exception
-handler but this serves as an example how to do your own.
+### 3. Provide Actionable Information
 
-## Overriding the current Ravyn exception handlers
+```python
+# Not actionable
+raise PermissionDenied("Access denied")
 
-Currently by default, every Ravyn application starts with `ImproperlyConfigured` and `ValidationErrorException`
-to make sure everything is covered accordingly but this does not necessarily mean that this can't be changed.
-
-```python hl_lines="18 42 61-62"
-{!> ../../../docs_src/exceptions/overriding.py !}
+# Actionable
+raise PermissionDenied("You need 'admin' role to perform this action")
 ```
 
-This will make sure that the application defaults will have a your exception_handler instead of the main application.
+---
 
-## API Reference
+## Next Steps
 
-Check out the [API Reference for HTTPException](./references/exceptions.md) for more details.
+Now that you understand exceptions, explore:
+
+- [Exception Handlers](./exception-handlers.md) - Custom exception handling
+- [Permissions](./permissions/index.md) - Permission-based access control
+- [Middleware](./middleware/index.md) - Request/response processing
+- [Responses](./responses.md) - Different response types
+- [API Reference](./references/exceptions.md) - Complete exception reference
