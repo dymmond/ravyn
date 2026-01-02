@@ -55,7 +55,6 @@ There are many ways of doing this but in the documentation of Pydantic (even a f
 from ravyn import RavynSettings
 from pydantic import Field
 
-
 class AppSettings(RavynSettings):
     allowed_hosts: List[str] = Field(..., env='ALLOWED_HOSTS')
 

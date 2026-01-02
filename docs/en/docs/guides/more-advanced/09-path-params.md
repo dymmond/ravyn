@@ -11,16 +11,14 @@ control and understanding of how path parameters work, including usage with cust
 Path parameters are dynamic segments in your route’s path, defined using either curly braces `{}`
 or angle brackets `<>`. These values are passed to your controller/handler as arguments.
 
-### ✅ Basic Example
+### Basic Example
 
 ```python
 from ravyn import Ravyn, Gateway, JSONResponse, get
 
-
 @get("/users/{user_id}")
 async def read_user(user_id: str) -> JSONResponse:
     return JSONResponse({"user_id": user_id})
-
 
 app = Ravyn(routes=[Gateway(handler=read_user)])
 ```
@@ -126,12 +124,9 @@ async def get_user_by_type(user_type: UserType):
 ```
 
 - This will raise a 422 error if an invalid enum value is used.
-- `/users/admin` → ✅
-- `/users/random` → ❌
+- `/users/admin` → - `/users/random` → ---
 
----
-
-## ✅ Summary
+## Summary
 - Use `{}` or `<>` to declare dynamic segments.
 - Inline typing allows automatic validation and transformation.
 - Custom transformers let you support advanced types (e.g., `datetime`).

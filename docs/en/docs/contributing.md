@@ -1,394 +1,515 @@
-# Contributing
+# Contributing to Ravyn
 
-Thank you for showing interest in contributing to Ravyn. There are many ways you can help and contribute to the
-project.
+Thank you for your interest in contributing to Ravyn! We welcome contributions from the community and appreciate your help in making Ravyn better.
 
-* Try Ravyn and [report bugs and issues](https://github.com/dymmond/ravyn/issues/new) you find.
-* [Implement new features](https://github.com/dymmond/ravyn/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-* Help others by [reviewing pull requests](https://github.com/dymmond/ravyn/pulls)
-* Help writing documentation
-* Use the discussions and actively participate on them.
-* Become an contributor by helping Ravyn growing and spread the words across small, medium, large or any company
-size.
+## What You'll Learn
 
-## Reporting possible bugs and issues
+- How to set up your development environment with hatch
+- Contribution workflow and guidelines
+- Code style and testing requirements
+- How to submit pull requests
+- Where to get help
 
-It is natural that you might find something that Ravyn should support or even experience some sorte of unexpected
-behaviour that needs addressing.
+## Quick Start
 
-The way we love doing things is very simple, contributions should start out with a
-[discussion](https://github.com/dymmond/ravyn/discussions). The potential bugs shall be raised as "Potential Issue"
-in the discussions, the feature requests may be raised as "Ideas".
+```bash
+# 1. Fork and clone the repository
+git clone https://github.com/YOUR_USERNAME/ravyn.git
+cd ravyn
 
-We can then decide if the discussion needs to be escalated into an "Issue" or not.
+# 2. Install hatch
+pip install hatch
 
-When reporting something you should always try to:
+# 3. Create development environments (optional, hatch does this automatically)
+hatch env create
+hatch env create test
+hatch env create docs
 
-* Be as more descriptive as possible
-* Provide as much evidence as you can, something like:
-    * OS platform
-    * Python version
-    * Installed dependencies
-    * Code snippets
-    * Tracebacks
+# 4. Run tests to verify setup
+hatch run test:test
 
-Avoid putting examples extremely complex to understand and read. Simplify the examples as much as possible to make
-it clear to understand and get the required help.
+# 5. Create a branch for your changes
+git checkout -b feature/my-awesome-feature
 
-## Development
+# 6. Make your changes and test
+hatch run test:test
+hatch run lint
 
-To develop for Ravyn, create a fork of the [Ravyn repository](https://github.com/dymmond/ravyn) on GitHub.
+# 7. Commit and push
+git add .
+git commit -m "Add awesome feature"
+git push origin feature/my-awesome-feature
 
-After, clone your fork with the follow command replacing `YOUR-USERNAME` with your GitHub username:
-
-```shell
-$ git clone https://github.com/YOUR-USERNAME/ravyn
+# 8. Open a pull request on GitHub
 ```
 
-Ravyn also uses [hatch](https://hatch.pypa.io/latest/) for its development, testing and release cycles.
+---
 
-Please make sure you run:
+## Ways to Contribute
 
-```shell
-$ pip install hatch
+### 🐛 Report Bugs
+
+Found a bug? Please start with a [discussion](https://github.com/dymmond/ravyn/discussions) as "Potential Issue":
+
+- Clear description of the problem
+- Steps to reproduce
+- Expected vs actual behavior
+- Your environment (OS, Python version, Ravyn version)
+- Code snippets and tracebacks
+
+### Suggest Features
+
+Have an idea? [Open a discussion](https://github.com/dymmond/ravyn/discussions) as "Ideas":
+
+- Clear description of the feature
+- Use cases and benefits
+- Proposed implementation (if you have ideas)
+
+### 📝 Improve Documentation
+
+Documentation improvements are always welcome:
+
+- Fix typos or unclear explanations
+- Add examples
+- Improve existing guides
+- Write tutorials
+
+### 🔧 Submit Code
+
+Code contributions should:
+
+- Fix bugs
+- Add new features
+- Improve performance
+- Enhance existing functionality
+
+---
+
+## Development Setup
+
+### Prerequisites
+
+- Python 3.8 or higher
+- Git
+- A GitHub account
+
+### Installation
+
+```bash
+# Fork the repository on GitHub first, then:
+
+# Clone your fork
+git clone https://github.com/YOUR_USERNAME/ravyn.git
+cd ravyn
+
+# Add upstream remote
+git remote add upstream https://github.com/dymmond/ravyn.git
+
+# Install hatch
+pip install hatch
 ```
 
-### Install the project dependencies
+> [!INFO]
+> Ravyn uses [hatch](https://hatch.pypa.io/latest/) for development, testing, and release cycles.
 
-Not necessary because the dependencies are automatically installed by hatch.
-But if environments should be pre-initialized it can be done with `hatch env`.
+### Initialize Environments (Optional)
 
-```shell
-$ cd ravyn
-$ hatch env create
-$ hatch env create test
-$ hatch env create docs
+Hatch automatically creates environments when needed, but you can pre-initialize them:
+
+```bash
+# Create all environments
+hatch env create
+hatch env create test
+hatch env create docs
 ```
 
-!!! Tip
-    This is the recommended way but if you still feel you want your own virtual environment and
-    all the packages installed there, you can always run `scripts/install`.
+!!! tip
+    If you prefer your own virtual environment with all packages installed, you can run `scripts/install`.
 
-### Enable pre-commit
+### Verify Installation
 
-The project comes with a pre-commit hook configuration. To enable it, just run inside the clone:
+```bash
+# Run tests
+hatch run test:test
 
-```shell
-$ pre-commit install
+# Run linting
+hatch run lint
+
+# Check formatting
+hatch run format
 ```
 
-### Run the tests
+---
 
-To run the tests, use:
+## Contribution Workflow
 
-```shell
-$ hatch run test:test
+### 1. Create a Discussion
+
+Before starting work, create a [discussion](https://github.com/dymmond/ravyn/discussions) to talk about your changes.
+
+### 2. Fork and Branch
+
+```bash
+# Update your fork
+git checkout main
+git pull upstream main
+
+# Create a feature branch
+git checkout -b feature/my-feature
+# or
+git checkout -b fix/bug-description
 ```
 
-Because Ravyn uses pytest, any additional arguments will be passed. More info within the
-[pytest documentation](https://docs.pytest.org/en/latest/how-to/usage.html)
+### 3. Make Changes
 
-For example, to run a single test_script:
+- Write clean, readable code
+- Follow the code style guidelines
+- Add tests for new functionality
+- Update documentation as needed
 
-```shell
-$ hatch run test:test tests/test_apiviews.py
+### 4. Test Your Changes
+
+```bash
+# Run all tests
+hatch run test:test
+
+# Run specific test file
+hatch run test:test tests/test_routing.py
+
+# Run linting
+hatch run lint
+
+# Format code
+hatch run format
 ```
 
-To run the linting, use:
+### 5. Enable Pre-commit (Optional)
 
-
-```shell
-$ hatch run lint
+```bash
+# Install pre-commit hooks
+pre-commit install
 ```
+
+### 6. Commit Your Changes
+
+```bash
+# Stage changes
+git add .
+
+# Commit with descriptive message
+git commit -m "Add feature: description of what you did"
+```
+
+**Commit Message Guidelines:**
+- Use present tense ("Add feature" not "Added feature")
+- Be descriptive but concise
+- Reference issue numbers when applicable
+
+Examples:
+```
+Add support for WebSocket connections (#123)
+Fix validation error in request handling (#456)
+Update documentation for caching system
+```
+
+### 7. Push and Create Pull Request
+
+```bash
+# Push to your fork
+git push origin feature/my-feature
+```
+
+Then open a pull request on GitHub with:
+
+- Clear title describing the change
+- Description of what changed and why
+- Reference to related discussions/issues
+- Screenshots (if UI changes)
+
+---
+
+## Testing
+
+### Running Tests
+
+```bash
+# All tests
+hatch run test:test
+
+# Specific file
+hatch run test:test tests/test_routing.py
+
+# With coverage
+hatch run test:test --cov=ravyn --cov-report=html
+
+# Verbose output
+hatch run test:test -v
+```
+
+> [!INFO]
+> Ravyn uses pytest. Any additional arguments are passed directly to pytest.
+
+### Writing Tests
+
+```python
+import pytest
+from ravyn import Ravyn, get
+
+def test_simple_route():
+    """Test basic route functionality."""
+    app = Ravyn()
+    
+    @get("/hello")
+    def hello() -> dict:
+        return {"message": "Hello, World!"}
+    
+    app.add_route(hello)
+    
+    from ravyn import RavynTestClient
+    
+    with RavynTestClient(app) as client:
+        response = client.get("/hello")
+        assert response.status_code == 200
+        assert response.json() == {"message": "Hello, World!"}
+```
+
+---
 
 ## Documentation
 
-Improving the documentation is quite easy and it is placed inside the `ravyn/docs` folder.
+### Building Documentation
 
-To build all the documentation:
+```bash
+# Build all documentation
+hatch run docs:build
 
-```shell
-$ hatch run docs:build
+# Build specific language
+hatch run docs:build_lang en
 ```
 
-### Docs live (serving the docs)
+### Serving Documentation Locally
 
-During local development, there is a script that builds the site and checks for any changes, live-reloading:
+```bash
+# Serve docs with live reload
+hatch run docs:serve
 
-```shell
-$ hatch run docs:serve
+# Serve on specific port
+hatch run docs:serve -p 8080
+
+# Serve specific language
+hatch run docs:serve_lang es
 ```
 
-It will serve the documentation on `http://localhost:8000`.
-
-If you wish to serve on a different port:
-
-```shell
-$ hatch run docs:serve -p <PORT-NUMBER>
-```
-
-That way, you can edit the documentation/source files and see the changes live.
+The documentation will be available at `http://localhost:8000`.
 
 !!! tip
-    Alternatively, you can perform the same steps that scripts does manually.
+    You can also manually run `mkdocs serve` in the `docs/en/` directory.
 
-    Go into the language directory, for the main docs in English it's at `docs/en/`:
+### Documentation Structure
 
-    ```console
-    $ cd docs/en/
-    ```
+- Documentation uses [MkDocs](https://www.mkdocs.org/)
+- All docs are in Markdown format in `./docs/en/`
+- Code examples are in `./docs_src/` directory
+- Code blocks are included/injected when generating the site
 
-    Then run `mkdocs` in that directory:
+---
 
-    ```console
-    $ mkdocs serve --dev-addr 8000
-    ```
+## Code Style
 
-### Docs Structure
+### Linting and Formatting
 
-The documentation uses <a href="https://www.mkdocs.org/" class="external-link" target="_blank">MkDocs</a>.
+```bash
+# Run linting
+hatch run lint
 
-And there are extra tools/scripts in place to handle translations in `./scripts/docs.py`.
-
-!!! tip
-    You don't need to see the code in `./scripts/docs.py`, you just use it in the command line.
-
-All the documentation is in Markdown format in the directory `./docs/en/`.
-
-Many of the tutorials have blocks of code.
-
-In most of the cases, these blocks of code are actual complete applications that can be run as is.
-
-In fact, those blocks of code are not written inside the Markdown, they are Python files in the `./docs_src/` directory.
-
-And those Python files are included/injected in the documentation when generating the site.
-
-### Translations
-
-Help with translations is VERY MUCH appreciated! And it can't be done without the help from the community.
-
-Here are the steps to help with translations.
-
-#### Tips and guidelines
-
-* Check the currently <a href="https://github.com/dymmond/ravyn/pulls" class="external-link" target="_blank">existing pull requests</a> for your language. You can filter the pull requests by the ones with the label for your language. For example, for Spanish, the label is <a href="https://github.com/dymmond/ravyn/pulls?q=is%3Aopen+sort%3Aupdated-desc+label%3Alang-es+label%3Aawaiting-review" class="external-link" target="_blank">`lang-es`</a>.
-
-* Review those pull requests, requesting changes or approving them. For the languages I don't speak, I'll wait for several others to review the translation before merging.
-
-!!! tip
-    You can <a href="https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/commenting-on-a-pull-request" class="external-link" target="_blank">add comments with change suggestions</a> to existing pull requests.
-
-    Check the docs about <a href="https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-request-reviews" class="external-link" target="_blank">adding a pull request review</a> to approve it or request changes.
-
-* Check if there's a <a href="https://github.com/dymmond/ravyn/discussions/categories/translations" class="external-link" target="_blank">GitHub Discussion</a> to coordinate translations for your language. You can subscribe to it, and when there's a new pull request to review, an automatic comment will be added to the discussion.
-
-* If you translate pages, add a single pull request per page translated. That will make it much easier for others to review it.
-
-* To check the 2-letter code for the language you want to translate, you can use the table <a href="https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes" class="external-link" target="_blank">List of ISO 639-1 codes</a>.
-
-#### Existing language
-
-Let's say you want to translate a page for a language that already has translations for some pages, like Spanish.
-
-In the case of Spanish, the 2-letter code is `es`. So, the directory for Spanish translations is located at `docs/es/`.
-
-!!! tip
-    The main ("official") language is English, located at `docs/en/`.
-
-Now run the live server for the docs in Spanish:
-
-```shell
-// Use the command "live" and pass the language code as a CLI argument
-$ hatch run docs:serve_lang es
+# Format code
+hatch run format
 ```
 
-!!! tip
-    Alternatively, you can perform the same steps that scripts does manually.
+### Python Style
 
-    Go into the language directory, for the Spanish translations it's at `docs/es/`:
+We follow PEP 8 with some modifications:
 
-    ```console
-    $ cd docs/es/
-    ```
-
-    Then run `mkdocs` in that directory:
-
-    ```console
-    $ mkdocs serve --dev-addr 8000
-    ```
-
-Now you can go to <a href="http://127.0.0.1:8000" class="external-link" target="_blank">http://127.0.0.1:8000</a> and see your changes live.
-
-You will see that every language has all the pages. But some pages are not translated and have an info box at the top, about the missing translation.
-
-Now let's say that you want to add a translation for the section [Router](routing/router.md){.internal-link target=_blank}.
-
-* Copy the file at:
-
-```
-docs/en/docs/routing/router.md
+```python
+# Good
+class UserController:
+    """Handle user-related operations."""
+    
+    async def get_user(self, user_id: int) -> dict:
+        """
+        Get user by ID.
+        
+        Args:
+            user_id: The user's ID
+            
+        Returns:
+            User data dictionary
+        """
+        user = await self.db.fetch_one("SELECT * FROM users WHERE id = ?", user_id)
+        return user
 ```
 
-* Paste it in exactly the same location but for the language you want to translate, e.g.:
+### Type Hints
 
-```
-docs/es/docs/routing/router.md
-```
+Always use type hints:
 
-!!! tip
-    Notice that the only change in the path and file name is the language code, from `en` to `es`.
+```python
+# Good
+async def create_user(name: str, email: str) -> dict:
+    pass
 
-If you go to your browser you will see that now the docs show your new section (the info box at the top is gone). 🎉
-
-Now you can translate it all and see how it looks as you save the file.
-
-#### New Language
-
-Let's say that you want to add translations for a language that is not yet translated, not even some pages.
-
-Let's say you want to add translations for Creole, and it's not yet there in the docs.
-
-Checking the link from above, the code for "Creole" is `ht`.
-
-The next step is to run the script to generate a new translation directory:
-
-```shell
-// Use the command new-lang, pass the language code as a CLI argument
-$ hatch run docs:new_lang ht
-
-Successfully initialized: docs/ht
+# Bad - no type hints
+async def create_user(name, email):
+    pass
 ```
 
-Now you can check in your code editor the newly created directory `docs/ht/`.
-
-That command created a file `docs/ht/mkdocs.yml` with a simple config that inherits everything from the `en` version:
-
-```yaml
-INHERIT: ../en/mkdocs.yml
-site_dir: '../../site_lang/ht'
-```
-
-!!! tip
-    You could also simply create that file with those contents manually.
-
-That command also created a dummy file `docs/ht/index.md` for the main page, you can start by translating that one.
-
-You can continue with the previous instructions for an "Existing Language" for that process.
-
-You can make the first pull request with those two files, `docs/ht/mkdocs.yml` and `docs/ht/index.md`. 🎉
-
-#### Preview the result
-
-As already mentioned above, you can use the `./scripts/docs.py` with the `live` command to preview the results (or `mkdocs serve`).
-
-Once you are done, you can also test it all as it would look online, including all the other languages.
-
-To do that, first build all the docs:
-
-
-```shell
-// Use the command "build-all", this will take a bit
-$ hatch run docs:build
-```
-
-You can also collect documentation for one language
-
-```shell
-// Use the command "build-lang", this will take a bit
-$ hatch run docs:build_lang your_lang
-```
-
-This builds all those independent MkDocs sites for each language, combines them, and generates the final output at `./site_lang/`.
-
-Then you can serve that with the command `serve`:
-
-```shell
-// Use the command "dev" after running "build-all" or "build-lang -l your_lang"
-$ hatch run docs:dev
-
-Warning: this is a very simple server. For development, use mkdocs serve instead.
-This is here only to preview a site with translations already built.
-Make sure you run the build-all command first.
-Serving at: http://127.0.0.1:8000
-```
+---
 
 ## Building Ravyn
 
-To build a package locally, run:
+### Local Build
 
+```bash
+# Build package locally
+hatch build
 
-```shell
-$ hatch build
+# Or create a shell with installed package
+hatch shell
 ```
 
+---
 
-Alternatively running:
+## TaskFile (Alternative)
 
+Ravyn also supports [TaskFile](https://taskfile.dev/installation/) as an alternative to hatch commands:
 
-```shell
-$ hatch shell
+```bash
+# List all available tasks
+task
+
+# Run tests manually
+task test_man ARGS=tests/msgspec/
 ```
 
-It will install the requirements and create a local build in your virtual environment.
+!!! warning
+    TaskFile support may be discontinued in the future for a better alternative.
 
-## TaskFile
+---
 
-Ravyn also embraces the [TaskFile](https://taskfile.dev/installation/) instead of the Makefile which is only available, fully, for *NIX users.
+## Pull Request Guidelines
 
-The reason for also allowing the task file to exist its because we also understand that contributors
-might enjoy it a bit more than using the hatch syntax.
+### Before Submitting
 
-All the commands presented above are also presented in the `TaskFile` and after you install it and
-get familiar with it, you can run in the command line:
+- [ ] Tests pass locally
+- [ ] Code follows style guidelines
+- [ ] Documentation updated
+- [ ] Commit messages are clear
+- [ ] Branch is up to date with main
 
-```shell
-$ task
+### PR Description Template
+
+```markdown
+## Description
+Brief description of changes
+
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Documentation update
+- [ ] Performance improvement
+
+## Related Discussions/Issues
+Relates to #123
+
+## Testing
+Describe how you tested your changes
+
+## Checklist
+- [ ] Tests added/updated
+- [ ] Documentation updated
+- [ ] Code follows style guidelines
 ```
 
-This will list all available commands that you can use. Let us see how you could run a manual test
-using a task.
+---
 
-```shell
-$ task test_man ARGS=tests/msgspec/
+## Translations
+
+Help with translations is very much appreciated!
+
+### Tips and Guidelines
+
+- Check [existing pull requests](https://github.com/dymmond/ravyn/pulls) for your language
+- Review PRs and request changes or approve them
+- Check [GitHub Discussions](https://github.com/dymmond/ravyn/discussions/categories/translations) for translation coordination
+- Add one pull request per page translated
+- Use [ISO 639-1 codes](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) for language codes
+
+### Translating Existing Language
+
+```bash
+# Serve docs for specific language (e.g., Spanish)
+hatch run docs:serve_lang es
 ```
 
-!!! Warning
-    TaskFile is used by Ravyn but this does not mean that in the future we might decide to stop
-    supporting it for a better alternative.
+Then copy files from `docs/en/docs/` to `docs/es/docs/` and translate.
 
-## Releasing
+### Adding New Language
 
-*This section is for the maintainers of `Ravyn`*.
+```bash
+# Create new language directory (e.g., Creole with code 'ht')
+hatch run docs:new_lang ht
+```
 
-### Building the Ravyn for release
+This creates `docs/ht/mkdocs.yml` and `docs/ht/index.md` to get started.
 
-Before releasing a new package into production some considerations need to be taken into account.
+---
 
-* **Changelog**
-    * Like many projects, we follow the format from [keepchangelog](https://keepachangelog.com/en/1.0.0/).
-    * [Compare](https://github.com/dymmond/ravyn/compare/) `main` with the release tag and list of the entries
-that are of interest to the users of the framework.
-        * What **must** go in the changelog? added, changed, removed or deprecated features and the bug fixes.
-        * What is **should not go** in the changelog? Documentation changes, tests or anything not specified in the
-point above.
-        * Make sure the order of the entries are sorted by importance.
-        * Keep it simple.
+## Getting Help
 
-* *Version bump*
-    * The version should be in `__init__.py` of the main package.
+### Community
 
-#### Releasing
+- **GitHub Discussions**: Ask questions and share ideas
+- **Issues**: Report bugs and request features
+- **Pull Requests**: Review and contribute code
 
-Once the `release` PR is merged, create a new [release](https://github.com/dymmond/ravyn/releases/new)
-that includes:
+### Resources
 
-Example:
+- [Documentation](https://ravyn.dev)
+- [GitHub Repository](https://github.com/dymmond/ravyn)
+- [Examples](https://github.com/dymmond/ravyn/tree/main/examples)
 
-There will be a release of the version `0.2.3`, this is what it should include.
+---
 
-* Release title: `Version 0.2.3`.
-* Tag: `0.2.3`.
-* The description should be copied from the changelog.
+## Code of Conduct
 
-Once the release is created, it should automatically upload the new version to PyPI. If something
-does not work with PyPI the release can be done by running `scripts/release`.
+We are committed to providing a welcoming and inclusive environment. Please:
+
+**Do:**
+- Be respectful and constructive
+- Welcome newcomers
+- Give credit where due
+- Focus on what's best for the community
+
+**Don't:**
+- Use offensive language
+- Make personal attacks
+- Harass others
+- Share private information
+
+---
+
+## License
+
+By contributing to Ravyn, you agree that your contributions will be licensed under the same license as the project (MIT License).
+
+---
+
+## Thank You!
+
+Your contributions make Ravyn better for everyone. We appreciate your time and effort! ---
+
+## Next Steps
+
+- [View Discussions](https://github.com/dymmond/ravyn/discussions)
+- [View Open Issues](https://github.com/dymmond/ravyn/issues)
+- [Read the Documentation](https://ravyn.dev)

@@ -1,95 +1,420 @@
-# WSGI frameworks
+# WSGI
 
-Did you know because of the awesome work from [a2wsgi](https://github.com/abersheeran/a2wsgi)
-added to the simplicity of Ravyn you can integrate any wsgi framework (Flask, Django...)?
+Mount WSGI applications (Flask, Django, etc.) inside your Ravyn app. Perfect for gradual migrations or integrating legacy systems.
 
-Yes, that's right, you can now smoothly move to Ravyn without rewriting your old applications from the scratch,
-actually, you can reuse them directly within Ravyn, even another Ravyn running inside another Ravyn,
-an *RavynAPIException*.
+## What You'll Learn
 
-## WSGIMiddleware
+- What WSGI is and when to use it
+- Mounting WSGI apps in Ravyn
+- Migrating from WSGI to ASGI
+- Common integration patterns
+- Performance considerations
 
-Using this middleware is very simple, let's use Flask as example since it is very fast to spin-up a Flask service
-compared to other giants like Django.
+## Quick Start
 
-=== "Simple Routing"
+```python
+from ravyn import Ravyn
+from flask import Flask
 
-    ```python hl_lines="1 6 9 24"
-    {!> ../../../docs_src/wsgi/simple_routing.py!}
-    ```
+# Your existing Flask app
+flask_app = Flask(__name__)
 
-=== "Nested Routing"
+@flask_app.route("/hello")
+def hello():
+    return {"message": "Hello from Flask!"}
 
-    ```python hl_lines="1 6 9 26"
-    {!> ../../../docs_src/wsgi/nested_routing.py!}
-    ```
+# Mount in Ravyn
+from ravyn.middleware.wsgi import WSGIMiddleware
 
-=== "Complex Routing"
+app = Ravyn(
+    routes=[
+        Mount("/legacy", app=WSGIMiddleware(flask_app))
+    ]
+)
 
-    ```python hl_lines="1 6-7 10 16 37 51"
-    {!> ../../../docs_src/wsgi/complex_routing.py!}
-    ```
-
-=== "Multiple Flask"
-
-    ```python hl_lines="1 6-7 10 22 33-34"
-    {!> ../../../docs_src/wsgi/multiple.py!}
-    ```
-
-=== "Ravyn"
-
-    ```python hl_lines="1 6-7 10 22 31-32 36"
-    {!> ../../../docs_src/wsgi/ravyn.py!}
-    ```
-
-=== "ChildRavyn"
-
-    ```python hl_lines="1 6-7 10 22 31-32 36"
-    {!> ../../../docs_src/wsgi/childravyn.py!}
-    ```
-
-You already get the idea, the integrations are endeless!
-
-## Verify it
-
-With all of examples from before, you can now verify that the integrations are working.
-
-The paths pointing to the `WSGIMiddleware` will be handled by Flask and the rest is handled by **Ravyn**,
-including the Ravyn inside another Ravyn.
-
-If you run the endpoint handled by Flask:
-
-* `/flask` - From simple routing.
-* `/flask` - From nested routing.
-* `/internal/flask` and `/external/second/flask` - From complex routing.
-* `/flask` and `/second/flask` - From multiple flask apps.
-* `/ravyn/flask` and `/ravyn/second/flask` - From inside another Ravyn
-
-You will see the response:
-
-```shell
-Hello, Ravyn from Flask!
+# /legacy/hello → Flask handles it
+# Other routes → Ravyn handles them
 ```
 
-Accessing any `Ravyn` endpoint:
+---
 
-* `/home/ravyn` - From simple routing.
-* `/home/ravyn` - From complex routing.
-* `/home/ravyn` - From nested routing.
-* `/home/ravyn` - From multiple flask apps.
-* `/ravyn/home/ravyn` - From inside another Ravyn
+## Why Mount WSGI Apps?
 
-```json
-{
-    "name": "ravyn"
-}
+### Use Cases:
+
+- **Gradual Migration** - Migrate from Flask/Django to Ravyn incrementally
+
+- **Legacy Integration** - Keep old WSGI apps running alongside new code
+
+- **Third-Party Apps** - Integrate existing WSGI applications
+
+- **Backwards Compatibility** - Support legacy endpoints during transition
+
+### When to Use:
+
+- Migrating from Flask, Django, or other WSGI frameworks
+- Need to maintain legacy endpoints
+- Integrating third-party WSGI applications
+- Gradual modernization of codebase
+
+---
+
+## WSGI vs ASGI
+
+| Feature | WSGI | ASGI |
+|---------|------|------|
+| **Concurrency** | Synchronous | Async/await |
+| **WebSockets** | No | Yes |
+| **HTTP/2** | No | Yes |
+| **Performance** | Good | Excellent |
+| **Frameworks** | Flask, Django | Ravyn, FastAPI |
+
+!!! info
+    WSGI apps run in a thread pool, which can impact performance. Consider migrating to ASGI for better concurrency.
+
+---
+
+## Mounting WSGI Applications
+
+### Basic Mount
+
+```python
+from ravyn import Ravyn, Mount
+from ravyn.middleware.wsgi import WSGIMiddleware
+from flask import Flask
+
+# Flask app
+flask_app = Flask(__name__)
+
+@flask_app.route("/api/users")
+def users():
+    return {"users": []}
+
+# Mount in Ravyn
+app = Ravyn(
+    routes=[
+        Mount("/flask", app=WSGIMiddleware(flask_app))
+    ]
+)
+
+# /flask/api/users → Flask handles it
 ```
 
-## WSGI and Ravyn OpenAPI
+### Multiple WSGI Apps
 
-Only apps that are inherited from [Ravyn](./application/applications.md)
-or [ChildRavyn](./routing/router.md#child-ravyn-application) will be showing
-in the OpenAPI documentation. This is for compatibility purposes only and **does not affect** the internal
-routing.
+```python
+from ravyn import Ravyn, Mount
+from ravyn.middleware.wsgi import WSGIMiddleware
+from flask import Flask
+from django.core.wsgi import get_wsgi_application
 
-WSGI integrations and all the urls associated still work.
+# Flask app
+flask_app = Flask(__name__)
+
+# Django app
+django_app = get_wsgi_application()
+
+# Mount both
+app = Ravyn(
+    routes=[
+        Mount("/flask", app=WSGIMiddleware(flask_app)),
+        Mount("/django", app=WSGIMiddleware(django_app))
+    ]
+)
+```
+
+---
+
+## Flask Integration
+
+### Complete Example
+
+```python
+from ravyn import Ravyn, Mount, get
+from ravyn.middleware.wsgi import WSGIMiddleware
+from flask import Flask, jsonify
+
+# Existing Flask app
+flask_app = Flask(__name__)
+
+@flask_app.route("/legacy/users")
+def get_users():
+    return jsonify({"users": ["Alice", "Bob"]})
+
+@flask_app.route("/legacy/products")
+def get_products():
+    return jsonify({"products": ["Product 1", "Product 2"]})
+
+# New Ravyn endpoints
+@get("/api/health")
+def health() -> dict:
+    return {"status": "healthy"}
+
+# Combine them
+app = Ravyn(
+    routes=[
+        Mount("/", app=WSGIMiddleware(flask_app)),  # Flask handles /legacy/*
+        Gateway(handler=health)  # Ravyn handles /api/health
+    ]
+)
+```
+
+---
+
+## Django Integration
+
+### Basic Setup
+
+```python
+from ravyn import Ravyn, Mount
+from ravyn.middleware.wsgi import WSGIMiddleware
+import os
+import django
+
+# Configure Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
+django.setup()
+
+# Get Django WSGI app
+from django.core.wsgi import get_wsgi_application
+django_app = get_wsgi_application()
+
+# Mount in Ravyn
+app = Ravyn(
+    routes=[
+        Mount("/admin", app=WSGIMiddleware(django_app))
+    ]
+)
+
+# /admin/* → Django handles it
+```
+
+---
+
+## Migration Strategies
+
+### Strategy 1: Gradual Route Migration
+
+```python
+from ravyn import Ravyn, Mount, get
+from ravyn.middleware.wsgi import WSGIMiddleware
+from flask import Flask
+
+flask_app = Flask(__name__)
+
+# Old Flask routes (being phased out)
+@flask_app.route("/old/users")
+def old_users():
+    return {"users": []}
+
+# New Ravyn routes
+@get("/api/users")
+def new_users() -> dict:
+    return {"users": [], "version": "v2"}
+
+app = Ravyn(
+    routes=[
+        Mount("/old", app=WSGIMiddleware(flask_app)),  # Legacy
+        Gateway(handler=new_users)  # New
+    ]
+)
+```
+
+### Strategy 2: Feature Flags
+
+```python
+import os
+from ravyn import Ravyn, Mount, get
+from ravyn.middleware.wsgi import WSGIMiddleware
+
+USE_LEGACY = os.getenv("USE_LEGACY_API", "false") == "true"
+
+if USE_LEGACY:
+    # Mount legacy app
+    app = Ravyn(
+        routes=[Mount("/", app=WSGIMiddleware(legacy_app))]
+    )
+else:
+    # Use new Ravyn app
+    app = Ravyn(routes=[Gateway(handler=new_endpoint)])
+```
+
+---
+
+## Performance Considerations
+
+### Thread Pool Configuration
+
+```python
+from ravyn.middleware.wsgi import WSGIMiddleware
+
+# Configure thread pool size
+wsgi_middleware = WSGIMiddleware(
+    flask_app,
+    workers=10  # Number of worker threads
+)
+
+app = Ravyn(
+    routes=[Mount("/legacy", app=wsgi_middleware)]
+)
+```
+
+### Performance Tips
+
+1. **Minimize WSGI Usage** - Migrate critical paths to ASGI first
+2. **Use Caching** - Cache WSGI responses when possible
+3. **Monitor Performance** - Track response times
+4. **Gradual Migration** - Move high-traffic routes first
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Path Conflicts
+
+**Problem:** WSGI and ASGI routes conflict.
+
+```python
+# Wrong - both handle /api/users
+flask_app.route("/api/users")
+@get("/api/users")
+```
+
+**Solution:** Use different path prefixes:
+
+```python
+# Correct
+Mount("/legacy", app=WSGIMiddleware(flask_app))  # /legacy/api/users
+@get("/api/users")  # /api/users
+```
+
+### Pitfall 2: Missing Django Setup
+
+**Problem:** Django not configured before mounting.
+
+```python
+# Wrong - Django not set up
+django_app = get_wsgi_application()  # Error!
+```
+
+**Solution:** Configure Django first:
+
+```python
+# Correct
+import os
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
+django.setup()
+
+django_app = get_wsgi_application()
+```
+
+### Pitfall 3: Blocking Operations
+
+**Problem:** WSGI app blocks async operations.
+
+```python
+# Wrong - WSGI blocks event loop
+@flask_app.route("/slow")
+def slow():
+    time.sleep(10)  # Blocks!
+    return {"done": True}
+```
+
+**Solution:** Use thread pool or migrate to async:
+
+```python
+# Correct - migrate to Ravyn
+@get("/slow")
+async def slow() -> dict:
+    await asyncio.sleep(10)  # Non-blocking
+    return {"done": True}
+```
+
+---
+
+## Best Practices
+
+### 1. Isolate Legacy Code
+
+```python
+# Good - clear separation
+app = Ravyn(
+    routes=[
+        Mount("/legacy", app=WSGIMiddleware(old_app)),  # Legacy
+        Include("/api", routes=new_routes)  # New
+    ]
+)
+```
+
+### 2. Document Migration Plan
+
+```python
+# Good - clear comments
+app = Ravyn(
+    routes=[
+        # TODO: Migrate to /api/v2/users by Q2 2026
+        Mount("/legacy", app=WSGIMiddleware(flask_app)),
+        
+        # New endpoints
+        Include("/api/v2", routes=new_routes)
+    ]
+)
+```
+
+### 3. Monitor Performance
+
+```python
+# Good - add logging
+import logging
+
+logger = logging.getLogger(__name__)
+
+wsgi_middleware = WSGIMiddleware(flask_app)
+
+@app.on_event("startup")
+async def log_wsgi_mount():
+    logger.info("WSGI app mounted at /legacy")
+```
+
+---
+
+## Testing WSGI Mounts
+
+```python
+from ravyn import Ravyn, Mount
+from ravyn.middleware.wsgi import WSGIMiddleware
+from ravyn import RavynTestClient
+from flask import Flask
+
+# Flask app
+flask_app = Flask(__name__)
+
+@flask_app.route("/hello")
+def hello():
+    return {"message": "Hello"}
+
+# Ravyn app
+app = Ravyn(
+    routes=[Mount("/flask", app=WSGIMiddleware(flask_app))]
+)
+
+# Test
+def test_wsgi_mount():
+    with RavynTestClient(app) as client:
+        response = client.get("/flask/hello")
+        assert response.status_code == 200
+        assert response.json() == {"message": "Hello"}
+```
+
+---
+
+## Next Steps
+
+Now that you understand WSGI integration, explore:
+
+- [Routing](./routing/routes.md) - Route configuration
+- [Middleware](./middleware/index.md) - Request processing
+- [Migration Guide](./migration.md) - Migrating to Ravyn
+- [Testing](./testclient.md) - Test your application

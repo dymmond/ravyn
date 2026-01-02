@@ -29,11 +29,9 @@ Returning a text file directly:
 from ravyn import Ravyn, Gateway, get
 from ravyn.contrib.responses.files import send_file
 
-
 @get()
 async def get_report():
     return send_file("reports/summary.txt")
-
 
 app = Ravyn(routes=[
     Gaetway("/report", handler=get_report)

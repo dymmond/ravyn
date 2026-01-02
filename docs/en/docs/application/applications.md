@@ -1,174 +1,444 @@
-# Applications
+# Ravyn
 
-Ravyn runs Lilya under the hood and therefore includes an application class **Ravyn** that ties
-of its functionality.
+The `Ravyn` class is the core of your application. It handles routing, middleware, settings, and ties everything together.
 
-## The Ravyn class
+## What You'll Learn
 
-=== "In a nutshell"
+- Creating a Ravyn application
+- Configuration options
+- Application state management
+- Accessing settings
+- Lifecycle management
 
-    ```python
-    {!> ../../../docs_src/application/app/nutshell.py !}
-    ```
+## Quick Start
 
-=== "Another way"
+```python
+from ravyn import Ravyn, get
 
-    ```python
-    {!> ../../../docs_src/application/app/another_way.py!}
-    ```
+@get("/")
+def homepage() -> dict:
+    return {"message": "Hello, Ravyn!"}
 
-=== "With Include"
-
-    ```python
-    {!> ../../../docs_src/application/app/with_include.py!}
-    ```
-
-### Quick note
-
-Because the swagger and redoc can only do so much, for example with the
-`username = request.path_params["username"]` **you won't be able to test it via docs**.
-**The best way of doing it is by calling the API directly via any preferred client or browser.**
-
-In other words, the path param can be captured using the Request.path_params, but cannot be tested from the Swagger UI.
-
-#### Testing using curl or insomnia
-
-Via cURL:
-
-```shell
-$ curl -X GET http://localhost:8000/user/ravyn
+app = Ravyn(
+    routes=[Gateway(handler=homepage)],
+    debug=True
+)
 ```
 
-Via Insomnia:
+---
 
-<p align="center">
-  <a href="https://res.cloudinary.com/dymmond/image/upload/v1669211317/esmerald/others/insomnia_phitug.png" target="_blank"><img src="https://res.cloudinary.com/dymmond/image/upload/v1669211317/esmerald/others/insomnia_phitug.png" alt='Insomnia'></a>
-</p>
+## Creating an Application
 
-!!! Note
-    You can use something else besides insomnia. This was for example purposes.
+### Minimal Application
 
-### Instantiating the application
+```python
+from ravyn import Ravyn
 
-Creating an application instance can be done in different ways and with a great plus of using the
-[settings](./settings.md) for a cleaner approach.
-
-**Parameters**:
-
-* **debug** - Boolean indicating if debug tracebacks should be returned on errors. Basically, debug mode,
-very useful for development.
-* **title** - The title for the application. Used for OpenAPI.
-* **app_name** - The application name. Used also for OpenAPI.
-* **description** - The description for the application. Used for OpenAPI.
-* **version** - The version for the application. Used for OpenAPI.
-* **contact** - The contact of an admin. Used for OpenAPI.
-* **terms_of_service** - The terms of service of the application. Used for OpenAPI.
-* **license** - The license information. Used for OpenAPI.
-* **servers** - The servers in dictionary format. Used for OpenAPI.
-* **secret_key** - The secret key used for internal encryption (for example, user passwords).
-* **allowed_hosts** - A list of allowed hosts. Enables the built-in allowed hosts middleware.
-* **allow_origins** - A list of allowed origins. Enables the built-in CORS middleware. It can be only `allow_origins`
-or a [CORSConfig](../configurations/cors.md) object but not both.
-* **routes** - A list of routes to serve incoming HTTP and WebSocket requests.
-A list of [Gateway](../routing/routes.md#gateway), [WebSocketGateway](../routing/routes.md#websocketgateway)
-or [Include](../routing/routes.md#include)
-* **interceptors** - A list of [interceptors](../interceptors.md) to serve the application incoming
-requests (HTTP and Websockets).
-* **permissions** - A list of [permissions](../permissions/index.md) to serve the application incoming
-requests (HTTP and Websockets).
-* **middleware** - A list of middleware to run for every request. A Ravyn application will always include the
-middlewares from the configurations passed (CSRF, CORS, JWT...) and the custom user middleware. The middlewares
-can be subclasses of the [MiddlewareProtocol](../protocols.md).
-or <a href='https://www.lilya.dev/middleware/' target='_blank'>Lilya Middleware</a> as they are both converted
-internally. Read more about [Python Protocols](https://peps.python.org/pep-0544/).
-* **dependencies** - A dictionary of string and [Inject](.././dependencies.md) instances enable application level dependency
-injection.
-* **exception_handlers** - A dictionary of [exception types](../exceptions.md) (or custom exceptions) and the handler
-functions on an application top level. Exception handler callables should be of the form of
-`handler(request, exc) -> response` and may be be either standard functions, or async functions.
-* **csrf_config** - If [CSRFConfig](../configurations/csrf.md) is set it will enable the CSRF built-in middleware.
-* **openapi_config** - If [OpenAPIConfig](../configurations/openapi/config.md) is set it will override the default OpenAPI
-docs settings.
-* **cors_config** - If [CORSConfig](../configurations/cors.md) is set it will enable the CORS built-in middleware.
-* **static_files_config** - If [StaticFilesConfig](../configurations/staticfiles.md) is set, it will enable the
-application static files configuration.
-* **template_config** - If [TemplateConfig](../configurations/template.md) is set it will enable the template
-engine from the configuration object.
-* **session_config** - If [SessionConfig](../configurations/session.md) is set it will enable the session
-built-in middleware.
-* **response_class** - Custom subclass of [Response](../responses.md) to be used as application response
-class.
-* **response_cookies** - List of cookie objects.
-* **response_headers** - Mapping dictionary of header objects.
-* **scheduler_config** - A [SchedulerConfig](../configurations/scheduler.md) class used for the application scheduler.
-extra configuations of [scheduler tasks](../scheduler/handler.md).
-* **timezone** - The application default timezone. Defaults to `UTC`.
-* **on_shutdown** - A list of callables to run on application shutdown. Shutdown handler callables do not take any
-arguments, and may be be either standard functions, or async functions.
-
-* **on_startup** - A list of callables to run on application startup. Startup handler callables do not take any
-arguments, and may be be either standard functions, or async functions.
-* **lifespan** - The lifespan context function is a newer style that replaces on_startup / on_shutdown handlers.
-Use one or the other, not both.
-* **tags** - List of tags to include in the OpenAPI schema.
-* **include_in_schema** - Boolean flag to indicate if should be schema included or not.
-* **deprecated** - Boolean flag for deprecation. Used for OpenAPI.
-* **security** - Security definition of the application. Used for OpenAPI.
-* **enable_openapi** - Flag to enable/disable OpenAPI docs. It is enabled by default.
-* **redirect_slashes** - Flag to enable/disable redirect slashes for the handlers. It is enabled by default.
-
-## Application settings
-
-Settings are another way of controlling the parameters passed to the
-[Ravyn object when instantiating](#instantiating-the-application). Check out the [settings](./settings.md) for
-more details and how to use it to power up your application.
-
-To access the application settings there are different ways:
-
-=== "Within the application request"
-
-    ```python hl_lines="6"
-    {!> ../../../docs_src/application/settings/within_app_request.py!}
-    ```
-
-=== "From the global settings"
-
-    ```python hl_lines="1 6"
-    {!> ../../../docs_src/application/settings/global_settings.py!}
-    ```
-
-=== "From the conf settings"
-
-    ```python hl_lines="2 7"
-    {!> ../../../docs_src/application/settings/conf_settings.py!}
-    ```
-
-### State and application instance
-
-You can store arbitrary extra state on the application instance using the State instance.
-
-Example:
-
-```python hl_lines="6"
-{!> ../../../docs_src/application/others/app_state.py!}
+app = Ravyn()
 ```
 
-## Accessing the application instance
+!!! warning "Route Requirement"
+    While the code above assumes a valid application, a `Ravyn` application **requires at least one route** to be useful. Without routes, it will return 404 for every request.
+    
+    Also, ensure your route handlers have **explicit return types** (e.g., `def handler() -> dict:`). This is crucial for data serialization and automatic documentation.
 
-The application instance can be access via `request` when it is available.
+### With Routes
 
-Example:
+```python
+from ravyn import Ravyn, Gateway, get
 
-```python hl_lines="6"
-{!> ../../../docs_src/application/others/access_app_instance.py!}
+@get("/users")
+def list_users() -> dict:
+    return {"users": []}
+
+app = Ravyn(
+    routes=[Gateway(handler=list_users)]
+)
 ```
 
-## Accessing the state from the application instance
+### With Configuration
 
-The state can be access via `request` when it is available.
+```python
+from ravyn import Ravyn
 
-Example:
-
-```python hl_lines="7 11"
-{!> ../../../docs_src/application/others/access_state_from_app.py!}
+app = Ravyn(
+    title="My API",
+    version="1.0.0",
+    debug=True,
+    routes=[...]
+)
 ```
+
+---
+
+## Configuration Parameters
+
+### Essential Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `routes` | list | List of Gateway, WebSocketGateway, Include |
+| `debug` | bool | Enable debug mode (default: False) |
+| `title` | str | API title for OpenAPI docs |
+| `version` | str | API version for OpenAPI docs |
+
+### OpenAPI Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `description` | str | API description |
+| `contact` | dict | Admin contact info |
+| `license` | dict | License information |
+| `servers` | list | Server configurations |
+| `tags` | list | OpenAPI tags |
+
+### Security & Middleware
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `allowed_hosts` | list | Allowed host names |
+| `cors_config` | CORSConfig | CORS configuration |
+| `csrf_config` | CSRFConfig | CSRF protection |
+| `session_config` | SessionConfig | Session management |
+| `middleware` | list | Custom middleware |
+
+### Advanced Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `dependencies` | dict | Application-level dependencies |
+| `interceptors` | list | Request interceptors |
+| `permissions` | list | Permission classes |
+| `exception_handlers` | dict | Custom exception handlers |
+| `lifespan` | callable | Lifespan context manager |
+
+---
+
+## Complete Example
+
+```python
+from ravyn import Ravyn, Gateway, Include, get
+from ravyn.config import CORSConfig
+
+@get("/health")
+def health_check() -> dict:
+    return {"status": "healthy"}
+
+@get("/users")
+def list_users() -> dict:
+    return {"users": []}
+
+app = Ravyn(
+    title="My API",
+    version="1.0.0",
+    description="A powerful API built with Ravyn",
+    debug=True,
+    
+    # Routes
+    routes=[
+        Gateway(handler=health_check),
+        Include("/api", routes=[
+            Gateway(handler=list_users)
+        ])
+    ],
+    
+    # CORS
+    cors_config=CORSConfig(
+        allow_origins=["*"],
+        allow_methods=["*"]
+    ),
+    
+    # Security
+    allowed_hosts=["localhost", "api.example.com"]
+)
+```
+
+---
+
+## Application State
+
+Store arbitrary data on the application instance:
+
+### Setting State
+
+```python
+from ravyn import Ravyn
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: Ravyn):
+    # Startup
+    app.state.db = await connect_database()
+    app.state.cache = RedisCache()
+    
+    yield
+    
+    # Shutdown
+    await app.state.db.disconnect()
+    await app.state.cache.close()
+
+app = Ravyn(lifespan=lifespan)
+```
+
+### Accessing State
+
+```python
+from ravyn import get, Request
+
+@get("/users")
+async def get_users(request: Request) -> dict:
+    # Access database from state
+    db = request.app.state.db
+    users = await db.fetch_all("SELECT * FROM users")
+    return {"users": users}
+```
+
+---
+
+## Accessing Settings
+
+### From Request
+
+```python
+from ravyn import get, Request
+
+@get("/config")
+def get_config(request: Request) -> dict:
+    settings = request.app.settings
+    return {
+        "debug": settings.debug,
+        "title": settings.title
+    }
+```
+
+### From Global Settings
+
+```python
+from ravyn.conf import settings
+
+# Access anywhere
+print(settings.debug)
+print(settings.title)
+```
+
+### From conf Module
+
+```python
+from ravyn.conf.global_settings import RavynSettings
+
+settings = RavynSettings()
+print(settings.debug)
+```
+
+---
+
+## Lifecycle Management
+
+### Startup and Shutdown
+
+```python
+async def startup():
+    print("Application starting...")
+    # Initialize resources
+
+async def shutdown():
+    print("Application shutting down...")
+    # Cleanup resources
+
+app = Ravyn(
+    on_startup=[startup],
+    on_shutdown=[shutdown]
+)
+```
+
+### Lifespan Context (Recommended)
+
+```python
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: Ravyn):
+    # Startup
+    print("Starting up...")
+    app.state.db = await connect_database()
+    
+    yield  # Application runs
+    
+    # Shutdown
+    print("Shutting down...")
+    await app.state.db.disconnect()
+
+app = Ravyn(lifespan=lifespan)
+```
+
+!!! tip
+    Use `lifespan` instead of `on_startup`/`on_shutdown` for better resource management.
+
+---
+
+## Common Patterns
+
+### Pattern 1: API with Database
+
+```python
+from ravyn import Ravyn, get
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: Ravyn):
+    app.state.db = await connect_database()
+    yield
+    await app.state.db.disconnect()
+
+@get("/users")
+async def get_users(request: Request) -> list:
+    return await request.app.state.db.fetch_all("SELECT * FROM users")
+
+app = Ravyn(
+    routes=[Gateway(handler=get_users)],
+    lifespan=lifespan
+)
+```
+
+### Pattern 2: Microservice
+
+```python
+from ravyn import Ravyn, Include
+
+app = Ravyn(
+    title="User Service",
+    version="1.0.0",
+    routes=[
+        Include("/api/v1", routes=v1_routes),
+        Include("/api/v2", routes=v2_routes)
+    ],
+    cors_config=CORSConfig(allow_origins=["*"])
+)
+```
+
+### Pattern 3: With Settings
+
+```python
+from ravyn import Ravyn, RavynSettings
+
+class AppSettings(RavynSettings):
+    title: str = "My API"
+    debug: bool = True
+    database_url: str = "postgresql://..."
+
+app = Ravyn(settings_module=AppSettings)
+```
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Forgetting to Add Routes
+
+**Problem:** No routes defined.
+
+```python
+# Wrong - no routes
+app = Ravyn()
+```
+
+**Solution:** Add routes:
+
+```python
+# Correct
+app = Ravyn(
+    routes=[Gateway(handler=homepage)]
+)
+```
+
+### Pitfall 2: Using Both Lifespan and on_startup
+
+**Problem:** Mixing lifecycle approaches.
+
+```python
+# Wrong - using both
+app = Ravyn(
+    lifespan=lifespan,
+    on_startup=[startup]  # Don't mix!
+)
+```
+
+**Solution:** Use one or the other:
+
+```python
+# Correct
+app = Ravyn(lifespan=lifespan)
+```
+
+### Pitfall 3: Accessing State Before Initialization
+
+**Problem:** State not set up yet.
+
+```python
+# Wrong - state not initialized
+app = Ravyn()
+print(app.state.db)  # Error!
+```
+
+**Solution:** Initialize in lifespan:
+
+```python
+# Correct
+@asynccontextmanager
+async def lifespan(app: Ravyn):
+    app.state.db = await connect_database()
+    yield
+
+app = Ravyn(lifespan=lifespan)
+```
+
+---
+
+## Best Practices
+
+### 1. Use Settings for Configuration
+
+```python
+# Good - settings-based
+class AppSettings(RavynSettings):
+    title: str = "My API"
+    debug: bool = False
+
+app = Ravyn(settings_module=AppSettings)
+```
+
+### 2. Organize Routes with Include
+
+```python
+# Good - organized routes
+app = Ravyn(
+    routes=[
+        Include("/api/users", routes=user_routes),
+        Include("/api/products", routes=product_routes)
+    ]
+)
+```
+
+### 3. Use Lifespan for Resources
+
+```python
+# Good - proper resource management
+@asynccontextmanager
+async def lifespan(app: Ravyn):
+    app.state.db = await connect_database()
+    yield
+    await app.state.db.disconnect()
+
+app = Ravyn(lifespan=lifespan)
+```
+
+---
+
+## Next Steps
+
+Now that you understand the Ravyn application class, explore:
+
+- [Settings](./settings.md) - Application configuration
+- [Routing](../routing/routes.md) - Route configuration
+- [Middleware](../middleware/index.md) - Request processing
+- [Lifespan Events](../lifespan-events.md) - Application lifecycle

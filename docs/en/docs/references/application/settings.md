@@ -32,6 +32,7 @@ app.settings
 ::: ravyn.RavynSettings
     options:
         filters:
+
         - "!^model_config"
         - "!^ipython_args"
         - "!^ptpython_config_file"

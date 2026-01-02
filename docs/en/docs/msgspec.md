@@ -1,267 +1,452 @@
 # MsgSpec
 
-!!! Info
-    WHen Msgspec was natively added to Ravyn in the version 2.4.0, it was beyond our wildest dreams
-    what was about to come. With the introduction of the [Encoders](./encoders.md), every integration
-    with external validators was simplified a lot.
+MsgSpec is a fast serialization and validation library that integrates seamlessly with Ravyn. If you need maximum performance for JSON serialization, MsgSpec is an excellent alternative to Pydantic.
 
-    The following section is still applied but its for historical reasons since Pydantic and Msgspec
-    in Ravyn are natively integration with Encoders but we leave this section as some principals
-    are still applied but eventually we migh discontinue (or not) this part and you can treat msgspec as you
-    normally treat with Pydantic approach.
+## What You'll Learn
 
-```python
-from ravyn.core.datastructures.msgspec import Struct
-```
+- Using MsgSpec Structs in Ravyn
+- MsgSpec vs Pydantic performance
+- Integrating with OpenAPI documentation
+- Mixing MsgSpec with Pydantic
+- Validation with MsgSpec
 
-!!! Warning
-    For a full integration of `Ravyn` with [OpenAPI](./openapi.md) this is **mandatory** to be
-    used. Using `msgspec.Struct` for OpenAPI models will incur in errors.
-
-    `ravyn.datastructures.msgspec.Struct` **is exactly the same** as `msgspec.Struct` but with
-    extras added for [OpenAPI](./openapi.md) purposes.
-
-## What is `msgspec`
-
-As their documentation mention:
-
-> msgspec is a fast serialization and validation library, with builtin support for JSON, MessagePack, YAML, and TOML.
-
-`msgspec` and `Pydantic` are two extremely powerful libraries and both serve also different purposes
-but there are a lot of people that prefer `msgspec` to Pydantic for its performance.
-
-A good example, as per `msgspec` documentation.
+## Quick Start
 
 ```python
-import msgspec
+from ravyn import Ravyn, get, post
+from ravyn.datastructures.msgspec import Struct
 
-class User(msgspec.Struct):
-    """A new type describing a User"""
+class User(Struct):
     name: str
-    groups: set[str] = set()
-    email: str | None = None
+    email: str
+    age: int = 0
+
+@get("/user")
+def get_user() -> User:
+    return User(name="Alice", email="alice@example.com", age=30)
+
+@post("/user")
+def create_user(user: User) -> User:
+    # Validation happens automatically
+    return user
+
+app = Ravyn()
+app.add_route(get_user)
+app.add_route(create_user)
 ```
 
-## `msgspec` and Ravyn
+!!! info
+    Always import from `ravyn.datastructures.msgspec import Struct` for full Ravyn integration, not directly from `msgspec`.
 
-Ravyn supports `msgspec` with the nuances of what the framework can offer
-**without breaking any native functionality**.
+---
 
-So what does this mean? Well, Ravyn for [OpenAPI documentation](./openapi.md) uses internal
-processes that rely on `Pydantic` and that should remain (at least for now) but also integrates
-`msgspec` in a seemless way.
+## Why Use MsgSpec?
 
-This means, when you implement `msgspec` structs in your code, the error handling is delegated
-to the library and no Pydantic is involved, for obvious reasons, as well as the serialisation
-and deserialization of the data.
+### Performance Benefits:
 
-### The nuances of Ravyn
+- **Faster Serialization** - 5-10x faster than Pydantic for JSON
 
-This is what Ravyn can also do for you. By nuances, what Ravyn actually means is that you
-**can mix `msgspec` structs within your Pydantic models but not the other way around**.
+- **Lower Memory Usage** - More efficient than Pydantic
 
-Is this useful? Depends of what you want to do. You probably won't be using this but it is there
-in case you feel like playing around.
+- **Fast Validation** - High-performance data validation
 
-Nothing to worry about, we will be covering this in detail.
+- **Multiple Formats** - JSON, MessagePack, YAML, TOML support
 
-## Importing `msgspec`
+### When to Use MsgSpec:
 
-As mentioned at the very top of this document, to import the `msgspec` module you will need to:
+- High-throughput APIs
+- Performance-critical endpoints
+- Large data payloads
+- Microservices with tight latency requirements
+
+### When to Use Pydantic:
+
+- Complex validation logic
+- Rich ecosystem of validators
+- Extensive field customization
+- ORM integration (SQLAlchemy, etc.)
+
+---
+
+## MsgSpec vs Pydantic
+
+| Feature | MsgSpec | Pydantic |
+|---------|---------|----------|
+| **Speed** | ⚡⚡⚡ Very Fast | ⚡⚡ Fast |
+| **Memory** | Low | Higher |
+| **Validation** | Built-in types | Extensive validators |
+| **Ecosystem** | Smaller | Very Large |
+| **Learning Curve** | Simple | Moderate |
+
+---
+
+## Using MsgSpec Structs
+
+### Basic Struct
 
 ```python
-from ravyn.core.datastructures.msgspec import Struct
+from ravyn.datastructures.msgspec import Struct
+
+class Product(Struct):
+    name: str
+    price: float
+    in_stock: bool = True
 ```
 
-Now, this can be a bit confusing, right? Why we need to import from this place instead of using
-directly the `msgspec.Struct`?
-
-Well, actually you can use directly the `msgspec.Struct` but as mentioned before, **Ravyn** uses
-Pydantic for the [OpenAPI](./openapi.md) documentation and to add the [nuances](#the-nuances-of-ravyn)
-we all love and therefore the `ravyn.datastructures.msgspec.Struct` is simply an extended
-object that adds some Pydantic flavours for the [OpenAPI](./openapi.md).
-
-This also means that you can declare [OpenAPIResponses](./responses.md#openapi-responses) using
-`msgspec`. Pretty cool, right?
-
-!!! Warning
-    If you don't use the `ravyn.datastructures.msgspec.Struct`, it won't be possible
-    to use the `msgspec` with Pydantic. At least not in a cleaner supported way.
-
-## How to use it
-
-### `ravyn.datastructures.msgspec.Struct`
-
-Well, let us see how we would work with `msgspec` inside Ravyn.
-
-In a nutshell, it is exactly the same as you would normally do if you were creating a Pydantic
-base model or a datastructure to be used within your application.
+### With Validation
 
 ```python
-{!> ../../../docs_src/msgspec/nutshell.py !}
+from ravyn.datastructures.msgspec import Struct
+from ravyn import post
+from ravyn.exceptions import ValidationError
+
+class CreateUser(Struct):
+    username: str
+    email: str
+    age: int
+    
+    def __post_init__(self):
+        if self.age < 18:
+            raise ValidationError("Must be 18 or older")
+        if "@" not in self.email:
+            raise ValidationError("Invalid email format")
+
+@post("/users")
+def create_user(data: CreateUser) -> dict:
+    return {"created": data.username}
 ```
 
-Simple, right? Yes and there is a lot going here.
-
-You you might have noticed, we are importing from `ravyn.datastructures.msgspec` the `Struct`
-and this is a good habit to have if you care about [OpenAPI documentation](./openapi.md) and then
-we are simply declaring the `data` as the `User` of type `Struct` as the data in and as a response
-the `User` as well.
-
-The reason why we declare the `User` as a response it is just to show that `msgspec`
-**can also be used as another Ravyn response**.
-
-The rest, it is still as clean as always was in Ravyn.
-
-Now, the cool part is when we send a payload to the API, something like this:
-
-```shell
-data = {"name": "Ravyn", "email": "ravyn@ravyn.dev"}
-```
-
-When this payload is sent, the **validations are done automatically by the `msgspec` library**
-which means you can implement as many validations as you want as you would normally do while
-using `msgspec`.
+### Nested Structs
 
 ```python
-{!> ../../../docs_src/msgspec/validations.py !}
+from ravyn.datastructures.msgspec import Struct
+
+class Address(Struct):
+    street: str
+    city: str
+    zip_code: str
+
+class User(Struct):
+    name: str
+    email: str
+    address: Address
+
+# Usage
+user = User(
+    name="Alice",
+    email="alice@example.com",
+    address=Address(
+        street="123 Main St",
+        city="Springfield",
+        zip_code="12345"
+    )
+)
 ```
 
-And just like that, you are now using `msgspec` and all of its power within **Ravyn**.
+---
 
-### `msgspec.Struct`
+## Ravyn Integration
 
-As mentioned before, importing from `ravyn.datastructures.msgspec.Struct` should be the way
-for Ravyn to use it without any issues but you can still use the normal `msgspec.Struct` as well.
+### Import from Ravyn
 
 ```python
-{!> ../../../docs_src/msgspec/no_import.py !}
+# Correct - Full Ravyn integration
+from ravyn.datastructures.msgspec import Struct
+
+# Wrong - Missing OpenAPI support
+from msgspec import Struct
 ```
 
-Now this is possible and it will work as normal but **it comes with limitations**. When accessing
-the [OpenAPI](./openapi.md), it will raise errors.
+!!! warning
+    Using `msgspec.Struct` directly will cause errors with OpenAPI documentation. Always use `ravyn.datastructures.msgspec.Struct`.
 
-Again, `ravyn.datatructures.msgspec.Struct` is **exactly the same** as the `msgspec.Struct` with
-extra Ravyn flavours and this means you
-**will not have the problem of updating the version of `msgspec` anytime you need**.
-
-### Nested structs
-
-Well, this is now what you can do already with `msgspec` and not directly related with Ravyn but
-for example purposes, let us see how it would look like it having a nested `Struct`.
+### As Request Body
 
 ```python
-{!> ../../../docs_src/msgspec/nested.py !}
+from ravyn import post
+from ravyn.datastructures.msgspec import Struct
+
+class LoginRequest(Struct):
+    username: str
+    password: str
+
+@post("/login")
+def login(credentials: LoginRequest) -> dict:
+    # MsgSpec validates automatically
+    return {"token": "abc123"}
 ```
 
-One possible [payload](./extras/request-data.md#the-payload-field) would be:
+### As Response
 
-```json
-{
-    "name": "Ravyn",
-    "email": "ravyn@ravyn.dev",
-    "address": {
-        "post_code": "90210",
-        "street_address": "California"
-    }
-}
+```python
+from ravyn import get
+from ravyn.datastructures.msgspec import Struct
+
+class UserResponse(Struct):
+    id: int
+    name: str
+    email: str
+
+@get("/users/{user_id}")
+def get_user(user_id: int) -> UserResponse:
+    return UserResponse(
+        id=user_id,
+        name="Alice",
+        email="alice@example.com"
+    )
 ```
 
-### The nuances of `Struct`
-
-It was mentioned numerous times the use of `ravyn.datastructures.msgspec.Struct` and what it
-could give you besides the obvious needed [OpenAPI](./openapi.md) documentation.
-
-This is not the only thing. This special `datastructure` also allows you to **mix with Pydantic**
-models if you want to.
-
-Does that mean the `Struct` will be then evaluated by `Pydantic`? No, it does not.
-
-The beauty of this system is that every `Struct`/`BaseModel` is evaluated by its own `library` which
-means that if you have a `Struct` inside a `BaseModel`, the validations are done separately.
-
-Why would you mix them if they are different? Well, in theory you wouldn't but you will never know
-what people want so Ravyn offers that possibility **but not the other way around**.
-
-Let us see how it would look like having both working side by side.
-
-```python hl_lines="4 8 14 19"
-{!> ../../../docs_src/msgspec/mixed.py !}
-```
-
-This works perfectly well and the payload is still like this:
-
-```json
-{
-    "name": "Ravyn",
-    "email": "ravyn@ravyn.dev",
-    "address": {
-        "post_code": "90210",
-        "street_address": "California"
-    }
-}
-```
-
-The difference is that the `address` part of the payload will be evaluated by `msgspec` and the
-rest by `Pydantic`.
-
-## Responses
-
-As mentioned before, the `Struct` of `msgspec` can also be used as `Response` of Ravyn. This
-will enable the internal mechanisms to serialize/deserialize with the power of the native library
-as everyone came to love.
-
-You can see [more details](./responses.md#other-responses) about the types of responses you can use
-with Ravyn.
+---
 
 ## OpenAPI Documentation
 
-Now this is the nice part of `msgspec`. How can you integrate `msgspec` with [OpenAPI](./openapi.md)?
+MsgSpec Structs work seamlessly with OpenAPI:
 
-Well, as mentioned before, in the same way you would normally do. You can also use
-[OpenAPIResponse](./responses.md#openapi-responses) with the `Struct` as well!
-
-Let us see the previous example again.
+### Single Response
 
 ```python
-{!> ../../../docs_src/msgspec/nutshell.py !}
+from ravyn import get
+from ravyn.datastructures.msgspec import Struct
+from ravyn.openapi.datastructures import OpenAPIResponse
+
+class User(Struct):
+    name: str
+    email: str
+
+@get(
+    "/user",
+    responses={
+        200: OpenAPIResponse(model=User, description="User details")
+    }
+)
+def get_user() -> User:
+    return User(name="Alice", email="alice@example.com")
 ```
 
-This will generate a simple OpenAPI documentation using the `Struct`.
-
-What if you want to create `OpenAPIResponse` objects? Well, there are also three ways:
-
-1. [As single object](#as-a-single-object).
-2. [As a list](#as-a-list).
-3. [Mixing with Pydantic](#mixing-with-pydantic) (the [nuance](#the-nuances-of-ravyn)).
-
-### As a single object
-
-```python hl_lines="27 28"
-{!> ../../../docs_src/msgspec/openapi/single.py !}
-```
-
-### As a list
-
-```python hl_lines="21"
-{!> ../../../docs_src/msgspec/openapi/list.py !}
-```
-
-### Mixing with Pydantic
-
-```python hl_lines="27"
-{!> ../../../docs_src/msgspec/openapi/mixing.py !}
-```
-
-## Notes
-
-This is the integration with `msgspec` and Ravyn in a simple fashion where you can take advantage
-of the powerful `msgspec` library and the elegance of Ravyn.
-
-This section covers the dos and dont's of the `Struct` and once again, use:
+### List Response
 
 ```python
-from ravyn.core.datastructures.msgspec import Struct
+@get(
+    "/users",
+    responses={
+        200: OpenAPIResponse(model=[User], description="List of users")
+    }
+)
+def list_users() -> list[User]:
+    return [
+        User(name="Alice", email="alice@example.com"),
+        User(name="Bob", email="bob@example.com")
+    ]
 ```
 
-And have fun!
+---
+
+## Mixing MsgSpec with Pydantic
+
+You can use MsgSpec Structs inside Pydantic models (but not vice versa):
+
+```python
+from ravyn.datastructures.msgspec import Struct
+from pydantic import BaseModel
+
+class Address(Struct):
+    street: str
+    city: str
+
+class User(BaseModel):
+    name: str
+    email: str
+    address: Address  # MsgSpec Struct inside Pydantic model
+
+# This works!
+user = User(
+    name="Alice",
+    email="alice@example.com",
+    address=Address(street="123 Main St", city="Springfield")
+)
+```
+
+> [!INFO]
+> Each type is validated by its own library: MsgSpec validates `Address`, Pydantic validates `User`.
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Using msgspec.Struct Directly
+
+**Problem:** OpenAPI documentation fails.
+
+```python
+# Wrong - breaks OpenAPI
+from msgspec import Struct
+
+class User(Struct):
+    name: str
+```
+
+**Solution:** Import from Ravyn:
+
+```python
+# Correct
+from ravyn.datastructures.msgspec import Struct
+
+class User(Struct):
+    name: str
+```
+
+### Pitfall 2: Pydantic Inside MsgSpec
+
+**Problem:** Trying to nest Pydantic in MsgSpec.
+
+```python
+# Won't work
+from pydantic import BaseModel
+from ravyn.datastructures.msgspec import Struct
+
+class Address(BaseModel):
+    street: str
+
+class User(Struct):
+    name: str
+    address: Address  # Pydantic inside MsgSpec - not supported
+```
+
+**Solution:** Use MsgSpec for nested types or use Pydantic for everything:
+
+```python
+# Option 1: All MsgSpec
+class Address(Struct):
+    street: str
+
+class User(Struct):
+    name: str
+    address: Address
+
+# Option 2: All Pydantic
+class Address(BaseModel):
+    street: str
+
+class User(BaseModel):
+    name: str
+    address: Address
+```
+
+### Pitfall 3: Missing Validation
+
+**Problem:** No validation on struct fields.
+
+```python
+# No validation
+class User(Struct):
+    age: int  # Accepts any int, even negative
+```
+
+**Solution:** Add validation in `__post_init__`:
+
+```python
+# With validation
+class User(Struct):
+    age: int
+    
+    def __post_init__(self):
+        if self.age < 0:
+            raise ValueError("Age must be positive")
+```
+
+### Pitfall 4: Forgetting Default Values
+
+**Problem:** Required fields not provided.
+
+```python
+# Error if in_stock not provided
+class Product(Struct):
+    name: str
+    price: float
+    in_stock: bool  # Required!
+```
+
+**Solution:** Provide defaults for optional fields:
+
+```python
+# Correct
+class Product(Struct):
+    name: str
+    price: float
+    in_stock: bool = True  # Optional with default
+```
+
+---
+
+## Performance Comparison
+
+### Serialization Speed
+
+```python
+# MsgSpec: ~5-10x faster than Pydantic
+import msgspec
+import time
+
+class User(Struct):
+    name: str
+    email: str
+
+user = User(name="Alice", email="alice@example.com")
+
+# Serialize 100,000 times
+start = time.time()
+for _ in range(100000):
+    msgspec.json.encode(user)
+print(f"MsgSpec: {time.time() - start:.2f}s")
+
+# Compare with Pydantic for same operation
+# Pydantic typically takes 5-10x longer
+```
+
+---
+
+## Best Practices
+
+### 1. Use for High-Performance Endpoints
+
+```python
+# Good - high-throughput endpoint
+@get("/api/data")
+def get_data() -> DataStruct:
+    return DataStruct(...)  # Fast serialization
+```
+
+### 2. Keep Validation Simple
+
+```python
+# Good - simple validation
+class User(Struct):
+    age: int
+    
+    def __post_init__(self):
+        if not 0 <= self.age <= 150:
+            raise ValueError("Invalid age")
+```
+
+### 3. Use Type Hints
+
+```python
+# Good - clear types
+class Product(Struct):
+    name: str
+    price: float
+    tags: list[str]
+    metadata: dict[str, str]
+```
+
+---
+
+## Next Steps
+
+Now that you understand MsgSpec, explore:
+
+- [Encoders](./encoders.md) - Custom data type support
+- [Responses](./responses.md) - Response types
+- [Requests](./requests.md) - Request handling
+- [OpenAPI](./openapi.md) - API documentation
+- [MsgSpec Documentation](https://jcristharif.com/msgspec/) - Official docs

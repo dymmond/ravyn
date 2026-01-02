@@ -24,6 +24,7 @@ uvicorn myapp:app --host 0.0.0.0 --port 8000 --workers 4 --lifespan on
 ```
 
 Options:
+
 - `--workers`: Number of worker processes.
 - `--lifespan on`: Ensures startup and shutdown events are handled.
 - `--reload`: (Only for development) enables auto-reload on file changes.
@@ -120,4 +121,4 @@ Use environment variables and `.env` files to manage secrets, database connectio
 
 Your app is ready for the real world. Next step?
 
-👉 Continue to [scaling](./04-scaling) to explore strategies for performance, load balancing, and horizontal scaling.
+👉 Continue to [scaling](./04-scaling.md) to explore strategies for performance, load balancing, and horizontal scaling.

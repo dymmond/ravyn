@@ -14,15 +14,12 @@ The `RavynTestClient` allows you to interact with your application as if it were
 from ravyn import Ravyn, get
 from ravyn.testclient import RavynTestClient
 
-
 @get("/ping")
 def ping() -> dict:
     return {"message": "pong"}
 
-
 app = Ravyn(routes=[ping])
 client = RavynTestClient(app)
-
 
 def test_ping():
     response = client.get("/ping")
@@ -43,7 +40,6 @@ import pytest
 def client():
     return RavynTestClient(app)
 
-
 def test_ping(client):
     response = client.get("/ping")
     assert response.status_code == 200
@@ -58,15 +54,12 @@ If your route depends on an authenticated user, include the token or mocked cred
 ```python
 from ravyn import Inject, Injects, get, HTTPException
 
-
 async def get_current_user():
     return {"username": "admin"}
-
 
 @get("/me", dependencies={"user": Inject(get_current_user)})
 async def get_me(user: dict[str, str] = Injects()) -> dict:
     return user
-
 
 def test_authenticated():
     client = RavynTestClient(Ravyn(routes=[get_me]))
@@ -84,11 +77,9 @@ You can test how your application handles errors:
 ```python
 from ravyn import get, HTTPException
 
-
 @get("/fail")
 def fail() -> None:
     raise HTTPException(status_code=418, detail="I'm a teapot")
-
 
 def test_custom_error():
     client = RavynTestClient(Ravyn(routes=[fail]))
@@ -114,7 +105,6 @@ async def on_shutdown():
 
 app = Ravyn(routes=[], on_startup=[on_startup], on_shutdown=[on_shutdown])
 
-
 def test_lifespan():
     with RavynTestClient(app):
         assert called["startup"] is True
@@ -127,8 +117,8 @@ def test_lifespan():
 
 Now that you know how to test Ravyn APIs:
 
-- ✅ Use fixtures to isolate tests
-- ✅ Mock dependencies like users or databases
-- ✅ Validate lifecycle events and exceptions
+- Use fixtures to isolate tests
+- Mock dependencies like users or databases
+- Validate lifecycle events and exceptions
 
-👉 Up next: [deployment](./03-deployment) — learn how to deploy your Ravyn app into production.
+👉 Up next: [deployment](./03-deployment.md) — learn how to deploy your Ravyn app into production.

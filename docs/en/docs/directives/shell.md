@@ -86,7 +86,6 @@ $ ravyn shell --kernel ptpython
 Sometimes you want to use your application settings as well while loading the shell. You can see
 [more details](../application/settings.md) about the settings and [how to use them](../application/settings.md).
 
-
 === "MacOS & Linux"
 
     ```shell

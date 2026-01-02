@@ -108,5 +108,4 @@ And since `something` is not declared in the Enum type, you will get an error si
 }
 ```
 
-
 [lilya]: https://lilya.dev

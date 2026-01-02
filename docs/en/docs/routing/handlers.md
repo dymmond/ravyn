@@ -1,169 +1,276 @@
 # Handlers
 
-Handlers are part of the core of what makes `Ravyn` and they are needed to build the APIs and the routing
-of the application.
+Think of your API like a restaurant. When customers (clients) interact with your menu (API), they do different things:
 
-They provide a set of available parameters like `status_code`, `response_class`, `include_in_schema` and many others.
+- **GET** - "Show me the menu" (read)
+- **POST** - "I'll order the pasta" (create)
+- **PUT** - "Actually, make that whole wheat pasta" (replace)
+- **PATCH** - "Add extra cheese" (modify)
+- **DELETE** - "Cancel my order" (remove)
 
-## HTTP handlers
+Handlers are the decorators that tell your API which "action" each endpoint performs. They're the waiters taking orders and the kitchen fulfilling them.
 
-There different http handlers representing the different
-<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods" target="_blank">HTTP Methods</a> available
-and special one for special circumstances.
+## What You'll Learn
 
-!!! warning
-    In every HTTP handler ([get](#get), [post](#post), [put](#put), [patch](#patch), [delete](#delete) and [route](#route))
-    if a `path` is not provided, it will default to `/`.
+- Available HTTP handlers (GET, POST, PUT, PATCH, DELETE)
+- Using each HTTP method correctly
+- WebSocket handlers for real-time communication
+- Handler parameters and options
 
-### GET
+## Quick Start
 
-```python hl_lines="4 9 14"
-{!> ../../../docs_src/routing/handlers/get.py !}
+```python
+from ravyn import Ravyn, get, post
+
+@get("/users")
+def list_users() -> list:
+    return [{"id": 1, "name": "Alice"}]
+
+@post("/users")
+def create_user(data: dict) -> dict:
+    return {"id": 2, **data}
+
+app = Ravyn(routes=[
+    Gateway(handler=list_users),
+    Gateway(handler=create_user)
+])
 ```
 
-**Default status code**: `200`
+---
 
-#### Parameters
+## HTTP Handlers
 
-All the parameters and defaults are available in the [Handlers Reference](../references/routing/handlers.md#ravyn.get).
+### @get - Retrieve Resources
 
-### POST
+```python
+from ravyn import get
 
-```python hl_lines="11 17"
-{!> ../../../docs_src/routing/handlers/post.py !}
+@get("/users/{user_id}")
+def get_user(user_id: int) -> dict:
+    return {"id": user_id, "name": "Alice"}
+
+# Default status code: 200
 ```
 
-**Default status code**: `201`
+**Use for:** Fetching data, listing resources
 
-#### Parameters
+### @post - Create Resources
 
-All the parameters and defaults are available in the [Handlers Reference](../references/routing/handlers.md#ravyn.post).
+```python
+from ravyn import post
 
-### PUT
+@post("/users")
+def create_user(name: str, email: str) -> dict:
+    return {"id": 1, "name": name, "email": email}
 
-```python hl_lines="4 9"
-{!> ../../../docs_src/routing/handlers/put.py !}
+# Default status code: 201
 ```
 
-**Default status code**: `200`
+**Use for:** Creating new resources, submitting forms
 
-#### Parameters
+### @put - Update Resources
 
-All the parameters and defaults are available in the [Handlers Reference](../references/routing/handlers.md#ravyn.put).
+```python
+from ravyn import put
 
-### PATCH
+@put("/users/{user_id}")
+def update_user(user_id: int, name: str) -> dict:
+    return {"id": user_id, "name": name}
 
-```python hl_lines="4 9"
-{!> ../../../docs_src/routing/handlers/patch.py !}
+# Default status code: 200
 ```
 
-**Default status code**: `200`
+**Use for:** Full resource updates, replacements
 
-#### Parameters
+### @patch - Partial Updates
 
-All the parameters and defaults are available in the [Handlers Reference](../references/routing/handlers.md#ravyn.patch).
+```python
+from ravyn import patch
 
-### DELETE
+@patch("/users/{user_id}")
+def partial_update(user_id: int, name: str = None) -> dict:
+    return {"id": user_id, "name": name}
 
-```python hl_lines="4 10"
-{!> ../../../docs_src/routing/handlers/delete.py !}
+# Default status code: 200
 ```
 
-**Default status code**: `204`
+**Use for:** Partial resource updates
 
-#### Parameters
+### @delete - Remove Resources
 
-All the parameters and defaults are available in the [Handlers Reference](../references/routing/handlers.md#ravyn.delete).
+```python
+from ravyn import delete
 
-### Route
+@delete("/users/{user_id}")
+def delete_user(user_id: int) -> None:
+    pass  # Delete logic here
 
-```python hl_lines="4 9 14 19"
-{!> ../../../docs_src/routing/handlers/route.py !}
+# Default status code: 204
 ```
 
-**Default status code**: `200`
+**Use for:** Deleting resources
 
-`@route` is a special handler because it is designed to allow more than one `HTTP` handler in one go.
+---
 
-Sometimes you might want to have one [Gateway](./routes.md#gateway) that allows more than one HTTP operation but
-writing two different functions with roughly the same logic can be avoided by using this special handler.
+## HTTP Methods Comparison
 
-Example:
+| Method | Purpose | Default Status | Request Body |
+|--------|---------|----------------|--------------|
+| **GET** | Retrieve | 200 | No |
+| **POST** | Create | 201 | Yes |
+| **PUT** | Update (full) | 200 | Yes |
+| **PATCH** | Update (partial) | 200 | Yes |
+| **DELETE** | Remove | 204 | No |
 
-```python hl_lines="4"
-{!> ../../../docs_src/routing/handlers/route_example1.py !}
+---
+
+## Special Handlers
+
+### @route - Multiple Methods
+
+Handle multiple HTTP methods with one function:
+
+```python
+from ravyn import route
+
+@route("/users/{user_id}", methods=["GET", "PUT"])
+def handle_user(user_id: int, request: Request) -> dict:
+    if request.method == "GET":
+        return {"id": user_id, "name": "Alice"}
+    elif request.method == "PUT":
+        return {"id": user_id, "updated": True}
 ```
 
-There are also three more **unique** and exotic ones:
+**Use for:** Shared logic across methods
 
-#### Parameters
+### @head - Headers Only
 
-All the parameters and defaults are available in the [Handlers Reference](../references/routing/handlers.md#ravyn.route).
+```python
+from ravyn import head
 
-### HEAD
+@head("/users")
+def users_head() -> None:
+    pass  # Returns headers only, no body
 
-```python hl_lines="4 9 14"
-{!> ../../../docs_src/routing/handlers/head.py !}
+# Default status code: 200
 ```
 
-**Default status code**: `200`
+### @options - CORS Preflight
 
-#### Parameters
+```python
+from ravyn import options
 
-All the parameters and defaults are available in the [Handlers Reference](../references/routing/handlers.md#ravyn.head).
+@options("/users")
+def users_options() -> dict:
+    return {"allowed_methods": ["GET", "POST"]}
 
-### OPTIONS
-
-```python hl_lines="4 9 14"
-{!> ../../../docs_src/routing/handlers/options.py !}
+# Default status code: 200
 ```
 
-**Default status code**: `200`
+### @trace - Debugging
 
-#### Parameters
+```python
+from ravyn import trace
 
-All the parameters and defaults are available in the [Handlers Reference](../references/routing/handlers.md#ravyn.options).
+@trace("/debug")
+def trace_request() -> dict:
+    return {"trace": "enabled"}
 
-### TRACE
-
-```python hl_lines="4 9 14"
-{!> ../../../docs_src/routing/handlers/trace.py !}
+# Default status code: 200
 ```
 
-**Default status code**: `200`
+---
 
-#### Parameters
+## WebSocket Handler
 
-All the parameters and defaults are available in the [Handlers Reference](../references/routing/handlers.md#ravyn.trace).
+### @websocket - Real-time Communication
 
-## HTTP handler summary
+```python
+from ravyn import websocket
+from ravyn.websockets import WebSocket
 
-* Handlers are used alongside [Gateway](./routes.md#gateway).
-* There are `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`, `TRACE` available to be used.
-* There is a `route` special to handle more than one HTTP method at once.
-
-## WebSocket handler
-
-Websockets are different nature and widely used for applications where the communication between client and server
-needs usually to be constantly opened.
-<a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API" target="_blank">More on websockets</a>.
-
-!!! warning
-    Due to the nature of websockets, Ravyn does a direct implementation of the WebSocket from Lilya which also
-    means no `sync` functions.
-
-### WebSocket
-
-```python hl_lines="5 12 19 26 33"
-{!> ../../../docs_src/routing/handlers/websocket.py !}
+@websocket("/ws")
+async def websocket_endpoint(socket: WebSocket) -> None:
+    await socket.accept()
+    
+    while True:
+        data = await socket.receive_text()
+        await socket.send_text(f"Echo: {data}")
 ```
 
-#### Parameters
+!!! info
+    WebSocket handlers must be async functions.
 
-All the parameters and defaults are available in the [Handlers Reference](../references/routing/handlers.md#ravyn.websocket).
+---
 
+## Handler Parameters
 
-## WebSocket handler summary
+### Common Parameters
 
-* Handlers are used alongside [WebSocketGateway](./routes.md#websocketgateway).
-* There is only one `websocket` handler available.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | str | URL path (default: `/`) |
+| `status_code` | int | HTTP status code |
+| `response_class` | type | Custom response class |
+| `tags` | list | OpenAPI tags |
+| `summary` | str | OpenAPI summary |
+| `description` | str | OpenAPI description |
+| `include_in_schema` | bool | Include in docs |
+
+### Example with Parameters
+
+```python
+@get(
+    "/users",
+    status_code=200,
+    tags=["users"],
+    summary="List all users",
+    description="Returns a list of all users in the system"
+)
+def list_users() -> list:
+    return [{"id": 1, "name": "Alice"}]
+```
+
+---
+
+## Best Practices
+
+### 1. Use Appropriate Methods
+
+```python
+# Good - correct methods
+@get("/users")  # Read
+@post("/users")  # Create
+@put("/users/{id}")  # Update
+@delete("/users/{id}")  # Delete
+```
+
+### 2. Set Correct Status Codes
+
+```python
+# Good - explicit status codes
+@post("/users", status_code=201)  # Created
+@delete("/users/{id}", status_code=204)  # No Content
+```
+
+### 3. Document Your Endpoints
+
+```python
+# Good - documented
+@get(
+    "/users",
+    summary="List users",
+    description="Returns all users with pagination"
+)
+def list_users() -> list:
+    return []
+```
+
+---
+
+## Next Steps
+
+- [Routes](./routes.md) - Organize handlers with Gateway and Include
+- [Router](./router.md) - Advanced routing configuration
+- [Controllers](./controllers.md) - Class-based handlers
+- [Responses](../responses.md) - Response types

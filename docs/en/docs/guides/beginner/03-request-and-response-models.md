@@ -5,6 +5,7 @@ In this section, you'll learn how to validate and structure input and output usi
 ## Why Use Models?
 
 Pydantic models offer:
+
 - **Automatic validation** of incoming request data
 - **Auto-generated documentation**
 - **Clear structure** for responses
@@ -19,11 +20,9 @@ Define a Pydantic model to validate incoming data:
 from pydantic import BaseModel
 from ravyn import post
 
-
 class CreateUserRequest(BaseModel):
     name: str
     age: int
-
 
 @post("/users")
 def create_user(data: CreateUserRequest) -> dict:
@@ -31,6 +30,7 @@ def create_user(data: CreateUserRequest) -> dict:
 ```
 
 When a POST request is made to `/users`, Ravyn:
+
 - Automatically parses the JSON
 - Validates it against `CreateUserRequest`
 - Injects the model instance into the handler
@@ -47,11 +47,9 @@ Define a model to **structure** the output:
 from pydantic import BaseModel
 from ravyn import get
 
-
 class UserResponse(BaseModel):
     id: int
     name: str
-
 
 @get("/users/{user_id}")
 def get_user(user_id: int) -> UserResponse:
@@ -95,6 +93,7 @@ def list_users() -> list[UserResponse]:
 ## What's Next?
 
 You've now learned how to:
+
 - Use request models for validation
 - Use response models for output structure
 - Handle nesting and collections

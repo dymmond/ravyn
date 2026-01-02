@@ -11,7 +11,6 @@ A route maps a URL path and HTTP method to a Python function:
 ```python
 from ravyn import get
 
-
 @get("/hello")
 def say_hello():
     return {"message": "Hello, world!"}
@@ -40,11 +39,9 @@ from ravyn import Router
 
 user_router = Router()
 
-
 @user_router.get("/users")
 def list_users():
     return ["user1", "user2"]
-
 
 @user_router.post("/users")
 def create_user():

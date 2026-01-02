@@ -24,7 +24,6 @@ from ravyn.core.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Scope, Receive, Send
 from lilya.middleware import DefineMiddleware
 
-
 class LogMiddleware(MiddlewareProtocol):
 
     def __init__(self, app: ASGIApp) -> None:
@@ -33,7 +32,6 @@ class LogMiddleware(MiddlewareProtocol):
         async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
             print(f"Incoming request: {request.method} {request.url}")
             await self.app(scope, receive, send)
-
 
 app = Ravyn(
     routes=[],
@@ -108,6 +106,7 @@ middleware=[DefineMiddleware(A), DefineMiddleware(B)]
 ```
 
 Order:
+
 1. `A` before request
 2. `B` before request
 3. Route handler

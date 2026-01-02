@@ -46,7 +46,6 @@ There are different ways of achieving that, using the `Optional` or `Union`.
 !!! Tip
     from Python 3.10+ the `Union` can be replaced with `|` syntax.
 
-
 === "Using Optional"
 
     ```python

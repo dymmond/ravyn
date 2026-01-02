@@ -1,270 +1,396 @@
-# Handler
+# Task Handlers
 
-Ravyn uses <a href='https://asyncz.dymmond.com' target='_blank'>Asyncz</a> to manage the
-scheduler internally and therefore their documentation is also up to date.
+Create and configure scheduled tasks using the @scheduler decorator with Asyncz triggers.
 
-The handler is the `scheduler` used to decorate a function that you want to process as a task.
+## What You'll Learn
 
-## Requirements
+- Using the @scheduler decorator
+- Available triggers (cron, interval, date)
+- Task configuration options
+- Advanced scheduling patterns
 
-Please check the [minimum requirements](./scheduler.md#requirements) to use this feature within
-your project.
-
-## The scheduler
-
-This decorator does a lot of the magic containing all the information needed about a task and how it should be
-performed internally.
-
-**Parameters**:
-
-* **name** - The name given to the task. Not the name of the function.
-
-    <sup>Default: `None`</sup>
-
-* **trigger** - An instance of a [trigger](#triggers).
-
-    <sup>Default: `None`</sup>
-
-* **id** - Explicit identifier (id) for the task.
-
-    <sup>Default: `None`</sup>
-
-* **misfire_grace_time** - The seconds after the designated runtime that the task is still allowed to be run.
-
-    <sup>Default: `undefined`</sup>
-
-* **coalesce** - Run once instead of many times if the scheduler determines that the task should be run more than once
-in succession.
-
-    <sup>Default: `undefined`</sup>
-
-* **max_instances** - The maximum number of concurrently running instances allowed for this task.
-
-    <sup>Default: `undefined`</sup>
-
-* **next_run_time** - When to first run the task, regardless of the trigger.
-
-    <sup>Default: `undefined`</sup>
-
-* **store** - The alias of the [store](#stores-executors-and-other-configurations) to store the task in.
-
-    <sup>Default: `None`</sup>
-
-* **executor** - The  alias of the executor to run the task with.
-
-    <sup>Default: `None`</sup>
-
-* **replace_existing** - True to replace an existing task with the same `id`.
-
-    <sup>Default: `None`</sup>
-
-* **is_enabled** - If a task should run or be disabled and not being triggered by the task scheduler.
-
-    <sup>Default: `True`</sup>
-
-* **args** - The list of positional arguments to call func with.
-
-    <sup>Default: `None`</sup>
-
-* **kwargs** - The dict of keyword arguments to call func with.
-
-    <sup>Default: `None`</sup>
-
-To obtain the `undefined` type:
+## Quick Start
 
 ```python
-from asyncz.typing import undefined
+from ravyn.contrib.schedulers.asyncz.decorator import scheduler
+
+@scheduler(name="daily_cleanup", trigger="cron", hour=2, minute=0)
+async def cleanup_old_data():
+    """Runs every day at 2:00 AM."""
+    await delete_old_records()
+    print("Cleanup completed")
 ```
+
+!!! info
+    Install scheduler support: `pip install ravyn[schedulers]`
+
+---
+
+## The @scheduler Decorator
+
+The `@scheduler` decorator marks a function as a scheduled task.
+
+### Basic Usage
+
+```python
+from ravyn.contrib.schedulers.asyncz.decorator import scheduler
+
+@scheduler(name="my_task", trigger="interval", hours=1)
+async def my_scheduled_task():
+    """Runs every hour."""
+    print("Task executed!")
+```
+
+### Decorator Parameters
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `name` | str | Task name | `None` |
+| `trigger` | str/object | Trigger type or instance | `None` |
+| `id` | str | Explicit task ID | `None` |
+| `misfire_grace_time` | int | Seconds after scheduled time task can still run | `undefined` |
+| `coalesce` | bool | Run once if multiple executions missed | `undefined` |
+| `max_instances` | int | Max concurrent instances | `undefined` |
+| `store` | str | Task store alias | `None` |
+| `executor` | str | Executor alias | `None` |
+| `is_enabled` | bool | Enable/disable task | `True` |
+
+---
 
 ## Triggers
 
-Ravyn comes with some pre-defined triggers ready to be used by the application.
+### CronTrigger - Schedule Like Cron
 
-The built-in trigger cover the majority of the needs of all users. However if that is not the case, there is always
-the option to create a
-<a href="https://asyncz.dymmond.com/triggers/#custom-trigger" target="_blank">custom</a>.
-
-* `BaseTrigger` - The base of all triggers and it can be extended to create a
-<a href="https://asyncz.dymmond.com/triggers/#basetrigger" target="_blank">custom</a>.
-* `CronTrigger`
-* `IntervalTrigger`
-* `DateTrigger`
-* `OrTrigger`
-* `AndTrigger`
-
-Importing the triggers:
+Run tasks at specific times using cron-style scheduling:
 
 ```python
-from asyncz.triggers import (
-    AndTrigger,
-    BaseTrigger,
-    CronTrigger,
-    DateTrigger,
-    IntervalTrigger,
-    OrTrigger,
+from ravyn.contrib.schedulers.asyncz.decorator import scheduler
+
+# Every day at 9:00 AM
+@scheduler(name="morning_report", trigger="cron", hour=9, minute=0)
+async def generate_morning_report():
+    await create_daily_report()
+
+# Every Monday at 10:00 AM
+@scheduler(
+    name="weekly_summary",
+    trigger="cron",
+    day_of_week="mon",
+    hour=10,
+    minute=0
+)
+async def weekly_summary():
+    await send_weekly_email()
+
+# First day of month at midnight
+@scheduler(name="monthly_billing", trigger="cron", day=1, hour=0, minute=0)
+async def process_monthly_billing():
+    await generate_invoices()
+```
+
+**Cron Parameters:**
+
+| Parameter | Type | Description | Range |
+|-----------|------|-------------|-------|
+| `year` | int/str | 4-digit year | - |
+| `month` | int/str | Month | 1-12 |
+| `day` | int/str | Day of month | 1-31 |
+| `week` | int/str | ISO week | 1-53 |
+| `day_of_week` | int/str | Weekday | 0-6 or mon-sun |
+| `hour` | int/str | Hour | 0-23 |
+| `minute` | int/str | Minute | 0-59 |
+| `second` | int/str | Second | 0-59 |
+
+### IntervalTrigger - Fixed Intervals
+
+Run tasks at regular intervals:
+
+```python
+# Every 30 minutes
+@scheduler(name="sync_data", trigger="interval", minutes=30)
+async def sync_with_api():
+    await fetch_latest_data()
+
+# Every 2 hours
+@scheduler(name="backup", trigger="interval", hours=2)
+async def backup_database():
+    await create_backup()
+
+# Every day
+@scheduler(name="cleanup", trigger="interval", days=1)
+async def daily_cleanup():
+    await remove_old_files()
+
+# Complex interval
+@scheduler(
+    name="complex_task",
+    trigger="interval",
+    weeks=1,
+    days=2,
+    hours=3,
+    minutes=30
+)
+async def complex_interval():
+    # Runs every 1 week, 2 days, 3 hours, and 30 minutes
+    pass
+```
+
+**Interval Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `weeks` | int | Number of weeks |
+| `days` | int | Number of days |
+| `hours` | int | Number of hours |
+| `minutes` | int | Number of minutes |
+| `seconds` | int | Number of seconds |
+| `start_date` | datetime/str | Start time |
+| `end_date` | datetime/str | End time |
+
+### DateTrigger - One-Time Execution
+
+Run a task once at a specific date/time:
+
+```python
+from datetime import datetime
+
+# Run once at specific time
+@scheduler(
+    name="campaign_launch",
+    trigger="date",
+    run_date=datetime(2026, 12, 25, 9, 0)
+)
+async def launch_campaign():
+    await activate_holiday_campaign()
+
+# Run once (immediately if no date specified)
+@scheduler(name="one_time_task", trigger="date")
+async def run_once():
+    await initialize_system()
+```
+
+---
+
+## Advanced Triggers
+
+### OrTrigger - Multiple Schedules
+
+Run when ANY trigger fires:
+
+```python
+from asyncz.triggers import CronTrigger, IntervalTrigger, OrTrigger
+
+# Run at 9 AM OR every 3 hours
+trigger = OrTrigger([
+    CronTrigger(hour=9, minute=0),
+    IntervalTrigger(hours=3)
+])
+
+@scheduler(name="flexible_task", trigger=trigger)
+async def flexible_execution():
+    await process_data()
+```
+
+### AndTrigger - Combined Conditions
+
+Run when ALL triggers agree:
+
+```python
+from asyncz.triggers import CronTrigger, AndTrigger
+
+# Run on weekdays AND between 9-5
+trigger = AndTrigger([
+    CronTrigger(day_of_week="mon-fri"),
+    CronTrigger(hour="9-17")
+])
+
+@scheduler(name="business_hours_task", trigger=trigger)
+async def during_business_hours():
+    await send_notifications()
+```
+
+---
+
+## Task Configuration
+
+### Preventing Overlaps
+
+```python
+# Only 1 instance at a time
+@scheduler(
+    name="heavy_task",
+    trigger="interval",
+    minutes=5,
+    max_instances=1
+)
+async def heavy_processing():
+    await process_large_dataset()
+```
+
+### Handling Missed Runs
+
+```python
+# If missed, run only once (not multiple times)
+@scheduler(
+    name="sync_task",
+    trigger="interval",
+    minutes=10,
+    coalesce=True
+)
+async def sync_data():
+    await sync_with_external_api()
+```
+
+### Grace Period
+
+```python
+# Allow 60 seconds after scheduled time
+@scheduler(
+    name="time_sensitive",
+    trigger="cron",
+    hour=9,
+    minute=0,
+    misfire_grace_time=60
+)
+async def time_sensitive_task():
+    await send_morning_email()
+```
+
+---
+
+## Complete Example
+
+```python
+from ravyn import Ravyn
+from ravyn.contrib.schedulers.asyncz.config import AsynczConfig
+from ravyn.contrib.schedulers.asyncz.decorator import scheduler
+
+# Define tasks
+@scheduler(name="hourly_sync", trigger="interval", hours=1)
+async def sync_data():
+    """Sync data every hour."""
+    print("Syncing data...")
+    await fetch_from_api()
+
+@scheduler(name="daily_report", trigger="cron", hour=8, minute=0)
+async def generate_report():
+    """Generate report at 8 AM daily."""
+    print("Generating report...")
+    await create_daily_report()
+
+@scheduler(
+    name="cleanup",
+    trigger="cron",
+    hour=2,
+    minute=0,
+    max_instances=1
+)
+async def cleanup_old_data():
+    """Cleanup at 2 AM, prevent overlaps."""
+    print("Cleaning up...")
+    await delete_old_records()
+
+# Configure app
+app = Ravyn(
+    scheduler_config=AsynczConfig(),
+    enable_scheduler=True,
+    scheduler_tasks={
+        "hourly_sync": "tasks.sync_data",
+        "daily_report": "tasks.generate_report",
+        "cleanup": "tasks.cleanup_old_data"
+    }
 )
 ```
 
-Or you can simply import directly from the `asyncz` library as it is fully compatible.
+---
 
-### CronTrigger
+## Best Practices
 
-Triggers when current time matches all specified time constraits. Very similar to the way the UNIX cron works.
-
-```shell
-┌───────────── minute (0 - 59)
-│ ┌───────────── hour (0 - 23)
-│ │ ┌───────────── day of the month (1 - 31)
-│ │ │ ┌───────────── month (1 - 12)
-│ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday;
-│ │ │ │ │                                   7 is also Sunday on some systems)
-│ │ │ │ │
-│ │ │ │ │
-* * * * * <command to execute>
-```
-
-**Parameters**:
-
-* **year** (*int*|*str*) – 4-digit year
-* **month** (*int*|*str*) – Month (1-12)
-* **day** (*int*|*str*) – Day of month (1-31)
-* **week** (*int*|*str*) – ISO week (1-53)
-* **day_of_week** (*int*|*str*) – Number or name of weekday (0-6 or mon,tue,wed,thu,fri,sat,sun)
-* **hour** (*int*|*str*) – Hour (0-23)
-* **minute** (*int*|*str*) – Minute (0-59)
-* **second** (*int*|*str*) – Second (0-59)
-* **start_date** (*datetime*|*str*) – Earliest possible date/time to trigger on (inclusive)
-* **end_date** (*datetime*|*str*) – Latest possible date/time to trigger on (inclusive)
-* **timezone** (*datetime*.*tzinfo*|*str*) – Time zone to use for the date/time calculations (defaults to scheduler timezone)
-* **jitter** (*int*|*None*) – Delay the task execution by jitter seconds at most
+### 1. Use Descriptive Names
 
 ```python
-{!> ../../../docs_src/scheduler/tasks/triggers/cron.py !}
+# Good - clear purpose
+@scheduler(name="user_cleanup_daily", trigger="cron", hour=2)
+async def cleanup_inactive_users():
+    pass
 ```
 
-### IntervalTrigger
-
-Triggers on specified intervals, starting on `start_date` if specified or `datetime.now()` + interval otherwise.
-
-**Parameters**:
-
-* **weeks** (*int*) - Number of weeks to wait.
-* **days** (*int*) - Number of days to wait.
-* **hours** (*int*) - Number of hours to wait.
-* **minutes** (*int*) - Number of minutes to wait.
-* **seconds** (*int*) - Number of seconds to wait.
-* **start_date** (*datetime*|*str*) - Starting point for the interval calculation.
-* **end_date** (*datetime*|*str*) – Latest possible date/time to trigger on
-* **timezone** (*datetime*.*tzinfo*|*str*) – Time zone to use for the date/time calculations
-* **jitter** (*int*|*None*) – Delay the task execution by jitter seconds at most
+### 2. Prevent Overlaps for Long Tasks
 
 ```python
-{!> ../../../docs_src/scheduler/tasks/triggers/interval.py !}
+# Good - prevent concurrent runs
+@scheduler(
+    name="heavy_processing",
+    trigger="interval",
+    hours=1,
+    max_instances=1
+)
+async def process_large_files():
+    pass
 ```
 
-### DateTrigger
-
-Triggers once on the given datetime. If `run_date` is left empty, current time is used.
-
-**Parameters**:
-
-* **run_date** (*datetime*|*str*) – The date/time to run the task at.
-* **timezone** (*datetime*.*tzinfo*|*str*) – Time zone for run_date if it doesn’t have one already.
+### 3. Handle Errors Gracefully
 
 ```python
-{!> ../../../docs_src/scheduler/tasks/triggers/date.py !}
+# Good - error handling
+@scheduler(name="api_sync", trigger="interval", minutes=15)
+async def sync_with_api():
+    try:
+        await fetch_data()
+    except Exception as e:
+        logger.error(f"Sync failed: {e}")
+        # Maybe send alert
 ```
 
-### OrTrigger
+---
 
-Always returns the earliest next fire time produced by any of the given triggers.
-The trigger is considered finished when all the given triggers have finished their schedules.
+## Stores and Executors
 
-**Parameters**:
-
-* **triggers** (*list*) – Triggers to combine.
-* **jitter** (*int*|*None*) – Delay the task execution by jitter seconds at most.
+Configure custom stores and executors:
 
 ```python
-{!> ../../../docs_src/scheduler/tasks/triggers/or.py !}
+from ravyn import Ravyn
+from ravyn.contrib.schedulers.asyncz.config import AsynczConfig
+
+app = Ravyn(
+    scheduler_config=AsynczConfig(),
+    enable_scheduler=True,
+    scheduler_configurations={
+        "stores": {
+            "default": {"type": "memory"},
+            "redis": {"type": "redis", "host": "localhost"}
+        },
+        "executors": {
+            "default": {"type": "asyncio"},
+            "threadpool": {"type": "threadpool", "max_workers": 20}
+        }
+    }
+)
+
+# Use custom store/executor
+@scheduler(
+    name="redis_task",
+    trigger="interval",
+    hours=1,
+    store="redis",
+    executor="threadpool"
+)
+async def task_with_custom_config():
+    pass
 ```
 
-### AndTrigger
+---
 
-Always returns the earliest next fire time that all the given triggers can agree on.
-The trigger is considered to be finished when any of the given triggers has finished its schedule.
+## Learn More
 
-**Parameters**:
+- [Asyncz Documentation](https://asyncz.dymmond.com) - Complete trigger reference
+- [Scheduler Setup](./scheduler.md) - Configure the scheduler
+- [SchedulerConfig](../configurations/scheduler.md) - Configuration options
 
-* **triggers** (*list*) – Triggers to combine.
-* **jitter** (*int*|*None*) – Delay the task execution by jitter seconds at most.
+---
 
-```python
-{!> ../../../docs_src/scheduler/tasks/triggers/and.py !}
-```
+## Next Steps
 
-!!! Note
-    These triggers are the same as the `Asyncz` and we didn't want to break existing functionality.
-    For more examples how to use even different approaches, check their great documentation.
-
-## Stores, executors and other configurations
-
-Using the scheduler also means access to a lot of extra possible configurations that can be added such as `stores`,
-`executors` and any other extra configuration needed.
-
-Ravyn allows to pass those configurations via application instantiation or via [settings](../application/settings.md).
-
-### Via application instantiation
-
-```python
-{!> ../../../docs_src/scheduler/tasks/configurations/app.py !}
-```
-
-### Via application settings
-
-```python
-{!> ../../../docs_src/scheduler/tasks/configurations/settings.py !}
-```
-
-Start the application with the new settings.
-
-=== "MacOS & Linux"
-
-    ```shell
-    RAVYN_SETTINGS_MODULE=AppSettings uvicorn src:app --reload
-
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
-
-=== "Windows"
-
-    ```shell
-    $env:RAVYN_SETTINGS_MODULE="AppSettings"; uvicorn src:app --reload
-
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
-
-
-### Configurations and the handler
-
-When creating a task and using the `scheduler` one of the parameters is the `store`.
-
-From the [example](#via-application-instantiation) you have new task stores and executors and those can be passed:
-
-```python hl_lines="15-16 27-28"
-{!> ../../../docs_src/scheduler/tasks/configurations/example1.py !}
-```
-
-!!! Tip
-    Have a look at the documentation from
-    <a href="https://asyncz.dymmond.com" target="_blank">Asyncz</a> and learn more
-    about what can be done and how can be done. All the parameters available in the Asyncz `add_task` are also
-    available in the `@scheduler` handler in the same way.
+- [Scheduler Configuration](./scheduler.md) - Enable and configure
+- [Background Tasks](../background-tasks.md) - One-off tasks
+- [Lifespan Events](../lifespan-events.md) - Application lifecycle

@@ -14,6 +14,7 @@ from ravyn import SessionConfig
 ::: ravyn.core.config.session.SessionConfig
     options:
         members:
+
             - secret_key
             - path
             - session_cookie
@@ -22,4 +23,5 @@ from ravyn import SessionConfig
             - same_site
             - validate_secret
         filters:
+
         - "!^model_config"

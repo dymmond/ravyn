@@ -14,5 +14,6 @@ from ravyn import OpenAPIConfig
 ::: ravyn.core.config.openapi.OpenAPIConfig
     options:
         filters:
+
         - "!^openapi"
         - "!^enable"

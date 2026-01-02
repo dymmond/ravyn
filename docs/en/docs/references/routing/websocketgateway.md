@@ -12,6 +12,7 @@ from ravyn import WebSocketGateway
 ::: ravyn.WebSocketGateway
     options:
         members:
+
             - path
             - handler
             - parent

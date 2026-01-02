@@ -223,7 +223,6 @@ Now, if you logout by clicking in the logout icon, you should receive a 401.
 
 <img src="https://res.cloudinary.com/dymmond/image/upload/v1733759352/esmerald/security/not_auth_nwd72q.png" alt="Not authenticated">
 
-
 ## Inactive users
 
 Now you can try with an inactive user and see what happens.

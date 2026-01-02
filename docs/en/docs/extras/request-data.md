@@ -50,7 +50,6 @@ You can also do nested models for the `data` or `payload` to be processed.
     {!> ../../../docs_src/extras/request_payload/nested_models.py !}
     ```
 
-
 The data expected to be sent to be validated is all required and expected with the following format:
 
 ```json
@@ -179,7 +178,6 @@ which means the following is **valid**.
     ```python
     {!> ../../../docs_src/extras/request_payload/custom_validation.py !}
     ```
-
 
 But what if you want to actually have a different payload split by responsabilities or simply because you just want for
 organisation purposes guarantee a more complex request?

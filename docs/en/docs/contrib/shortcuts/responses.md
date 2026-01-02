@@ -370,17 +370,16 @@ async def get_user() -> JSONResponse:
 | Authenticated but lacks permission  | `forbidden()`    |
 | Requested resource not found        | `not_found()`    |
 
-
 ### Comparison with [`abort()`](./abort.md)
 
 | Shortcut       | Purpose                                                    | Raises Exception? |
 | -------------- | ---------------------------------------------------------- | ----------------- |
-| `abort()`      | Immediately stops execution with an `HTTPException`.       | ✅ Yes             |
-| `json_error()` | Returns an error payload explicitly (execution continues). | ❌ No              |
-| `send_json()`  | Normal JSON response for successful operations.            | ❌ No              |
-| `stream()`     | Streams chunks of data incrementally.                      | ❌ No              |
-| `empty()`      | Indicates success with no body.                            | ❌ No              |
-| `redirect()`   | Redirects the client to a different URL.                   | ❌ No              |
-| `unauthorized()` | Returns a `401 Unauthorized` JSON error payload.           | ❌ No              |
-| `forbidden()`    | Returns a `403 Forbidden` JSON error payload.              | ❌ No              |
-| `not_found()`    | Returns a `404 Not Found` JSON error payload.              | ❌ No              |
+| `abort()`      | Immediately stops execution with an `HTTPException`.       | Yes             |
+| `json_error()` | Returns an error payload explicitly (execution continues). | No              |
+| `send_json()`  | Normal JSON response for successful operations.            | No              |
+| `stream()`     | Streams chunks of data incrementally.                      | No              |
+| `empty()`      | Indicates success with no body.                            | No              |
+| `redirect()`   | Redirects the client to a different URL.                   | No              |
+| `unauthorized()` | Returns a `401 Unauthorized` JSON error payload.           | No              |
+| `forbidden()`    | Returns a `403 Forbidden` JSON error payload.              | No              |
+| `not_found()`    | Returns a `404 Not Found` JSON error payload.              | No              |

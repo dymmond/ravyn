@@ -16,11 +16,9 @@ included in the request.
 from pydantic import BaseModel
 from ravyn import Ravyn, Gateway, Header, JSONResponse, post
 
-
 class User(BaseModel):
     name: str
     email: str
-
 
 @post("/create")
 async def create_user(
@@ -32,11 +30,11 @@ async def create_user(
     """
     return JSONResponse({"message": "User created", "user": data.model_dump(), "token": token})
 
-
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
 
 ### Explanation:
+
 - The `token` parameter is captured using the `Header` class, which corresponds to the `X-API-TOKEN` header.
 - If the `X-API-TOKEN` header is not provided, Ravyn will raise a `422` validation error.
 - The `alias` parameter is used to define the actual header name, allowing for flexibility and clarity.
@@ -52,7 +50,6 @@ Sometimes headers are optional, and you may want to provide default values if th
 ```python
 from ravyn import Ravyn, Gateway, Header, JSONResponse, post
 
-
 @post("/create")
 async def create_user(
         data: dict,
@@ -63,11 +60,11 @@ async def create_user(
     """
     return JSONResponse({"message": "User created", "data": data, "user_agent": user_agent})
 
-
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
 
 ### Explanation:
+
 - The `user_agent` header is optional, and the default value is `None`.
 - If the `User-Agent` header is not provided, the `user_agent` variable will be set to `None`.
 
@@ -85,11 +82,9 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from ravyn import Ravyn, Gateway, Header, JSONResponse, post
 
-
 class User(BaseModel):
     name: str
     email: str
-
 
 @post("/create")
 async def create_user(
@@ -101,11 +96,11 @@ async def create_user(
     """
     return JSONResponse({"message": "User created", "user": data.model_dump(), "authorization": authorization})
 
-
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
 
 ### Explanation:
+
 - The `authorization` header is validated to ensure its length is at least 10 characters.
 - If the header doesn't meet the validation constraints, Ravyn will raise a `422` validation error.
 
@@ -122,11 +117,9 @@ from typing import Optional
 from pydantic import BaseModel
 from ravyn import Ravyn, Gateway, Header, JSONResponse, post
 
-
 class User(BaseModel):
     name: str
     email: str
-
 
 @post("/create")
 async def create_user(
@@ -144,11 +137,11 @@ async def create_user(
         "user_agent": user_agent
     })
 
-
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
 
 ### Explanation:
+
 - The `token` header is mandatory and captured using the `Header` class with the `alias="X-API-TOKEN"`.
 - The `user_agent` header is optional and will be `None` if not provided.
 - Both the body data (`data` from `User`) and headers are processed in the same handler function.
@@ -165,7 +158,6 @@ Ravyn also allows you to set custom headers in the response. This can be useful 
 ```python
 from ravyn import Ravyn, Gateway, JSONResponse, post
 
-
 @post("/create")
 async def create_user() -> JSONResponse:
     """
@@ -175,11 +167,11 @@ async def create_user() -> JSONResponse:
     response.headers["X-API-KEY"] = "some-api-key"  # Setting custom header
     return response
 
-
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
 
 ### Explanation:
+
 - In this example, we set a custom `X-API-KEY` header in the response.
 - This shows how you can add custom headers to the response as needed.
 

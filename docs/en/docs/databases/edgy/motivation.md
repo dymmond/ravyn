@@ -28,7 +28,6 @@ be used
 * Fast
 * SQL Alchemy core
 
-
 ## How to use
 
 Using Edgy is as easy installing edgy and an async capable database driver for sqlalchemy.
@@ -39,7 +38,6 @@ But sometimes there is not even a suitable dbapi2 driver.
 
 Don't worry: you can use JDBC too (with a working java installation):
 
-
 ```shell
 $ pip install edgy[jdbc]
 # or manually
@@ -49,7 +47,6 @@ $ pip install edgy jpype1
 There are some other database connection shortcuts like:
 
 `edgy[postres]` or `edgy[sqlite]`
-
 
 ## Documentation and more details
 

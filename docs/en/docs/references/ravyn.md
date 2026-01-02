@@ -12,6 +12,7 @@ from ravyn import Ravyn
 ::: ravyn.Ravyn
     options:
         members:
+
             - state
             - settings
             - get_template_engine
@@ -28,4 +29,5 @@ from ravyn import Ravyn
 ::: ravyn.ChildRavyn
     options:
         members:
+
             - load_settings_value

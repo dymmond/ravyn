@@ -19,15 +19,12 @@ from ravyn import Ravyn, Gateway, JSONResponse, get
 
 fake_users = [{"last_name": "Doe", "email": "john.doe@example.com"}]
 
-
 @get("/users")
 async def read_users(skip: int = 1, limit: int = 5) -> JSONResponse:
     return JSONResponse(fake_users[skip: skip + limit])
 
-
 app = Ravyn(routes=[Gateway(handler=read_users)])
 ```
-
 
 **Explanation:**
 
@@ -45,15 +42,12 @@ using standard Python syntax.
 ```python
 from ravyn import Ravyn, Gateway, JSONResponse, get
 
-
 @get("/items")
 async def read_items(category: str = "all", page: int = 1) -> JSONResponse:
     return JSONResponse({"category": category, "page": page})
 
-
 app = Ravyn(routes=[Gateway(handler=read_items)])
 ```
-
 
 **Explanation:**
 
@@ -71,7 +65,6 @@ To make a query parameter optional without a default value, you can use `Optiona
 from typing import Optional
 from ravyn import Ravyn, Gateway, JSONResponse, get
 
-
 @get("/search")
 async def search_items(query: Optional[str] = None) -> JSONResponse:
     if query:
@@ -82,10 +75,8 @@ async def search_items(query: Optional[str] = None) -> JSONResponse:
         results = {"results": "Default results"}
     return JSONResponse(results)
 
-
 app = Ravyn(routes=[Gateway(handler=search_items)])
 ```
-
 
 **Explanation:**
 
@@ -103,7 +94,6 @@ It's important to ensure that parameter names are unique to avoid conflicts.
 ```python
 from ravyn import Ravyn, Gateway, JSONResponse, get
 
-
 @get("/users/{user_id}")
 async def get_user(user_id: int, detailed: bool = False) -> JSONResponse:
     user = {"user_id": user_id, "name": "John Doe"}
@@ -111,10 +101,8 @@ async def get_user(user_id: int, detailed: bool = False) -> JSONResponse:
         user.update({"email": "john.doe@example.com", "address": "123 Main St"})
     return JSONResponse(user)
 
-
 app = Ravyn(routes=[Gateway(handler=get_user)])
 ```
-
 
 **Explanation:**
 
@@ -135,15 +123,12 @@ Ravyn will raise a validation error if the parameter is missing in the request.
 ```python
 from ravyn import Ravyn, Gateway, JSONResponse, get
 
-
 @get("/reports")
 async def generate_report(date: str) -> JSONResponse:
     return JSONResponse({"report_date": date})
 
-
 app = Ravyn(routes=[Gateway(handler=generate_report)])
 ```
-
 
 **Explanation:**
 

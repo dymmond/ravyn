@@ -12,11 +12,9 @@ The `Body` class in Ravyn is used to define fields in the body of an HTTP reques
 from pydantic import BaseModel
 from ravyn import Ravyn, Gateway, JSONResponse, post, Body
 
-
 class User(BaseModel):
     name: str
     email: str
-
 
 @post("/create")
 async def create_user(data: User = Body(...)) -> JSONResponse:
@@ -25,11 +23,11 @@ async def create_user(data: User = Body(...)) -> JSONResponse:
     """
     return JSONResponse({"message": "User created", "user": data.model_dump()})
 
-
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
 
 ### Explanation:
+
 - The `User` Pydantic model defines the structure of the incoming data.
 - The `data` parameter is annotated with `Body(...)`, indicating that the body of the request should be parsed into the `User` model.
 - The `create_user` endpoint accepts the user data in JSON format and returns the same data in the response.
@@ -41,6 +39,7 @@ app = Ravyn(routes=[Gateway(handler=create_user)])
 Ravyn allows you to define the `media_type` for body fields, specifying the format of the data being sent.
 
 ### Available Media Types:
+
 - `application/json` (default)
 - `application/x-www-form-urlencoded`
 - `multipart/form-data`
@@ -54,11 +53,9 @@ from pydantic import BaseModel
 from ravyn import Ravyn, Gateway, JSONResponse, post, Body
 from ravyn.utils.enums import EncodingType
 
-
 class User(BaseModel):
     name: str
     email: str
-
 
 @post("/create")
 async def create_user(
@@ -69,11 +66,11 @@ async def create_user(
     """
     return JSONResponse({"message": "User created", "user": data.model_dump()})
 
-
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
 
 ### Explanation:
+
 - The `media_type=EncodingType.URL_ENCODED` specifies that the body content should be parsed as `application/x-www-form-urlencoded`, commonly used in forms.
 - This allows you to work with URL-encoded form data instead of JSON.
 
@@ -89,18 +86,15 @@ Ravyn leverages Pydantic for automatic data validation and serialization. You ca
 from pydantic import BaseModel
 from ravyn import Ravyn, Gateway, JSONResponse, post, Body
 
-
 class Address(BaseModel):
     street: str
     city: str
     country: str
 
-
 class User(BaseModel):
     name: str
     email: str
     address: Address
-
 
 @post("/create")
 async def create_user(data: User = Body(...)) -> JSONResponse:
@@ -109,11 +103,11 @@ async def create_user(data: User = Body(...)) -> JSONResponse:
     """
     return JSONResponse({"message": "User created", "user": data.model_dump()})
 
-
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
 
 ### Explanation:
+
 - The `User` model contains a nested `Address` model. The `data` parameter in the `create_user` function is annotated as `Body(...)`, which will automatically parse the incoming request body into the nested `User` and `Address` models.
 - This allows you to work with complex, nested data structures while keeping the validation and parsing automatic.
 
@@ -130,11 +124,9 @@ from typing import Optional
 from pydantic import BaseModel
 from ravyn import Ravyn, Gateway, JSONResponse, post, Body
 
-
 class User(BaseModel):
     name: str
     email: Optional[str] = None  # Optional field
-
 
 @post("/create")
 async def create_user(data: User = Body(...)) -> JSONResponse:
@@ -143,11 +135,11 @@ async def create_user(data: User = Body(...)) -> JSONResponse:
     """
     return JSONResponse({"message": "User created", "user": data.model_dump()})
 
-
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
 
 ### Explanation:
+
 - The `email` field is marked as `Optional[str]`, meaning it is not required in the request body. If the email is not provided, it will default to `None`.
 - This allows you to handle flexible form submissions where some fields may be omitted.
 
@@ -163,11 +155,9 @@ You can apply advanced validation to body fields using Pydantic's `Field` class,
 from pydantic import BaseModel, Field
 from ravyn import Ravyn, Gateway, JSONResponse, post, Body
 
-
 class User(BaseModel):
     name: str = Field(..., min_length=3)  # Ensures the name has at least 3 characters
     email: str = Field(..., regex=r"^[\w\.-]+@[\w\.-]+\.\w{2,3}$")  # Email validation
-
 
 @post("/create")
 async def create_user(data: User = Body(...)) -> JSONResponse:
@@ -176,11 +166,11 @@ async def create_user(data: User = Body(...)) -> JSONResponse:
     """
     return JSONResponse({"message": "User created", "user": data.model_dump()})
 
-
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
 
 ### Explanation:
+
 - The `Field(..., min_length=3)` ensures that the `name` field has at least three characters.
 - The `Field(..., regex=r"^[\w\.-]+@[\w\.-]+\.\w{2,3}$")` validates that the `email` field is in a correct email format.
 - These validations ensure that the request data meets specific requirements before reaching your handler logic.

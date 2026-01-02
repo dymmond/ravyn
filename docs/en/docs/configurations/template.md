@@ -1,74 +1,334 @@
 # TemplateConfig
 
-TemplateConfig is a simple set of configurations that when passed enables the template engine.
+Configure template rendering for server-side HTML generation in your Ravyn application.
 
-!!! info
-    Currently Ravyn supports `Jinja2`.
+## What You'll Learn
 
-It is important to understand that you don't need to use the provided `JinjaTemplateEngine`
-from Ravyn within the `TemplateConfig`.
+- Setting up Jinja2 templates
+- Rendering templates
+- Using async templates
+- Template best practices
 
-You are free to build your own and pass it to the `TemplateConfig`. This way you can design however you see fit.
-
-!!! Tip
-    Ravyn being built on top of Lilya, uses the `JinjaTemplateEngine` from it which means you can read
-    the [Jinja2Template](https://www.lilya.dev/templates/#jinja2template) from Lilya to understand
-    the parameters and how to use them.
-
-    You can also create your own jinja2 engine and pass it in the `engine` parameter of the `TemplateConfig`.
-
-    You will notice the name of the parameters in the `TemplateConfig` match maority of the jinja2 implementation.
-
-## TemplateConfig and application
-
-To use the TemplateConfig in an application instance.
-
-```python hl_lines="4-5 9"
-{!> ../../../docs_src/configurations/template/example1.py!}
-```
-
-## Parameters
-
-All the parameters and defaults are available in the [TemplateConfig Reference](../references/configurations/template.md).
-
-## TemplateConfig and application settings
-
-The TemplateConfig can be done directly via [application instantiation](#templateconfig-and-application)
-but also via settings.
+## Quick Start
 
 ```python
-{!> ../../../docs_src/configurations/template/settings.py!}
+from ravyn import Ravyn, get
+from ravyn.config import TemplateConfig
+from ravyn.responses import Template
+
+app = Ravyn(
+    template_config=TemplateConfig(
+        directory="templates"
+    )
+)
+
+@get("/")
+def homepage() -> Template:
+    return Template("index.html", context={"title": "Home"})
 ```
 
-This will make sure you keep the settings clean, separated and without a bloated **Ravyn** instance.
+---
 
-## `url_for`
+## Basic Configuration
 
-Ravyn automatically provides the `url_for` when using the jinja template system, that means
-you can do something like this:
-
-```jinja
-{!> ../../../docs_src/_shared/jinja.html!}
-```
-
-## How to use
-
-Simply return `Template` (of ravyn) not `TemplateResponse` with a `name` parameter pointing to the relative path of the template.
-You can pass extra data via setting the `context` parameter to a dictionary containing the extra data.
-
-To select the return type (txt, html) you need to name the files: `foo.html.jinja`.
-
-## Using async templates
-
-A very good feature of jinja2 is that you can you can have async templates. This means awaitables are automatically resolved
-and async iteration is supported out of the box.
-This is especially useful for the async ORMs, for example [Edgy](https://edgy.dymmond.com).
+### Minimal Setup
 
 ```python
-{!> ../../../docs_src/configurations/template/settings_async.py!}
+from ravyn import Ravyn
+from ravyn.config import TemplateConfig
+
+app = Ravyn(
+    template_config=TemplateConfig(
+        directory="templates"
+    )
+)
 ```
 
-And now you can iterate over QuerySets out of the box. Nothing else is required.
+### Complete Configuration
 
-Note that internally the template response switches the render method and uses the async content feature of lilya
-so you can only access the body attribute after calling `__call__` or `resolve_async_content()`.
+```python
+app = Ravyn(
+    template_config=TemplateConfig(
+        directory="templates",
+        autoescape=True,
+        auto_reload=True,  # Development only
+        enable_async=True  # For async templates
+    )
+)
+```
+
+---
+
+## Configuration Parameters
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `directory` | str/list | Template directory path(s) | **Required** |
+| `autoescape` | bool | Auto-escape HTML | `True` |
+| `auto_reload` | bool | Reload templates on change | `False` |
+| `enable_async` | bool | Enable async templates | `False` |
+
+---
+
+## Rendering Templates
+
+### Basic Template
+
+```python
+from ravyn import get
+from ravyn.responses import Template
+
+@get("/")
+def homepage() -> Template:
+    return Template("index.html")
+```
+
+**templates/index.html:**
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+</head>
+<body>
+    <h1>Welcome to Ravyn!</h1>
+</body>
+</html>
+```
+
+### With Context Data
+
+```python
+@get("/users/{user_id}")
+async def user_profile(user_id: int) -> Template:
+    user = await User.get(id=user_id)
+    
+    return Template(
+        "profile.html",
+        context={
+            "user": user,
+            "title": f"Profile - {user.name}"
+        }
+    )
+```
+
+**templates/profile.html:**
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+</head>
+<body>
+    <h1>{{ user.name }}</h1>
+    <p>Email: {{ user.email }}</p>
+</body>
+</html>
+```
+
+---
+
+## Async Templates
+
+Enable async templates for async database queries:
+
+### Configuration
+
+```python
+app = Ravyn(
+    template_config=TemplateConfig(
+        directory="templates",
+        enable_async=True  # Enable async
+    )
+)
+```
+
+### Using Async in Templates
+
+```python
+@get("/products")
+async def products() -> Template:
+    # Pass QuerySet directly
+    products = Product.query.all()  # Async QuerySet
+    
+    return Template(
+        "products.html",
+        context={"products": products}
+    )
+```
+
+**templates/products.html:**
+```html
+<ul>
+{% for product in products %}
+    <li>{{ product.name }} - ${{ product.price }}</li>
+{% endfor %}
+</ul>
+```
+
+> [!INFO]
+> With `enable_async=True`, Jinja2 automatically resolves async iterables.
+
+---
+
+## Built-in Template Functions
+
+### url_for
+
+Generate URLs for routes:
+
+```html
+<a href="{{ url_for('homepage') }}">Home</a>
+<a href="{{ url_for('user_profile', user_id=123) }}">Profile</a>
+```
+
+### Template Inheritance
+
+**base.html:**
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}My Site{% endblock %}</title>
+</head>
+<body>
+    {% block content %}{% endblock %}
+</body>
+</html>
+```
+
+**page.html:**
+```html
+{% extends "base.html" %}
+
+{% block title %}Page Title{% endblock %}
+
+{% block content %}
+    <h1>Page Content</h1>
+{% endblock %}
+```
+
+---
+
+## Using with Settings
+
+```python
+from ravyn import RavynSettings
+from ravyn.config import TemplateConfig
+
+class AppSettings(RavynSettings):
+    template_config: TemplateConfig = TemplateConfig(
+        directory="templates",
+        autoescape=True,
+        enable_async=True
+    )
+
+app = Ravyn(settings_module=AppSettings)
+```
+
+---
+
+## Common Patterns
+
+### Pattern 1: Layout with Partials
+
+```html
+<!-- base.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    {% include "partials/head.html" %}
+</head>
+<body>
+    {% include "partials/header.html" %}
+    {% block content %}{% endblock %}
+    {% include "partials/footer.html" %}
+</body>
+</html>
+```
+
+### Pattern 2: Form Rendering
+
+```python
+@get("/contact")
+def contact_form() -> Template:
+    return Template("contact.html")
+
+@post("/contact")
+async def submit_contact(name: str, email: str, message: str) -> Template:
+    await send_email(name, email, message)
+    
+    return Template(
+        "contact.html",
+        context={"success": True}
+    )
+```
+
+### Pattern 3: Error Pages
+
+```python
+from ravyn import Ravyn
+from ravyn.responses import Template
+
+app = Ravyn(
+    template_config=TemplateConfig(directory="templates")
+)
+
+@app.exception_handler(404)
+async def not_found(request, exc) -> Template:
+    return Template("404.html", status_code=404)
+
+@app.exception_handler(500)
+async def server_error(request, exc) -> Template:
+    return Template("500.html", status_code=500)
+```
+
+---
+
+## Best Practices
+
+### 1. Organize Templates
+
+```
+templates/
+  base.html
+  index.html
+  partials/
+    header.html
+    footer.html
+  users/
+    profile.html
+    list.html
+  errors/
+    404.html
+    500.html
+```
+
+### 2. Use Template Inheritance
+
+```html
+<!-- Good - reuse base layout -->
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Page Content</h1>
+{% endblock %}
+```
+
+### 3. Enable Auto-Escape
+
+```python
+# Good - prevent XSS
+template_config = TemplateConfig(
+    directory="templates",
+    autoescape=True  # Always escape HTML
+)
+```
+
+---
+
+## Next Steps
+
+- [StaticFilesConfig](./staticfiles.md) - Serve static files
+- [Responses](../responses.md) - Response types
+- [Application Settings](../application/settings.md) - Configuration

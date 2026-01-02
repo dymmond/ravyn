@@ -1,358 +1,582 @@
-# Settings
+# Application Settings
 
-Every application in a way or another needs settings for the uniqueness of the project itself.
+Settings let you configure your Ravyn application for different environments (development, testing, production) without changing code. Ravyn uses Pydantic-based settings inspired by Django's approach, making configuration clean and type-safe.
 
-When the complexity of a project increases and there are settings spread across the codebase, it is when the things
-start to get messy.
+## What You'll Learn
 
-One great framework, Django, has the settings in place but because of the legacy codebase and the complexity of almost
-20 years of development of the framework, those became a bit bloated and hard to maintain.
+- How to use default settings vs custom settings
+- Creating environment-specific configurations
+- Using `RAVYN_SETTINGS_MODULE` environment variable
+- Using `settings_module` for modular applications
+- Accessing settings in your application
 
-Inspired by Django and by the experience of 99% of the developed applications using some sort of settings
-(by environment, by user...), Ravyn comes equipped to handle exactly with that natively and using
-[Pydantic](https://pydantic-docs.helpmanual.io/visual_studio_code/#basesettings-and-ignoring-pylancepyright-errors)
-to leverage those.
+## Quick Start
 
-## The way of the settings
+### Using Default Settings
 
-There are two ways of using the settings object within an Ravyn application.
-
-* Using the **RAVYN_SETTINGS_MODULE**
-* Using the **[settings_module](#the-settings_module)**
-
-Each one of them has particular use cases but they also work together in perfect harmony.
-
-## RavynSettings and the application
-
-When starting a Ravyn instance, if no parameters are provided, it will automatically load the defaults from the
-system settings object, the `RavynSettings`.
-
-!!! Warning
-    In the past `RavynSettings` was called `RavynAPISettings` and that name will remain for now for backwards compatibility.
-
-    It is advised to simply use the new naming convention to avoid disruption in the future. The only change was the name.
-
-=== "No parameters"
-
-    ```python hl_lines="4"
-    {!> ../../../docs_src/settings/app/no_parameters.py!}
-    ```
-
-=== "With Parameters"
-
-    ```python hl_lines="6"
-    {!> ../../../docs_src/settings/app/with_parameters.py!}
-    ```
-
-## Custom settings
-
-Using the defaults from `RavynSettings` generally will not do too much for majority of the applications.
-
-For that reason custom settings are needed.
-
-**All the custom settings should be inherited from the `RavynSettings`**.
-
-Let's assume we have three environments for one application: `production`, `testing`, `development` and a base settings
-file that contains common settings across the three environments.
-
-=== "Base"
-
-    ```python
-    {!> ../../../docs_src/settings/custom/base.py!}
-    ```
-
-=== "Development"
-
-    ```python
-    {!> ../../../docs_src/settings/custom/development.py!}
-    ```
-
-=== "Testing"
-
-    ```python
-    {!> ../../../docs_src/settings/custom/testing.py!}
-    ```
-
-=== "Production"
-
-    ```python
-    {!> ../../../docs_src/settings/custom/production.py!}
-    ```
-
-What just happened?
-
-1. Created an `AppSettings` inherited from the `RavynSettings` with common cross environment properties.
-2. Created one settings file per environment and inherited from the base `AppSettings`.
-3. Imported specific database settings per environment and added the events `on_startup` and `on_shutdown` specific
-to each.
-
-
-## Ravyn Settings Module
-
-Ravyn by default is looking for a `RAVYN_SETTINGS_MODULE` environment variable to execute any custom settings. If nothing is provided, then it will execute the application defaults.
-
-=== "Without RAVYN_SETTINGS_MODULE"
-
-    ```shell
-    uvicorn src:app --reload
-
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
-
-=== "With RAVYN_SETTINGS_MODULE MacOS & Linux"
-
-    ```shell
-    RAVYN_SETTINGS_MODULE=src.configs.production.ProductionSettings uvicorn src:app
-
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
-
-=== "With RAVYN_SETTINGS_MODULE Windows"
-
-    ```shell
-    $env:RAVYN_SETTINGS_MODULE="src.configs.production.ProductionSettings"; uvicorn src:app
-
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
-
-It is very simple, `RAVYN_SETTINGS_MODULE` looks for the custom settings class created for the application
-and loads it in lazy mode.
-
-## The settings_module
-
-This is a great tool to make your Ravyn applications 100% independent and modular. There are cases
-where you simply want to plug an existing Ravyn application into another and that same Ravyn application
-already has unique settings and defaults.
-
-The `settings_module` is a parameter available in every single `Ravyn` instance as well as `ChildRavyn`.
-
-### Creating a settings_module
-
-The configurations have **literally the same concept**
-as the [RavynSettings](#ravynsettings-and-the-application), which means that every single
-`settings_module` **must be derived from the RavynSettings** or an `ImproperlyConfigured` exception
-is thrown.
-
-The reason why the above is to keep the integrity of the application and settings.
-
-```python hl_lines="22"
-{!> ../../../docs_src/application/settings/settings_config/example2.py !}
-```
-
-Is this simple, literally, Ravyn simplifies the way you can manipulate settings on each level
-and keeping the intregrity at the same time.
-
-Check out the [order of priority](#order-of-priority) to understand a bit more.
-
-## Order of priority
-
-There is an order or priority in which Ravyn reads your settings.
-
-If a `settings_module` is passed into an Ravyn instance, that same object takes priority above
-anything else. Let us imagine the following:
-
-* An Ravyn application with normal settings.
-* A ChildRavyn with a specific set of configurations unique to it.
-
-```python hl_lines="11"
-{!> ../../../docs_src/application/settings/settings_config/example1.py !}
-```
-
-**What is happenening here?**
-
-In the example above we:
-
-1. Created a settings object derived from the main `RavynSettings` and
-passed some defaults.
-1. Passed the `ChildRavynSettings` into the `ChildRavyn` instance.
-2. Passed the `ChildRavyn` into the `Ravyn` application.
-
-So, how does the priority take place here using the `settings_module`?
-
-1. If no parameter value (upon instantiation), for example `app_name`, is provided, it will check for that same value
-inside the `settings_module`.
-2. If `settings_module` does not provide an `app_name` value, it will look for the value in the
-`RAVYN_SETTINGS_MODULE`.
-3. If no `RAVYN_SETTINGS_MODULE` environment variable is provided by you, then it will default
-to the Ravyn defaults. [Read more about this here](#ravyn-settings-module).
-
-So the order of priority:
-
-1. Parameter instance value takes priority above `settings_module`.
-2. `settings_module` takes priority above `RAVYN_SETTINGS_MODULE`.
-3. `RAVYN_SETTINGS_MODULE` is the last being checked.
-
-## Settings config and Ravyn settings module
-
-The beauty of this modular approach is the fact that makes it possible to use **both** approaches at
-the same time ([order of priority](#order-of-priority)).
-
-Let us use an example where:
-
-1. We create a main Ravyn settings object to be used by the `RAVYN_SETTINGS_MODULE`.
-2. We create a `settings_module` to be used by the Ravyn instance.
-3. We start the application using both.
-
-Let us also assume you have all the settings inside a `src/configs` directory.
-
-**Create a configuration to be used by the RAVYN_SETTINGS_MODULE**
-
-```python title="src/configs/main_settings.py"
-{!> ../../../docs_src/application/settings/settings_config/main_settings.py !}
-```
-
-**Create a configuration to be used by the setting_config**
-
-```python title="src/configs/app_settings.py"
-{!> ../../../docs_src/application/settings/settings_config/app_settings.py !}
-```
-
-**Create an Ravyn instance**
-
-```python title="src/app.py" hl_lines="14"
-{!> ../../../docs_src/application/settings/settings_config/app.py !}
-```
-
-Now we can start the server using the `AppSettings` as global and `InstanceSettings` being passed
-via instantiation. The AppSettings from the main_settings.py is used to call from the command-line.
-
-=== "MacOS & Linux"
-
-    ```shell
-    RAVYN_SETTINGS_MODULE=src.configs.main_settings.AppSettings uvicorn src:app --reload
-
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
-
-=== "Windows"
-
-    ```shell
-    $env:RAVYN_SETTINGS_MODULE="src.configs.main_settings.AppSettings"; uvicorn src:app --reload
-
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
-
-Great! Now not only we have used the `settings_module` and `RAVYN_SETTINGS_MODULE` but we used
-them at the same time!
-
-Check out the [order of priority](#order-of-priority) to understand which value takes precedence
-and how Ravyn reads them out.
-
-## Parameters
-
-The parameters available inside `RavynSettings` can be overridden by any custom settings
-and those are available in the [settings reference](../references/application/settings.md).
-
-!!! Check
-    All the configurations are pydantic objects. Check [CORS](../configurations/cors.md),
-    [CSRF](../configurations/csrf.md), [Session](../configurations/session.md), [JWT](../configurations/session.md),
-    [StaticFiles](../configurations/staticfiles.md), [Template](../configurations/template.md) and
-    [OpenAPI](../configurations/openapi/config.md) and see how to use them.
-
-**Note**: To understand which parameters exist as well the corresponding values, [settings reference](../references/application/settings.md)
-is the place to go.
-
-## Accessing settings
-
-To access the application settings there are different ways:
-
-=== "Within the application request"
-
-    ```python hl_lines="6"
-    {!> ../../../docs_src/settings/access/within_app.py!}
-    ```
-
-=== "From the global settings"
-
-    ```python hl_lines="1 6"
-    {!> ../../../docs_src/settings/access/global.py!}
-    ```
-
-=== "From the conf settings"
-
-    ```python hl_lines="2 7"
-    {!> ../../../docs_src/settings/access/conf.py!}
-    ```
-
-!!! info
-    Some of this information might have been mentioned in some other parts of the documentation but we assume
-    the people reading it might have missed.
-
-## Order of importance
-
-Using the settings to start an application instead of providing the parameters directly in the moment of
-instantiation does not mean that one will work with the other.
-
-When you instantiate an application **or you pass parameters directly or you use settings or a mix of both**.
-
-Passing parameters in the object will always override the values from the default settings.
-
-```python
-from ravyn import RavynSettings
-from ravyn.conf.enums import EnvironmentType
-from ravyn.middleware.https import HTTPSRedirectMiddleware
-from ravyn.types import Middleware
-from lilya.middleware import DefineMiddleware
-
-
-class AppSettings(RavynSettings):
-    debug: bool = False
-
-    @property
-    def middleware(self) -> List[Middleware]:
-        return [DefineMiddleware(HTTPSRedirectMiddleware)]
-
-```
-
-The application will:
-
-1. Start with `debug` as `False`.
-2. Will start with a middleware `HTTPSRedirectMiddleware`.
-
-Starting the application with the above settings will make sure that has an initial `HTTPSRedirectMiddleware` and `debug`
-set with values, **but** what happens if you use the settings + parameters on instantiation?
+The simplest Ravyn app uses built-in defaults:
 
 ```python
 from ravyn import Ravyn
 
-app = Ravyn(debug=True, middleware=[])
+app = Ravyn()  # Uses default RavynSettings
 ```
 
-The application will:
+### Custom Settings
 
-1. Start with `debug` as `True`.
-2. Will start without custom middlewares it the `HTTPSRedirectMiddleware` it was overridden by `[]`.
+Create environment-specific settings:
 
-Although it was set in the settings to start with `HTTPSRedirectMiddleware` and debug as `False`, once you pass different
-values in the moment of instantiating an `Ravyn` object, those will become the values to be used.
+```python
+from ravyn import RavynSettings
+from ravyn.conf.enums import EnvironmentType
 
-**Declaring parameters in the instance will always precede the values from your settings**.
+class DevelopmentSettings(RavynSettings):
+    app_name: str = "My App (Dev)"
+    debug: bool = True
+    environment: str = EnvironmentType.DEVELOPMENT
+```
 
-The reason why you should be using settings is because it will make your codebase more organised and easier
-to maintain.
+Load it with an environment variable:
 
-!!! Check
-    When you pass the parameters via instantiation of an Ravyn object and not via parameters, when accessing the
-    values via `request.app.settings`, the values **won't be in the settings** as those were passed via application
-    instantiation and not via settings object. The way to access those values is, for example, `request.app.app_name`
-    directly.
+```shell
+# MacOS/Linux
+RAVYN_SETTINGS_MODULE='myapp.settings.DevelopmentSettings' uvicorn app:app
+
+# Windows
+$env:RAVYN_SETTINGS_MODULE="myapp.settings.DevelopmentSettings"; uvicorn app:app
+```
+
+!!! tip
+    If no `RAVYN_SETTINGS_MODULE` is set, Ravyn uses sensible defaults automatically.
+
+---
+
+## How Settings Work
+
+Ravyn has two ways to configure your application:
+
+1. **`RAVYN_SETTINGS_MODULE`** - Environment variable for global settings
+2. **`settings_module`** - Parameter for instance-specific settings
+
+Both work together with a clear priority order.
+
+### Default Settings (RavynSettings)
+
+When you create a Ravyn instance without parameters, it loads `RavynSettings`:
+
+```python
+from ravyn import Ravyn
+
+app = Ravyn()  # Automatically uses RavynSettings defaults
+```
+
+> [!INFO]
+> `RavynSettings` was previously called `RavynAPISettings`. The old name still works for backwards compatibility, but use `RavynSettings` for new code.
+
+### Overriding with Parameters
+
+You can override any setting by passing parameters directly:
+
+```python
+from ravyn import Ravyn
+
+app = Ravyn(
+    app_name="My Custom App",
+    debug=True,
+    enable_openapi=True
+)
+```
+
+**Priority:** Parameters > `settings_module` > `RAVYN_SETTINGS_MODULE` > defaults
+
+---
+
+## Creating Custom Settings
+
+All custom settings **must inherit from `RavynSettings`**.
+
+### Single Environment
+
+```python
+from ravyn import RavynSettings
+
+class MyAppSettings(RavynSettings):
+    app_name: str = "My Application"
+    debug: bool = False
+    secret_key: str = "your-secret-key-here"
+```
+
+### Multiple Environments (Recommended)
+
+Create a base settings class and environment-specific classes:
+
+#### Base Settings
+
+```python
+# myapp/settings/base.py
+from ravyn import RavynSettings
+
+class AppSettings(RavynSettings):
+    """Common settings across all environments"""
+    app_name: str = "My Application"
+    secret_key: str = "change-me-in-production"
+```
+
+#### Development Settings
+
+```python
+# myapp/settings/development.py
+from ravyn.conf.enums import EnvironmentType
+from .base import AppSettings
+
+class DevelopmentSettings(AppSettings):
+    debug: bool = True
+    environment: str = EnvironmentType.DEVELOPMENT
+    
+    @property
+    def database_url(self) -> str:
+        return "postgresql://localhost/myapp_dev"
+```
+
+#### Testing Settings
+
+```python
+# myapp/settings/testing.py
+from ravyn.conf.enums import EnvironmentType
+from .base import AppSettings
+
+class TestingSettings(AppSettings):
+    debug: bool = True
+    environment: str = EnvironmentType.TESTING
+    
+    @property
+    def database_url(self) -> str:
+        return "postgresql://localhost/myapp_test"
+```
+
+#### Production Settings
+
+```python
+# myapp/settings/production.py
+from ravyn.conf.enums import EnvironmentType
+from .base import AppSettings
+
+class ProductionSettings(AppSettings):
+    debug: bool = False
+    environment: str = EnvironmentType.PRODUCTION
+    
+    @property
+    def database_url(self) -> str:
+        return "postgresql://prod-server/myapp"
+```
+
+---
+
+## Using RAVYN_SETTINGS_MODULE
+
+Set the environment variable to load your custom settings:
+
+### Development
+
+```shell
+# MacOS/Linux
+RAVYN_SETTINGS_MODULE='myapp.settings.development.DevelopmentSettings' uvicorn app:app --reload
+
+# Windows
+$env:RAVYN_SETTINGS_MODULE="myapp.settings.development.DevelopmentSettings"; uvicorn app:app --reload
+```
+
+### Production
+
+```shell
+# MacOS/Linux
+RAVYN_SETTINGS_MODULE='myapp.settings.production.ProductionSettings' uvicorn app:app
+
+# Windows
+$env:RAVYN_SETTINGS_MODULE="myapp.settings.production.ProductionSettings"; uvicorn app:app
+```
+
+### Without Environment Variable
+
+If you don't set `RAVYN_SETTINGS_MODULE`, Ravyn uses defaults:
+
+```shell
+uvicorn app:app  # Uses RavynSettings defaults
+```
+
+---
+
+## Using settings_module (Modular Apps)
+
+The `settings_module` parameter lets you create modular applications with their own settings. This is perfect for:
+
+- Pluggable applications
+- Microservices
+- Child applications with unique configs
+
+### Basic Example
+
+```python
+from ravyn import Ravyn, RavynSettings
+
+class PluginSettings(RavynSettings):
+    app_name: str = "My Plugin"
+    plugin_enabled: bool = True
+
+app = Ravyn(settings_module=PluginSettings)
+```
+
+### Child Application with Custom Settings
+
+```python
+from ravyn import Ravyn, ChildRavyn, RavynSettings, Include
+
+class ChildSettings(RavynSettings):
+    app_name: str = "Child App"
+    debug: bool = True
+
+child_app = ChildRavyn(
+    routes=[...],
+    settings_module=ChildSettings
+)
+
+main_app = Ravyn(
+    routes=[
+        Include("/child", app=child_app)
+    ]
+)
+```
+
+---
+
+## Settings Priority Order
+
+Ravyn checks settings in this order (first match wins):
+
+1. **Instance parameters** - `Ravyn(debug=True)`
+2. **`settings_module`** - `Ravyn(settings_module=MySettings)`
+3. **`RAVYN_SETTINGS_MODULE`** - Environment variable
+4. **Default `RavynSettings`** - Built-in defaults
+
+### Example
+
+```python
+from ravyn import Ravyn, RavynSettings
+
+class GlobalSettings(RavynSettings):
+    debug: bool = False
+    app_name: str = "Global App"
+
+class InstanceSettings(RavynSettings):
+    debug: bool = True
+    app_name: str = "Instance App"
+
+# Set environment variable
+# RAVYN_SETTINGS_MODULE='myapp.GlobalSettings'
+
+app = Ravyn(
+    settings_module=InstanceSettings,  # Takes priority over RAVYN_SETTINGS_MODULE
+    app_name="Override App"  # Takes priority over everything
+)
+
+# Result:
+# - app_name = "Override App" (from parameter)
+# - debug = True (from settings_module, since no parameter)
+```
+
+---
+
+## Combining Both Approaches
+
+You can use `RAVYN_SETTINGS_MODULE` for global settings and `settings_module` for instance-specific overrides:
+
+### Global Settings
+
+```python
+# src/configs/main_settings.py
+from ravyn import RavynSettings
+
+class AppSettings(RavynSettings):
+    app_name: str = "My Application"
+    debug: bool = False
+```
+
+### Instance Settings
+
+```python
+# src/configs/instance_settings.py
+from ravyn import RavynSettings
+
+class InstanceSettings(RavynSettings):
+    app_name: str = "Custom Instance"
+    enable_openapi: bool = True
+```
+
+### Application
+
+```python
+# src/app.py
+from ravyn import Ravyn
+from src.configs.instance_settings import InstanceSettings
+
+app = Ravyn(settings_module=InstanceSettings)
+```
+
+### Run It
+
+```shell
+# MacOS/Linux
+RAVYN_SETTINGS_MODULE='src.configs.main_settings.AppSettings' uvicorn src:app --reload
+
+# Windows
+$env:RAVYN_SETTINGS_MODULE="src.configs.main_settings.AppSettings"; uvicorn src:app --reload
+```
+
+**Result:** `InstanceSettings` values override `AppSettings` values.
+
+---
+
+## Accessing Settings
+
+There are multiple ways to access settings in your application:
+
+### From Request Object
+
+```python
+from ravyn import Ravyn, get, Request
+
+app = Ravyn()
+
+@app.get("/info")
+def app_info(request: Request) -> dict:
+    return {
+        "app_name": request.app.settings.app_name,
+        "debug": request.app.settings.debug
+    }
+```
+
+### From Global Settings
+
+```python
+from ravyn import get
+from ravyn.conf import settings
+
+@get("/info")
+def app_info() -> dict:
+    return {
+        "app_name": settings.app_name,
+        "debug": settings.debug
+    }
+```
+
+### From conf.settings
+
+```python
+from ravyn import get
+from ravyn.conf.global_settings import settings
+
+@get("/info")
+def app_info() -> dict:
+    return {
+        "app_name": settings.app_name,
+        "debug": settings.debug
+    }
+```
+
+!!! warning
+    If you pass parameters directly to `Ravyn()` instead of using settings, those values won't be in `request.app.settings`. Access them via `request.app.app_name` directly.
+
+---
+
+## Available Settings Parameters
+
+All settings parameters are documented in the [Settings Reference](../references/application/settings.md).
+
+Common settings include:
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `app_name` | `str` | `"Ravyn"` | Application name |
+| `debug` | `bool` | `False` | Debug mode |
+| `environment` | `str` | `"production"` | Environment type |
+| `secret_key` | `str` | Auto-generated | Secret key for security |
+| `enable_openapi` | `bool` | `True` | Enable OpenAPI docs |
+| `allowed_hosts` | `List[str]` | `["*"]` | Allowed host headers |
+
+### Configuration Objects
+
+Settings can include configuration objects for specific features:
+
+- [CORS](../configurations/cors.md) - Cross-Origin Resource Sharing
+- [CSRF](../configurations/csrf.md) - Cross-Site Request Forgery protection
+- [Session](../configurations/session.md) - Session management
+- [JWT](../configurations/jwt.md) - JSON Web Token configuration
+- [StaticFiles](../configurations/staticfiles.md) - Static file serving
+- [Template](../configurations/template.md) - Template engine configuration
+- [OpenAPI](../configurations/openapi/config.md) - OpenAPI documentation
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Settings Not Loading
+
+**Problem:** Custom settings aren't being used.
+
+```python
+# Wrong - environment variable not set
+uvicorn app:app  # Uses defaults, not your custom settings
+```
+
+**Solution:** Set `RAVYN_SETTINGS_MODULE` before running:
+
+```shell
+# Correct
+RAVYN_SETTINGS_MODULE='myapp.settings.DevelopmentSettings' uvicorn app:app
+```
+
+### Pitfall 2: Settings Class Not Inheriting from RavynSettings
+
+**Problem:** `ImproperlyConfigured` exception.
+
+```python
+# Wrong
+class MySettings:  # Doesn't inherit from RavynSettings
+    debug: bool = True
+```
+
+**Solution:** Always inherit from `RavynSettings`:
+
+```python
+# Correct
+from ravyn import RavynSettings
+
+class MySettings(RavynSettings):
+    debug: bool = True
+```
+
+### Pitfall 3: Accessing Parameter Values from Settings
+
+**Problem:** Values passed as parameters aren't in `request.app.settings`.
+
+```python
+app = Ravyn(app_name="Custom Name")  # Passed as parameter
+
+@app.get("/info")
+def info(request: Request) -> dict:
+    # Wrong - won't find it in settings
+    return {"name": request.app.settings.app_name}
+```
+
+**Solution:** Access parameter values directly from the app:
+
+```python
+# Correct
+@app.get("/info")
+def info(request: Request) -> dict:
+    return {"name": request.app.app_name}  # Direct access
+```
+
+### Pitfall 4: Wrong Module Path
+
+**Problem:** `ModuleNotFoundError` when setting `RAVYN_SETTINGS_MODULE`.
+
+```shell
+# Wrong - typo in path
+RAVYN_SETTINGS_MODULE='myapp.setting.DevelopmentSettings' uvicorn app:app
+```
+
+**Solution:** Double-check the full module path:
+
+```shell
+# Correct
+RAVYN_SETTINGS_MODULE='myapp.settings.DevelopmentSettings' uvicorn app:app
+```
+
+### Pitfall 5: Mixing Settings and Parameters Unexpectedly
+
+**Problem:** Not understanding priority order leads to unexpected values.
+
+```python
+class MySettings(RavynSettings):
+    debug: bool = False
+
+app = Ravyn(
+    settings_module=MySettings,
+    debug=True  # This overrides settings!
+)
+# debug will be True, not False
+```
+
+**Solution:** Remember the priority: Parameters > settings_module > RAVYN_SETTINGS_MODULE > defaults
+
+---
+
+## Settings Patterns
+
+### Pattern 1: Environment-Based Settings
+
+```
+myapp/
+├── settings/
+│   ├── __init__.py
+│   ├── base.py
+│   ├── development.py
+│   ├── testing.py
+│   └── production.py
+└── app.py
+```
+
+Use different settings per environment:
+
+```shell
+# Development
+RAVYN_SETTINGS_MODULE='myapp.settings.development.DevelopmentSettings' uvicorn app:app --reload
+
+# Production
+RAVYN_SETTINGS_MODULE='myapp.settings.production.ProductionSettings' uvicorn app:app
+```
+
+### Pattern 2: .env Files with Pydantic
+
+```python
+from ravyn import RavynSettings
+from pydantic_settings import SettingsConfigDict
+
+class Settings(RavynSettings):
+    model_config = SettingsConfigDict(env_file=".env")
+    
+    database_url: str
+    secret_key: str
+    debug: bool = False
+```
+
+### Pattern 3: Feature Flags
+
+```python
+from ravyn import RavynSettings
+
+class Settings(RavynSettings):
+    feature_new_ui: bool = False
+    feature_beta_api: bool = False
+    
+@app.get("/features")
+def features(request: Request) -> dict:
+    return {
+        "new_ui": request.app.settings.feature_new_ui,
+        "beta_api": request.app.settings.feature_beta_api
+    }
+```
+
+---
+
+## Next Steps
+
+Now that you understand settings, explore:
+
+- [Settings Reference](../references/application/settings.md) - All available parameters
+- [CORS Configuration](../configurations/cors.md) - Configure CORS
+- [CSRF Configuration](../configurations/csrf.md) - CSRF protection
+- [JWT Configuration](../configurations/jwt.md) - JWT authentication
+- [Application Levels](./levels.md) - Understand application hierarchy
+- [Deployment](../deployment/intro.md) - Deploy with environment-specific settings

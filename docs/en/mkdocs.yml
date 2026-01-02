@@ -85,207 +85,164 @@ markdown_extensions:
     alternate_style: true
 - md_in_html
 nav:
-- index.md
-- Application:
-  - application/index.md
-  - Ravyn: application/applications.md
-  - application/levels.md
-  - application/settings.md
-  - Configurations:
-    - configurations/index.md
-    - configurations/cors.md
-    - configurations/csrf.md
-    - configurations/session.md
-    - configurations/staticfiles.md
-    - configurations/template.md
-    - configurations/logging.md
-    - configurations/jwt.md
-    - configurations/scheduler.md
-    - configurations/openapi/config.md
-- Features:
-  - features/index.md
+- Ravyn: index.md
+- Learning and Examples:
+  - Getting Started:
+    - Quick Start: guides/beginner/index.md
+    - First API: guides/beginner/02-building-your-first-api.md
+    - Request & Response: guides/beginner/03-request-and-response-models.md
+    - Error Handling: guides/beginner/04-handling-errors.md
+    - Routing Basics: guides/beginner/05-routing.md
+    - Middlewares: guides/beginner/06-middlewares.md
+    - Background Tasks: guides/beginner/07-background-tasks.md
+    - Dependencies: guides/beginner/08-dependencies.md
+    - Troubleshooting: troubleshooting.md
+  - Advanced Guides:
+    - guides/more-advanced/index.md
+    - Security Patterns: guides/more-advanced/01-security.md
+    - Architecture: guides/more-advanced/05-architecture-patterns.md
+    - Dependency Injection: guides/more-advanced/06-dependency-injection.md
+    - Advanced Concepts: guides/more-advanced/07-advanced-concepts.md
+    - Caching Strategies: guides/more-advanced/08-caching.md
+    - Path Parameters: guides/more-advanced/09-path-params.md
+    - Query Parameters: guides/more-advanced/10-query-params.md
+    - Request Data: guides/more-advanced/11-request-data.md
+    - Upload Files: guides/more-advanced/12-upload-files.md
+    - Forms: guides/more-advanced/13-forms.md
+    - Body: guides/more-advanced/14-body.md
+    - Headers: guides/more-advanced/15-headers.md
+    - Cookies: guides/more-advanced/16-cookies.md
+- Core Concepts:
+  - Application:
+    - application/index.md
+    - Ravyn: application/applications.md
+    - Settings: application/settings.md
+    - Levels: application/levels.md
   - Routing:
     - routing/index.md
-    - routing/router.md
-    - routing/routes.md
-    - routing/handlers.md
-    - routing/controllers.md
-    - routing/webhooks.md
-  - interceptors.md
-  - Permissions:
-    - permissions/index.md
-    - permissions/ravyn.md
-    - permissions/lilya.md
-  - Middleware:
-    - middleware/middleware.md
-    - middleware/authentication.md
-  - observables.md
-  - dependencies.md
-  - decorators.md
-  - exceptions.md
-  - exception-handlers.md
-  - extensions.md
-  - password-hashers.md
-  - requests.md
-  - context.md
-  - relay.md
-  - responses.md
-  - caching.md
-  - encoders.md
-  - msgspec.md
-  - background-tasks.md
-  - lifespan-events.md
-  - protocols.md
+    - Routes: routing/routes.md
+    - Handlers: routing/handlers.md
+    - Controllers: routing/controllers.md
+    - Router: routing/router.md
+    - Webhooks: routing/webhooks.md
+  - Requests & Responses:
+    - Requests: requests.md
+    - Responses: responses.md
+    - Path Parameters: extras/path-params.md
+    - Query Parameters: extras/query-params.md
+    - Request Data: extras/request-data.md
+    - File Uploads: extras/upload-files.md
+    - Forms: extras/forms.md
+    - Body Fields: extras/body-fields.md
+    - Header Fields: extras/header-fields.md
+    - Cookie Fields: extras/cookie-fields.md
+    - Dependencies: dependencies.md
+    - Context: context.md
+  - Configuration:
+    - configurations/index.md
+    - CORS: configurations/cors.md
+    - CSRF: configurations/csrf.md
+    - Sessions: configurations/session.md
+    - Static Files: configurations/staticfiles.md
+    - Templates: configurations/template.md
+    - Logging: configurations/logging.md
+    - JWT: configurations/jwt.md
+    - Scheduler: configurations/scheduler.md
+    - OpenAPI: configurations/openapi/config.md
   - Security:
     - security/index.md
-    - security/introduction.md
-    - security/interaction.md
-    - security/simple-oauth2.md
-    - security/oauth-jwt.md
-    - security/advanced/oauth2-scopes.md
-    - security/advanced/basic-auth.md
-    - security/available-security.md
-  - Advanced & Useful:
-    - extras/index.md
-    - extras/path-params.md
-    - extras/query-params.md
-    - extras/request-data.md
-    - extras/upload-files.md
-    - extras/forms.md
-    - extras/body-fields.md
-    - extras/header-fields.md
-    - extras/cookie-fields.md
+    - Introduction: security/introduction.md
+    - Interaction: security/interaction.md
+    - OAuth2 + JWT: security/oauth-jwt.md
+    - Simple OAuth2: security/simple-oauth2.md
+    - Basic Auth: security/advanced/basic-auth.md
+    - OAuth2 Scopes: security/advanced/oauth2-scopes.md
+    - Available Security: security/available-security.md
+    - Password Hashers: password-hashers.md
+- Features:
+  - Middleware:
+    - middleware/index.md
+    - Authentication: middleware/authentication.md
+  - Permissions:
+    - permissions/index.md
+    - Ravyn: permissions/ravyn.md
+    - Lilya: permissions/lilya.md
+  - Interceptors: interceptors.md
+  - Observables: observables.md
+  - Background Tasks: background-tasks.md
+  - Caching: caching.md
+  - Lifespan Events: lifespan-events.md
   - Scheduler:
     - scheduler/index.md
-    - Asyncz:
-      - scheduler/scheduler.md
-      - scheduler/handler.md
-  - Management & Directives:
-    - directives/index.md
-    - directives/discovery.md
-    - directives/directives.md
-    - directives/custom-directives.md
-    - directives/directive-decorator.md
-    - directives/shell.md
+    - Configuration: scheduler/scheduler.md
+    - Task Handlers: scheduler/handler.md
+  - Decorators: decorators.md
+  - Encoders: encoders.md
+  - Msgspec: msgspec.md
+  - Protocols: protocols.md
+  - Extensions: extensions.md
+  - Relay: relay.md
+  - gRPC: experimental/grpc.md
+  - Testing & Deployment:
+    - Testing:
+      - Test Client: testclient.md
+      - Testing Guide: guides/more-advanced/02-testing.md
+    - Deployment:
+      - deployment/index.md
+      - Introduction: deployment/intro.md
+      - Docker: deployment/docker.md
+      - Scaling: guides/more-advanced/04-scaling.md
 - Database Integrations:
   - databases/index.md
-  - Edgy:
-    - databases/edgy/motivation.md
-    - databases/edgy/models.md
-    - Middleware:
-      - databases/edgy/middleware.md
-      - databases/edgy/example.md
-  - Mongoz:
-    - databases/mongoz/motivation.md
-    - databases/mongoz/documents.md
-    - Middleware:
-      - databases/mongoz/middleware.md
-      - databases/mongoz/example.md
-- openapi.md
-- Extras:
-  - wsgi.md
-  - testclient.md
-  - Deployment:
-    - deployment/index.md
-    - Intro: deployment/intro.md
-    - Using docker: deployment/docker.md
-  - external.md
-  - Experimental:
-    - experimental/index.md
-    - experimental/grpc.md
+  - Edgy (SQL):
+    - Motivation: databases/edgy/motivation.md
+    - Models: databases/edgy/models.md
+    - Middleware: databases/edgy/middleware.md
+    - Example: databases/edgy/example.md
+  - Mongoz (MongoDB):
+    - Motivation: databases/mongoz/motivation.md
+    - Documents: databases/mongoz/documents.md
+    - Middleware: databases/mongoz/middleware.md
+    - Example: databases/mongoz/example.md
+- OpenAPI:
+  - openapi.md
+- CLI & Directives:
+  - directives/index.md
+  - Discovery: directives/discovery.md
+  - Built-in Directives: directives/directives.md
+  - Custom Directives: directives/custom-directives.md
+  - Directive Decorator: directives/directive-decorator.md
+  - Shell: directives/shell.md
+- Utilities:
+  - Exceptions: exceptions.md
+  - Exception Handlers: exception-handlers.md
+  - WSGI Integration: wsgi.md
+  - External: external.md
   - Contrib:
-    - contrib/mail.md
-    - contrib/files/send-file.md
-    - contrib/files/jsonify.md
+    - Mail: contrib/mail.md
+    - Send File: contrib/files/send-file.md
+    - Jsonify: contrib/files/jsonify.md
     - Shortcuts:
-      - contrib/shortcuts/abort.md
-      - contrib/shortcuts/responses.md
-- Learning and Examples:
-  - guides/index.md
-  - Getting Started:
-    - guides/beginner/index.md
-    - guides/beginner/02-building-your-first-api.md
-    - guides/beginner/03-request-and-response-models.md
-    - guides/beginner/04-handling-errors.md
-    - guides/beginner/05-routing.md
-    - guides/beginner/06-middlewares.md
-    - guides/beginner/07-background-tasks.md
-    - guides/beginner/08-dependencies.md
-    - guides/beginner/09-requests-and-responses.md
-    - guides/beginner/10-routing.md
-  - Getting deeper into Ravyn:
-    - guides/more-advanced/index.md
-    - guides/more-advanced/01-security.md
-    - guides/more-advanced/02-testing.md
-    - guides/more-advanced/03-deployment.md
-    - guides/more-advanced/04-scaling.md
-    - guides/more-advanced/05-architecture-patterns.md
-    - guides/more-advanced/06-dependency-injection.md
-    - guides/more-advanced/07-advanced-concepts.md
-    - guides/more-advanced/08-caching.md
-    - guides/more-advanced/09-path-params.md
-    - guides/more-advanced/10-query-params.md
-    - guides/more-advanced/11-request-data.md
-    - guides/more-advanced/12-upload-files.md
-    - guides/more-advanced/13-forms.md
-    - guides/more-advanced/14-body.md
-    - guides/more-advanced/15-headers.md
-    - guides/more-advanced/16-cookies.md
+      - Abort: contrib/shortcuts/abort.md
+      - Responses: contrib/shortcuts/responses.md
 - API Reference:
   - references/index.md
-  - references/ravyn.md
-  - references/application/settings.md
-  - references/configurations/cors.md
-  - references/configurations/csrf.md
-  - references/configurations/session.md
-  - references/configurations/static_files.md
-  - references/configurations/template.md
-  - references/configurations/jwt.md
-  - references/configurations/openapi.md
-  - references/background.md
-  - references/routing/router.md
-  - references/routing/gateway.md
-  - references/routing/websocketgateway.md
-  - references/routing/webhookgateway.md
-  - references/routing/include.md
-  - references/routing/view.md
-  - references/routing/handlers.md
-  - references/interceptors.md
-  - references/permissions.md
-  - references/middleware/baseauth.md
-  - references/middleware/authentication.md
-  - references/middleware/middlewares.md
-  - references/extensions.md
-  - references/pluggables.md
-  - references/exceptions.md
-  - references/request.md
-  - references/context.md
-  - references/responses/response.md
-  - references/responses/json-response.md
-  - references/responses/template-response.md
-  - references/responses/orjson-response.md
-  - references/responses/ujson-response.md
-  - references/responses/json.md
-  - references/responses/file.md
-  - references/responses/redirect.md
-  - references/responses/stream.md
-  - references/responses/template.md
-  - references/responses/orjson.md
-  - references/responses/ujson.md
-  - references/responses/openapi-response.md
-  - references/websockets.md
-  - references/injector.md
-  - references/uploadfile.md
-  - references/status-codes.md
-  - references/test-client.md
+  - Ravyn: references/ravyn.md
+  - Application: references/application/settings.md
+  - Configurations: references/configurations/index.md
+  - Routing: references/routing/router.md
+  - Middleware: references/middleware/middlewares.md
+  - Responses: references/responses/response.md
+  - Exceptions: references/exceptions.md
+  - Request: references/request.md
+  - Test Client: references/test-client.md
 - About:
-  - about.md
-  - sponsorship.md
-  - ravyn-people.md
-  - contributing.md
-- Migration:
-  - migration.md
-- release-notes.md
+  - About Ravyn: about.md
+  - Sponsorship: sponsorship.md
+  - Contributors: ravyn-people.md
+  - Contributing: contributing.md
+- Migration: migration.md
+- Release Notes: release-notes.md
 extra_css:
 - statics/css/custom.css
 extra:

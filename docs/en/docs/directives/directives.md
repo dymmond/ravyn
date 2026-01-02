@@ -142,6 +142,7 @@ A lot of files generated right? Yes but those are actually quite simple but let'
 
 * **Taskfile.yaml** - This is a special file provided by the directive that contains some useful commands to run your
 peoject locally, for example:
+
     * `task run` - Starts your project with the development settings.
     * `task test` - Runs your local tests with the testing settings.
     * `task clean` - Removes all the `*.pyc` from your project.

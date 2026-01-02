@@ -34,6 +34,7 @@ services:
   ravyn:
     build: .
     ports:
+
       - "8000:8000"
     deploy:
       replicas: 3
@@ -86,9 +87,11 @@ spec:
         app: ravyn
     spec:
       containers:
+
         - name: ravyn
           image: my-ravyn-app:latest
           ports:
+
             - containerPort: 8000
 ```
 
@@ -107,7 +110,6 @@ Configure via `RavynSettings`:
 from ravyn.conf import RavynSettings
 from ravyn.core.caches.redis import RedisCache
 
-
 class Settings(RavynSettings):
     cache_backend = RedisCache(url="redis://localhost:6379")
 ```
@@ -116,7 +118,6 @@ Use the `@cache` decorator:
 
 ```python
 from ravyn import get, cache
-
 
 @get("/slow")
 @cache(ttl=60)
@@ -133,7 +134,6 @@ Expose a simple `/health` route:
 
 ```python
 from ravyn import get
-
 
 @get("/health")
 def health() -> dict:
@@ -157,9 +157,9 @@ Use logging, monitoring, and tracing tools:
 
 ## Summary
 
-- ✅ Use Gunicorn or Uvicorn for workers
-- ✅ Use Docker/Kubernetes for horizontal scaling
-- ✅ Apply caching and health checks
-- ✅ Monitor and trace in production
+- Use Gunicorn or Uvicorn for workers
+- Use Docker/Kubernetes for horizontal scaling
+- Apply caching and health checks
+- Monitor and trace in production
 
-👉 Next: [architecture patterns](./05-architecture-patterns)
+👉 Next: [architecture patterns](./05-architecture-patterns.md)

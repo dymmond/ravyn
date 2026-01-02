@@ -5,7 +5,7 @@ with the current [supported documents](./documents.md#user).
 
 ## JWTAuthMiddleware
 
-This simple but effective middleware extends the [BaseAuthMiddleware](../../middleware/middleware.md#baseauthmiddleware)
+This simple but effective middleware extends the [BaseAuthMiddleware](../../middleware/index.md#baseauthmiddleware)
 and enables the authentication via JWT.
 
 ```python

@@ -17,11 +17,9 @@ In Ravyn, routes are created using decorators like `@get`, `@post`, etc., which 
 ```python
 from ravyn import Ravyn, get
 
-
 @get("/")
 def home() -> dict:
     return {"message": "Welcome to your API!"}
-
 
 app = Ravyn(routes=[home])
 ```
@@ -42,7 +40,6 @@ Path parameters let you capture parts of the URL.
 ```python
 from ravyn import get
 
-
 @get("/users/{user_id}")
 def get_user(user_id: int) -> dict:
     return {"user_id": user_id, "name": f"User {user_id}"}
@@ -60,7 +57,6 @@ Query parameters are passed using `?key=value` syntax.
 
 ```python
 from ravyn import get, Query
-
 
 @get("/search")
 def search(term: str = Query(...), limit: int = Query(10)) -> dict:
@@ -84,11 +80,9 @@ To handle JSON body data, just declare a parameter with a type.
 from pydantic import BaseModel
 from ravyn import post
 
-
 class User(BaseModel):
     name: str
     age: int
-
 
 @post("/users")
 def create_user(user: User) -> dict:

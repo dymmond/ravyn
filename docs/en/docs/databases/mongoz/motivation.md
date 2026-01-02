@@ -36,7 +36,6 @@ or anything else. **You are free to choose your own ODM**.
 * Fast
 * Built on the top of [Motor](https://motor.readthedocs.io/en/stable/)
 
-
 ## How to use
 
 To use Mongoz with Ravyn you should install some requirements first.

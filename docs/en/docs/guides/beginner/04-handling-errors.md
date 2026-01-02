@@ -13,7 +13,6 @@ Use `HTTPException` to raise an error with a specific status code and optional d
 ```python
 from ravyn import get, HTTPException
 
-
 @get("/items/{item_id}")
 def get_item(item_id: int) -> dict:
     if item_id != 1:
@@ -62,14 +61,11 @@ You can define a custom exception handler for your own exception classes:
 ```python
 from ravyn import Ravyn, Request, HTTPException, ExceptionHandler
 
-
 class MyCustomError(Exception):
     pass
 
-
 def my_custom_handler(request: Request, exc: MyCustomError):
     return {"detail": "Something custom went wrong!"}
-
 
 app = Ravyn(
     routes=[],
@@ -94,7 +90,6 @@ Just set `status_code` when raising `HTTPException`:
 ```python
 from ravyn import post, HTTPException
 
-
 @post("/login")
 def login() -> None:
     raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -108,7 +103,6 @@ You can return custom error payloads using a response directly:
 
 ```python
 from ravyn.responses import JSONResponse
-
 
 @get("/custom-error")
 def custom_error() -> None:

@@ -1,255 +1,324 @@
-# Controller
+# Controllers
 
-This is a special object from **Ravyn** and aims to implement the so needed class based views for those who love
-object oriented programming. Inspired by such great frameworks (Python, Go, JS), Controller was created to simplify
-the life of those who like OOP.
+Imagine a restaurant kitchen with different stations: one for appetizers, one for main courses, one for desserts. Each station has its own chef, tools, and recipes, but they all work together to serve the restaurant.
 
-## Controller class
+Controllers work the same way. Instead of scattering your user-related endpoints across multiple files, you group them into a `UserController` class. All user operations (create, read, update, delete) live in one organized place.
 
-```python
-{!> ../../../docs_src/routing/handlers/apiviews/controller.py !}
-```
+## What You'll Learn
 
-The Controller uses the Ravyn [handlers](./handlers.md) to create the "view" itself but also acts as the `parent`
-of those same routes and therefore all the available parameters such as [permissions](../permissions/index.md),
-[middlewares](../middleware/middleware.md), [exception handlers](../exception-handlers.md),
-[dependencies](../dependencies.md) and almost every other parameter available in the handlers are also available
-in the Controller.
+- Creating class-based controllers
+- Using generic controllers for common patterns
+- Controller routing and path prefixes
+- Best practices for organization
 
-### Parameters
-
-All the parameters and defaults are available in the [BaseController Reference](../references/routing/view.md).
-
-## Controller routing
-
-The routing is the same as declaring the routing for the handler with a simple particularity that you don't
-need to declare handler by handler. Since everything is inside an [Controller](#controller)
-objects the handlers will be automatically routed by **Ravyn** with the joint [path](#controller-path) given to class.
-
-```python title='controllers.py'
-{!> ../../../docs_src/routing/handlers/apiviews/controller.py !}
-```
-
-```python title='app.py' hl_lines="3 5"
-{!> ../../../docs_src/routing/handlers/apiviews/routing.py !}
-```
-
-## Controller path
-
-In the [Controller](#controller) the `path` is a mandatory field, even if you pass only `/`. This helps maintaining the
-structure of the routing cleaner and healthy.
-
-!!! Warning
-    Just because the `Controller` is a class it still follows the same rules of the
-    [routing priority](./routes.md#routes-priority) as well.
-
-## Path parameters
-
-Controller is no different from the handlers, really. The same rules for the routing are applied for any route
-[path param](./routes.md#path-parameters).
-
-```python title='app.py' hl_lines="5 15"
-{!> ../../../docs_src/routing/handlers/apiviews/path_params.py !}
-```
-
-## Websockets and handlers
-
-The Controller also allows the mix of both [HTTP handlers](./handlers.md#http-handlers) and
-[WebSocket handlers](./handlers.md#websocket-handler)
-
-```python title='app.py' hl_lines="15 19 26"
-{!> ../../../docs_src/routing/handlers/apiviews/mix.py !}
-```
-
-## Constraints
-
-When declaring an Controller and registering the route, both [Gateway](./routes.md#gateway) and
-[WebSocketGateway](./routes.md#websocketgateway) allow to be used for this purpose but one has a limitation compared
-to the other.
-
-* **Gateway** - Allows the Controller to have all the available handlers (`get`, `put`, `post`...) including `websocket`.
-* **WebSocketGateway** - Allows **only** to have `websockets`.
-
-## Generics
-
-Ravyn also offers some generics when it comes to build APIs. For example, the [Controller](#controller)
-allows the creation of apis where the function name can be whatever you desire like `create_users`,
-`get_items`, `update_profile`, etc...
-
-**Generics in Ravyn are more restrict**.
-
-So what does that mean? Means **you can only perform operations where the function name coincides with the http verb**.
-For example, `get`, `put`, `post` etc...
-
-If you attempt to create a function where the name differs from a http verb,
-an `ImproperlyConfigured` exception is raised **unless the `extra_allowed` is declared**.
-
-The available http verbs are:
-
-* `GET`
-* `POST`
-* `PUT`
-* `PATCH`
-* `DELETE`
-* `HEAD`
-* `OPTIONS`
-* `TRACE`
-
-Basically the same availability as the [handlers](./handlers.md).
-
-### Important
-
-The generics **enforce** the name matching of the functions with the handlers. That means, if
-you use a `ReadAPIController` that only allows the `get` and you use the wrong [handlers](./handlers.md)
-on the top of it, for example a [post](./handlers.md#post), an `ImproperlyConfigured` exception
-will be raised.
-
-Let us see what this means.
-
-```python hl_lines="13-14"
-{!> ../../../docs_src/routing/generics/important.py !}
-```
-
-As you can see, the handler `post()` does not match the function name `get`. **It should always match**.
-
-An easy way of knowing this is simple, when it comes to the available http verbs, the function name
-**should always match the handler**.
-
-Are there any exception? Yes but not for these specific cases, the exceptions are called
-[extra_allowed](#extra_allowed) but more details about this later on.
-
-### SimpleAPIView
-
-This is the base of all generics, subclassing from this class will allow you to perform all the
-available http verbs without any restriction.
-
-This is how you can import.
+## Quick Start
 
 ```python
-from ravyn import SimpleAPIView
+from ravyn import Ravyn, Controller, get, post
+
+class UserController(Controller):
+    path = "/users"
+    
+    @get("/{user_id}")
+    async def get_user(self, user_id: int) -> dict:
+        return {"id": user_id, "name": "Alice"}
+    
+    @post("/")
+    async def create_user(self, data: dict) -> dict:
+        return {"id": 1, **data}
+
+app = Ravyn(routes=[Gateway(handler=UserController)])
 ```
 
-#### Example
+---
+
+## Why Controllers?
+
+- **Organization** - Group related endpoints
+
+- **Code Reuse** - Share logic across methods
+
+- **OOP Style** - Class-based approach
+
+- **Cleaner Code** - Less repetition
+
+---
+
+## Basic Controller
+
+### Creating a Controller
 
 ```python
-{!> ../../../docs_src/routing/generics/simple_api_view.py !}
+from ravyn import Controller, get, post, put, delete
+
+class ProductController(Controller):
+    path = "/products"
+    
+    @get("/")
+    async def list_products(self) -> list:
+        return [{"id": 1, "name": "Product 1"}]
+    
+    @get("/{product_id}")
+    async def get_product(self, product_id: int) -> dict:
+        return {"id": product_id, "name": "Product 1"}
+    
+    @post("/")
+    async def create_product(self, data: dict) -> dict:
+        return {"id": 1, **data}
+    
+    @put("/{product_id}")
+    async def update_product(self, product_id: int, data: dict) -> dict:
+        return {"id": product_id, **data}
+    
+    @delete("/{product_id}")
+    async def delete_product(self, product_id: int) -> None:
+        pass
 ```
 
-### ReadAPIController
+### Registering Controllers
 
-Allows the `GET` verb to be used.
+```python
+from ravyn import Ravyn, Gateway
 
-This is how you can import.
+app = Ravyn(
+    routes=[
+        Gateway(handler=ProductController)
+    ]
+)
+```
+
+---
+
+## Controller Features
+
+### Shared Dependencies
+
+```python
+from ravyn import Controller, Inject, get
+
+class UserController(Controller):
+    path = "/users"
+    dependencies = {"db": Inject(get_database)}
+    
+    @get("/")
+    async def list_users(self, db) -> list:
+        return await db.fetch_all("SELECT * FROM users")
+```
+
+### Shared Permissions
+
+```python
+from ravyn import Controller, get
+
+class AdminController(Controller):
+    path = "/admin"
+    permissions = [IsAdmin]  # Applied to all methods
+    
+    @get("/users")
+    async def list_users(self) -> list:
+        return []
+```
+
+### WebSockets
+
+```python
+from ravyn import Controller, get, websocket
+from ravyn.websockets import WebSocket
+
+class ChatController(Controller):
+    path = "/chat"
+    
+    @get("/")
+    async def chat_page(self) -> dict:
+        return {"message": "Chat room"}
+    
+    @websocket("/ws")
+    async def chat_ws(self, socket: WebSocket) -> None:
+        await socket.accept()
+        while True:
+            data = await socket.receive_text()
+            await socket.send_text(f"Echo: {data}")
+```
+
+---
+
+## Generic Controllers
+
+### SimpleAPIView - All Methods
+
+```python
+from ravyn import SimpleAPIView, get, post
+
+class UserAPI(SimpleAPIView):
+    path = "/users"
+    
+    @get("/")
+    async def get(self) -> list:  # Method name matches HTTP verb
+        return []
+    
+    @post("/")
+    async def post(self, data: dict) -> dict:  # Method name matches HTTP verb
+        return data
+```
+
+!!! info
+    Generic controllers enforce method name matching with HTTP verbs.
+
+### ReadAPIController - GET Only
 
 ```python
 from ravyn.routing.controllers.generics import ReadAPIController
+from ravyn import get
+
+class UserReadAPI(ReadAPIController):
+    path = "/users"
+    
+    @get("/")
+    async def get(self) -> list:
+        return []
 ```
 
-#### Example
-
-```python
-{!> ../../../docs_src/routing/generics/read_api_view.py !}
-```
-
-### CreateAPIController
-
-Allows the `POST`, `PUT`, `PATCH` verbs to be used.
-
-This is how you can import.
+### CreateAPIController - POST/PUT/PATCH
 
 ```python
 from ravyn.routing.controllers.generics import CreateAPIController
+from ravyn import post, put
+
+class UserCreateAPI(CreateAPIController):
+    path = "/users"
+    
+    @post("/")
+    async def post(self, data: dict) -> dict:
+        return data
+    
+    @put("/{user_id}")
+    async def put(self, user_id: int, data: dict) -> dict:
+        return {"id": user_id, **data}
 ```
 
-#### Example
-
-```python
-{!> ../../../docs_src/routing/generics/create_api_view.py !}
-```
-
-### DeleteAPIController
-
-Allows the `DELETE` verb to be used.
-
-This is how you can import.
+### DeleteAPIController - DELETE Only
 
 ```python
 from ravyn.routing.controllers.generics import DeleteAPIController
+from ravyn import delete
+
+class UserDeleteAPI(DeleteAPIController):
+    path = "/users"
+    
+    @delete("/{user_id}")
+    async def delete(self, user_id: int) -> None:
+        pass
 ```
 
-#### Example
+---
+
+## Generic Controller Comparison
+
+| Generic | Allowed Methods | Use Case |
+|---------|----------------|----------|
+| `SimpleAPIView` | All | Full CRUD |
+| `ReadAPIController` | GET | Read-only APIs |
+| `CreateAPIController` | POST, PUT, PATCH | Create/Update |
+| `DeleteAPIController` | DELETE | Delete operations |
+| `ListAPIController` | All (returns lists) | List endpoints |
+
+---
+
+## Extra Methods
+
+Add custom methods with `extra_allowed`:
 
 ```python
-{!> ../../../docs_src/routing/generics/delete_api_view.py !}
+from ravyn import SimpleAPIView, get
+
+class UserAPI(SimpleAPIView):
+    path = "/users"
+    extra_allowed = ["search_users"]  # Allow custom method
+    
+    @get("/")
+    async def get(self) -> list:
+        return []
+    
+    @get("/search")
+    async def search_users(self, query: str) -> list:  # Custom method
+        return []
 ```
 
-### Combining all in one
+---
 
-What if you want to combine them all? Of course you also can.
+## Best Practices
+
+### 1. Use Controllers for Related Endpoints
 
 ```python
-{!> ../../../docs_src/routing/generics/combine.py !}
+# Good - grouped by resource
+class UserController(Controller):
+    path = "/users"
+    
+    @get("/")
+    async def list_users(self) -> list:
+        return []
+    
+    @post("/")
+    async def create_user(self, data: dict) -> dict:
+        return data
 ```
 
-**Combining them all is the same as using the [SimpleAPIView](#simpleapiview)**.
-
-### ListAPIController
-
-This is a *nice to have* type of generic. In principle, **all the functions must return lists or None**
-of any kind.
-
-This generic **enforces the return annotations to always be lists or None**.
-
-Allows all the verbs be used.
-
-This is how you can import.
+### 2. Share Common Logic
 
 ```python
-from ravyn.routing.controllers.generics import ListAPIController
+# Good - shared validation
+class ProductController(Controller):
+    path = "/products"
+    
+    def _validate_product(self, data: dict) -> None:
+        if not data.get("name"):
+            raise ValueError("Name required")
+    
+    @post("/")
+    async def create_product(self, data: dict) -> dict:
+        self._validate_product(data)
+        return data
 ```
 
-#### Example
+### 3. Use Generics for Restrictions
 
-```python hl_lines="9 13 17 21"
-{!> ../../../docs_src/routing/generics/list_api.py !}
+```python
+# Good - enforce read-only
+class PublicUserAPI(ReadAPIController):
+    path = "/public/users"
+    
+    @get("/")
+    async def get(self) -> list:
+        return []
 ```
 
-This is another generic that follows the same rules of the [SimpleAPIView](#simpleapiview), which
-means, if you want to add `extra` functions such as a `read_item()` or anything else, you must
-follow the [extra allowed](#extra_allowed) principle.
+---
 
-```python hl_lines="8 23"
-{!> ../../../docs_src/routing/generics/list_api_extra.py !}
-```
+## Controller vs Handlers
 
-### extra_allowed
+| Feature | Controller | Handlers |
+|---------|-----------|----------|
+| **Style** | Class-based | Function-based |
+| **Organization** | Grouped | Individual |
+| **Code Reuse** | Easy | Manual |
+| **Complexity** | Higher | Lower |
 
-All the generics subclass the [SimpleAPIView](#simpleapiview) as mentioned before and that superclass
-uses the `http_allowed_methods` to verify which methods are allowed or not to be passed inside
-the API object but also check if there is any `extra_allowed` list with any extra functions you
-would like the view to deliver.
+**Use controllers when:**
+- Multiple related endpoints
+- Shared logic needed
+- OOP preferred
 
-This means that if you want to add a `read_item()` function to any of the
-generics you also do it easily.
+**Use handlers when:**
+- Simple endpoints
+- Functional style preferred
+- Quick prototyping
 
-```python hl_lines="13 28"
-{!> ../../../docs_src/routing/generics/allowed.py !}
-```
+---
 
-As you can see, to make it happen you would need to declare the function name inside the
-`extra_allowed` to make sure that an `ImproperlyConfigured` is not raised.
+## Next Steps
 
-## What to choose
-
-All the available objects from the [Controller](#controller) to the [SimpleAPIView](#simpleapiview) and
-generics can do whatever you want and need so what and how to choose the right one for you?
-
-Well, like everything, it will depend of what you want to achieve. For example, if you do not care
-or do not want to be bothered with `http_allowed_methods` and want to go without restrictions,
-then the [Controller](#controller) is the right choice for you.
-
-On the other hand, if you feel like restricting youself or even during development you might want
-to restrict some actions on the fly, so maybe you can opt for choosing the [SimpleAPIView](#simpleapiview)
-or any of the generics.
-
-Your take!
+- [Handlers](./handlers.md) - Function-based routing
+- [Routes](./routes.md) - Route organization
+- [Dependencies](../dependencies.md) - Dependency injection
+- [Permissions](../permissions/index.md) - Access control

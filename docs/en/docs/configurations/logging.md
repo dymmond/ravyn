@@ -1,126 +1,267 @@
 # LoggingConfig
 
-## Why Ravyn Introduced `LoggingConfig`
+Configure centralized logging for your Ravyn application with flexible backend support.
 
-In building applications, logging is one of the most crucial parts of observability, debugging, and monitoring.
+## What You'll Learn
 
-Originally, Ravyn relied on developers manually configuring their own logging systems. However, to provide a consistent,
-extensible, and framework-integrated way to handle logging, Ravyn introduced a first-class logging system built around
-the `LoggingConfig` concept.
+- Why Ravyn has LoggingConfig
+- Using the global logger
+- Creating custom logging backends
+- Best practices for logging
 
-The goals of introducing `LoggingConfig` were:
-
-- **Consistency**: Applications have a predictable and reliable way of setting up logging.
-- **Flexibility**: Support standard Python logging, Loguru, Structlog, or any custom backend.
-- **Simplicity**: Only one central logger (`ravyn.logging.logger`) needs to be imported and used across the entire app.
-- **Extensibility**: Developers can easily subclass and provide their own custom logging configurations.
-
-Ravyn now automatically configures a global `logger` instance, based on the `LoggingConfig` provided during startup.
-
-## How `LoggingConfig` Works
-
-`LoggingConfig` is an **abstract base class** that defines how to configure the logging system.
-
-Ravyn provides:
-
-- `StandardLoggingConfig` — for classic Python `logging`.
-
-You can also implement your own custom logging backend by subclassing `LoggingConfig`.
-
-When `setup_logging(logging_config)` is called during app startup (you don't have access to this as this is internal), Ravyn:
-
-1. Applies the provided `LoggingConfig`.
-2. Binds the global `ravyn.logging.logger` to the correct backend.
-
-!!! Note
-    After configuration, importing and using `from ravyn.logging import logger` will always point to the correct
-    logging system automatically.
-
-## Available Logging Backends
-
-### 1. Standard Python Logging
-
-Default behavior if nothing is specified.
+## Quick Start
 
 ```python
 from ravyn import Ravyn
+from ravyn.logging import logger
 
-app = Ravyn()
+app = Ravyn()  # Uses StandardLoggingConfig by default
+
+# Use logger anywhere
+logger.info("Application started")
+logger.error("Something went wrong")
 ```
 
-Or inside `Ravyn` (with an example of a loguru logger):
+---
 
-```python
-{!> ../../../docs_src/configurations/logging/example1.py!}
-```
+## Why LoggingConfig?
 
-## Defining a Custom Logging Configuration
+Ravyn introduced `LoggingConfig` to provide:
 
-You can easily define your own `LoggingConfig` by subclassing it:
+- **Consistency** - Predictable logging across your app
 
-```python
-{!> ../../../docs_src/configurations/logging/example2.py!}
-```
+- **Flexibility** - Support for standard logging, Loguru, Structlog, or custom backends
 
-When creating a custom logger **you must** declare the following methods:
+- **Simplicity** - One global logger for the entire app
 
-- `configure()` - This method is called to set up the logging configuration.
-- `get_logger()` - This method should return the logger instance.
+- **Extensibility** - Easy to create custom logging configurations
 
-These methods are called during the application startup process and will make sure the logger is set up correctly
-using a common interface.
+---
 
-Usage:
+## The Global Logger
 
-```python
-from ravyn import Ravyn
-
-app = Ravyn(logging_config=CustomLoggingConfig())
-```
-
-## Using `logging_config` via `RavynSettings`
-
-If you are using settings classes to configure your app, you can pass the logging configuration there too:
-
-```python
-{!> ../../../docs_src/configurations/logging/settings.py!}
-```
-
-Then when initializing Ravyn:
-
-```python
-from ravyn import Ravyn
-
-app = Ravyn(settings_config=AppSettings())
-```
-
-!!! Tip
-    You can also initialise Ravyn settings via `RAVYN_SETTINGS_MODULE` as you can see in [settings](../application/settings.md)
-    documentation. This is useful for separating your settings from the application instance.
-
-Ravyn will automatically extract and configure the logger from your settings class.
-
-## Accessing the Global Logger
-
-Anywhere in your project, simply do:
+Access the logger anywhere in your application:
 
 ```python
 from ravyn.logging import logger
 
-logger.info("This is a log message.")
-logger.error("This is an error log.")
+# In any file
+logger.info("User logged in")
+logger.warning("Rate limit approaching")
+logger.error("Database connection failed")
+logger.debug("Request details: %s", request_data)
 ```
 
-No matter what backend you use (standard, Loguru, Structlog), the `logger` will behave correctly.
+The logger automatically uses the configured backend.
 
-## Important Notes
+---
 
-- If you need to **reconfigure logging** during runtime (e.g., in tests), you should explicitly teardown/reset first.
-- If no `logging_config` is provided, Ravyn defaults to a safe `StandardLoggingConfig`.
+## Available Backends
 
+### Standard Python Logging (Default)
 
-## Conclusion
+```python
+from ravyn import Ravyn
 
-`LoggingConfig` provides a powerful, flexible, and unified way to configure logging in Ravyn applications.
+# Uses StandardLoggingConfig by default
+app = Ravyn()
+```
 
-It ensures that regardless of the logging backend used, your app's logging behavior is predictable, extensible, and simple to maintain.
+### Custom Configuration
+
+```python
+from ravyn import Ravyn
+from ravyn.config import StandardLoggingConfig
+
+app = Ravyn(
+    logging_config=StandardLoggingConfig(
+        level="INFO",
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+)
+```
+
+---
+
+## Creating Custom Logging
+
+### Custom LoggingConfig
+
+```python
+from ravyn.config import LoggingConfig
+import logging
+
+class CustomLoggingConfig(LoggingConfig):
+    def configure(self) -> None:
+        """Configure the logging system."""
+        logging.basicConfig(
+            level=logging.INFO,
+            format='[%(levelname)s] %(name)s: %(message)s',
+            handlers=[
+                logging.StreamHandler(),
+                logging.FileHandler('app.log')
+            ]
+        )
+    
+    def get_logger(self):
+        """Return the logger instance."""
+        return logging.getLogger("ravyn")
+
+# Use it
+app = Ravyn(logging_config=CustomLoggingConfig())
+```
+
+### Using Loguru
+
+```python
+from ravyn.config import LoggingConfig
+from loguru import logger as loguru_logger
+
+class LoguruConfig(LoggingConfig):
+    def configure(self) -> None:
+        """Configure Loguru."""
+        loguru_logger.add(
+            "app.log",
+            rotation="500 MB",
+            retention="10 days",
+            level="INFO"
+        )
+    
+    def get_logger(self):
+        """Return Loguru logger."""
+        return loguru_logger
+
+app = Ravyn(logging_config=LoguruConfig())
+```
+
+---
+
+## Using with Settings
+
+```python
+from ravyn import RavynSettings
+from ravyn.config import StandardLoggingConfig
+
+class AppSettings(RavynSettings):
+    logging_config: StandardLoggingConfig = StandardLoggingConfig(
+        level="INFO"
+    )
+
+app = Ravyn(settings_module=AppSettings)
+```
+
+---
+
+## Logging Levels
+
+| Level | When to Use |
+|-------|-------------|
+| `DEBUG` | Detailed diagnostic information |
+| `INFO` | General informational messages |
+| `WARNING` | Warning messages for potential issues |
+| `ERROR` | Error messages for failures |
+| `CRITICAL` | Critical failures requiring immediate attention |
+
+### Example Usage
+
+```python
+from ravyn.logging import logger
+
+# Debug - detailed info
+logger.debug("Processing request: %s", request_id)
+
+# Info - general events
+logger.info("User %s logged in", user_id)
+
+# Warning - potential issues
+logger.warning("Cache miss for key: %s", cache_key)
+
+# Error - failures
+logger.error("Failed to connect to database: %s", error)
+
+# Critical - severe issues
+logger.critical("Out of memory! Shutting down...")
+```
+
+---
+
+## Best Practices
+
+### 1. Use Structured Logging
+
+```python
+# Good - structured data
+logger.info("User login", extra={
+    "user_id": user.id,
+    "ip_address": request.client.host,
+    "timestamp": datetime.utcnow()
+})
+```
+
+### 2. Log at Appropriate Levels
+
+```python
+# Good - correct levels
+logger.debug("Cache lookup for key: %s", key)  # Debug details
+logger.info("User created: %s", user.id)       # Important events
+logger.error("Payment failed: %s", error)      # Errors
+```
+
+### 3. Don't Log Sensitive Data
+
+```python
+# Wrong - logging passwords
+logger.info("User login: %s / %s", email, password)
+
+# Correct - no sensitive data
+logger.info("User login attempt: %s", email)
+```
+
+---
+
+## Common Patterns
+
+### Pattern 1: Request Logging
+
+```python
+from ravyn import get, Request
+from ravyn.logging import logger
+
+@get("/api/users")
+async def get_users(request: Request) -> list:
+    logger.info(
+        "Fetching users",
+        extra={"path": request.url.path, "method": request.method}
+    )
+    users = await fetch_users()
+    logger.info("Returned %d users", len(users))
+    return users
+```
+
+### Pattern 2: Error Logging
+
+```python
+from ravyn import post
+from ravyn.logging import logger
+
+@post("/api/process")
+async def process_data(data: dict) -> dict:
+    try:
+        result = await process(data)
+        return result
+    except Exception as e:
+        logger.error(
+            "Processing failed",
+            exc_info=True,  # Include stack trace
+            extra={"data_id": data.get("id")}
+        )
+        raise
+```
+
+---
+
+## Next Steps
+
+- [SchedulerConfig](./scheduler.md) - Task scheduling
+- [SessionConfig](./session.md) - Session management
+- [Application Settings](../application/settings.md) - Configuration

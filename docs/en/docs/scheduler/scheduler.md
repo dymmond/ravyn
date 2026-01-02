@@ -1,180 +1,460 @@
-# Motivation
+# Scheduler Setup
 
-Almost every application in one way or another needs some sort of automated scheduler to run automated tasks.
-In that in mind and with the help of the great widely used
-<a href='https://asyncz.dymmond.com' target='_blank'>Asyncz</a>, Ravyn comes with a built-in
-scheduler, saving you tons of headaches and simplifying the process of creating them.
+Imagine having a personal assistant who remembers to:
 
-## Requirements
+- Send birthday cards every year (cron job)
+- Pay bills on the 1st of each month (scheduled task)
+- Water your plants every Tuesday (recurring event)
+- Remind you about meetings 10 minutes before (one-time task)
 
-Ravyn uses `asyncz` for this integration. You can install by running:
+That's what the scheduler does for your application. It runs tasks automatically on a schedule, so you don't have to remember or manually trigger them. Your assistant never forgets, never sleeps, and works 24/7.
 
-```shell
-$ pip install ravyn[schedulers]
-```
+Configure and enable the built-in task scheduler in your Ravyn application using Asyncz.
 
-## AsynczConfig
+## What You'll Learn
 
-The `AsynczConfig` is the main object that manages the internal scheduler of `Ravyn` with asyncz expecting:
+- Installing scheduler support
+- Enabling the scheduler
+- Configuring AsynczConfig
+- Registering tasks
+- Best practices
 
-* `scheduler_class` - An instance of the `Asyncz` schedule type. Passed via `scheduler_class`.
+## Quick Start
 
-    <sup>Default: `AsyncIOScheduler`</sup>
-
-* `tasks` - A python dictionary of both key, value string mapping the tasks. Passed via
-`scheduler_tasks`.
-
-    <sup>Default: `{}`</sup>
-
-* `timezone` - The `timezone` of the scheduler. Passed via `timezone`.
-
-    <sup>Default: `UTC`</sup>
-
-* `configurations` - A python dictionary containing some extra configurations for the scheduler.
-Passed via `scheduler_configurations`.
-* `kwargs` - Any keyword argument that can be passed and injected into the `scheduler_class`.
-
-Since `Ravyn` is an `ASGI` framework, it is already provided a default scheduler class that works alongside with
-the application, the `AsyncIOScheduler`.
-
-!!! Note
-    This is for representation and explanation purposes as the RavynAPIExceptionScheduler cannot be instantiated,
-    instead, expects parameters being sent upon creating an Ravyn application.
-
-```python hl_lines="4"
+```python
 from ravyn import Ravyn
 from ravyn.contrib.schedulers.asyncz.config import AsynczConfig
 
-app = Ravyn(scheduler_config=AsynczConfig())
+app = Ravyn(
+    scheduler_config=AsynczConfig(),
+    enable_scheduler=True,
+    scheduler_tasks={
+        "daily_cleanup": "tasks.cleanup_old_data",
+        "hourly_sync": "tasks.sync_data"
+    }
+)
 ```
 
-You can have your own scheduler config class as well, check the [SchedulerConfig](../configurations/scheduler.md#how-to-use-it)
-for more information.
+---
 
-!!! warning
-    Anything else that does not work with `AsyncIO` is very likely also not to work with Ravyn.
+## Why Use the Scheduler?
 
-## AsynczConfig and the application
+- **Automated Tasks** - Run jobs automatically
 
-This is the default Ravyn integration with Asyncz and the class can be accessed via:
+- **No Cron Needed** - Built into your application
+
+- **Asyncz Integration** - Powerful scheduling library
+
+- **Easy Configuration** - Simple setup
+
+---
+
+## Requirements
+
+Install scheduler support:
+
+```bash
+pip install ravyn[schedulers]
+```
+
+This installs [Asyncz](https://asyncz.dymmond.com), the scheduling library used by Ravyn.
+
+---
+
+## AsynczConfig
+
+The `AsynczConfig` class manages the scheduler integration with Asyncz.
+
+### Basic Configuration
 
 ```python
+from ravyn import Ravyn
 from ravyn.contrib.schedulers.asyncz.config import AsynczConfig
+
+app = Ravyn(
+    scheduler_config=AsynczConfig(),
+    enable_scheduler=True
+)
 ```
 
-Because this is an Ravyn offer, you can always implement your own version if you don't like the way Ravyn handles
-the Asyncz default integration and adapt to your own needs. This is thanks to the [SchedulerConfig](../configurations/scheduler.md#how-to-use-it)
-from where AsynczConfig is derived.
+### Configuration Parameters
 
-### Enabling the scheduler
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `scheduler_class` | class | Asyncz scheduler type | `AsyncIOScheduler` |
+| `tasks` | dict | Task name to path mapping | `{}` |
+| `timezone` | str | Scheduler timezone | `"UTC"` |
+| `configurations` | dict | Extra scheduler config | `{}` |
 
-In order to make sure it does not always start, Ravyn is expecting a flag `enable_scheduler` to be True. Without
-the `enable_scheduler = True`, the scheduler will not start.
+---
 
-The default behaviour is `enable_scheduler = False`.
+## Enabling the Scheduler
 
-```python hl_lines="10"
-{!> ../../../docs_src/scheduler/scheduler.py !}
+The scheduler is **disabled by default**. Enable it with `enable_scheduler=True`.
+
+### Via Application
+
+```python
+from ravyn import Ravyn
+from ravyn.contrib.schedulers.asyncz.config import AsynczConfig
+
+app = Ravyn(
+    scheduler_config=AsynczConfig(),
+    enable_scheduler=True  # Required!
+)
 ```
 
-### Enabling the scheduler via settings
+### Via Settings
 
-As mentioned in this documentation, Ravyn is unique with [settings](../application/settings.md) and therefore
-the `enable_scheduler` can also be set to `True`/`False` there.
+```python
+from ravyn import RavynSettings
+from ravyn.contrib.schedulers.asyncz.config import AsynczConfig
 
-```python hl_lines="7"
-{!> ../../../docs_src/scheduler/scheduler_settings.py !}
+class AppSettings(RavynSettings):
+    enable_scheduler: bool = True
+    scheduler_config: AsynczConfig = AsynczConfig()
+
+app = Ravyn(settings_module=AppSettings)
 ```
 
-=== "MacOS & Linux"
+!!! warning
+    Without `enable_scheduler=True`, the scheduler will not start!
 
-    ```shell
-    RAVYN_SETTINGS_MODULE=AppSettings uvicorn src:app --reload
+---
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
+## Registering Tasks
 
-=== "Windows"
+Tasks must be registered with the application.
 
-    ```shell
-    $env:RAVYN_SETTINGS_MODULE="AppSettings"; uvicorn src:app --reload
+### Task Registration
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
+```python
+# tasks.py
+from ravyn.contrib.schedulers.asyncz.decorator import scheduler
 
-!!! Tip
-    Read more about how to take [advantage of the settings](../application/settings.md) and how to use them to leverage
-    your application.
+@scheduler(name="cleanup", trigger="cron", hour=2, minute=0)
+async def cleanup_old_data():
+    """Runs daily at 2 AM."""
+    await delete_old_records()
 
-## Tasks
-
-Tasks are simple pieces of functionality that contains the logic needed to run on a specific time.
-Ravyn does not enforce any specific file name where the tasks should be, you can place them anywhere you want.
-
-Once the tasks are created, you need to pass that same information to your Ravyn instance.
-
-!!! tip
-    There are more details about [how to create tasks](./handler.md) in the next section.
-
-```python title="accounts/tasks.py"
-{!> ../../../docs_src/scheduler/tasks/example1.py !}
+@scheduler(name="sync", trigger="interval", hours=1)
+async def sync_data():
+    """Runs every hour."""
+    await fetch_from_api()
 ```
 
-There are two tasks created, the `collect_market_data` and `send_newsletter` which are placed inside a
-`accounts/tasks`.
+### Register in Application
 
-Now it is time to tell the application to activate the scheduler and run the tasks based on the settings provided
-into the `scheduler` handler.
+```python
+# app.py
+from ravyn import Ravyn
+from ravyn.contrib.schedulers.asyncz.config import AsynczConfig
 
-```python hl_lines="6-10"
-{!> ../../../docs_src/scheduler/tasks/app_scheduler.py !}
+app = Ravyn(
+    scheduler_config=AsynczConfig(),
+    enable_scheduler=True,
+    scheduler_tasks={
+        "cleanup": "tasks.cleanup_old_data",
+        "sync": "tasks.sync_data"
+    }
+)
 ```
 
-**Or from the settings file**:
+**Task mapping format:**
+- **Key** - Task name (from @scheduler decorator)
+- **Value** - Import path to the task function
 
-```python hl_lines="6 10-14"
-{!> ../../../docs_src/scheduler/tasks/from_settings.py !}
+---
+
+## Complete Example
+
+### 1. Create Tasks
+
+```python
+# tasks.py
+from ravyn.contrib.schedulers.asyncz.decorator import scheduler
+
+@scheduler(name="daily_report", trigger="cron", hour=8, minute=0)
+async def generate_daily_report():
+    """Generate report at 8 AM daily."""
+    print("Generating daily report...")
+    await create_report()
+
+@scheduler(name="data_sync", trigger="interval", minutes=30)
+async def sync_external_data():
+    """Sync data every 30 minutes."""
+    print("Syncing data...")
+    await fetch_data()
+
+@scheduler(name="cleanup", trigger="cron", hour=2, minute=0)
+async def cleanup_database():
+    """Cleanup at 2 AM daily."""
+    print("Cleaning up...")
+    await delete_old_records()
 ```
 
-Start the server with the newly created settings.
+### 2. Configure Application
 
-=== "MacOS & Linux"
+```python
+# app.py
+from ravyn import Ravyn
+from ravyn.contrib.schedulers.asyncz.config import AsynczConfig
 
-    ```shell
-    RAVYN_SETTINGS_MODULE=AppSettings uvicorn src:app --reload
+app = Ravyn(
+    scheduler_config=AsynczConfig(timezone="America/New_York"),
+    enable_scheduler=True,
+    scheduler_tasks={
+        "daily_report": "tasks.generate_daily_report",
+        "data_sync": "tasks.sync_external_data",
+        "cleanup": "tasks.cleanup_database"
+    }
+)
+```
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
+### 3. Run Application
 
-=== "Windows"
+```bash
+ravyn run
+```
 
-    ```shell
-    $env:RAVYN_SETTINGS_MODULE="AppSettings"; uvicorn src:app --reload
+Tasks will run automatically according to their schedules!
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
+---
 
-The `scheduler_tasks` is expecting a python dictionary where the both key and value are strings.
+## Using Settings
 
-* `key` - The name of the task.
-* `value` - Where the task is located.
+### Settings File
 
-!!! Warning
-    Remember to activate the scheduler by enabling the `enable_scheduler` flag or else the scheduler will not
-    start.
+```python
+# settings.py
+from ravyn import RavynSettings
+from ravyn.contrib.schedulers.asyncz.config import AsynczConfig
+
+class AppSettings(RavynSettings):
+    enable_scheduler: bool = True
+    
+    scheduler_config: AsynczConfig = AsynczConfig(
+        timezone="UTC"
+    )
+    
+    scheduler_tasks: dict = {
+        "daily_report": "tasks.generate_daily_report",
+        "data_sync": "tasks.sync_external_data",
+        "cleanup": "tasks.cleanup_database"
+    }
+```
+
+### Application
+
+```python
+# app.py
+from ravyn import Ravyn
+from settings import AppSettings
+
+app = Ravyn(settings_module=AppSettings)
+```
+
+### Run with Settings
+
+```bash
+# Linux/Mac
+RAVYN_SETTINGS_MODULE=settings.AppSettings ravyn run
+
+# Windows
+$env:RAVYN_SETTINGS_MODULE="settings.AppSettings"; ravyn run
+```
+
+---
+
+## Advanced Configuration
+
+### Custom Stores and Executors
+
+```python
+from ravyn import Ravyn
+from ravyn.contrib.schedulers.asyncz.config import AsynczConfig
+
+app = Ravyn(
+    scheduler_config=AsynczConfig(),
+    enable_scheduler=True,
+    scheduler_configurations={
+        "stores": {
+            "default": {"type": "memory"},
+            "redis": {
+                "type": "redis",
+                "host": "localhost",
+                "port": 6379
+            }
+        },
+        "executors": {
+            "default": {"type": "asyncio"},
+            "threadpool": {
+                "type": "threadpool",
+                "max_workers": 20
+            }
+        }
+    },
+    scheduler_tasks={
+        "task1": "tasks.my_task"
+    }
+)
+```
+
+### Using Custom Stores
+
+```python
+# tasks.py
+from ravyn.contrib.schedulers.asyncz.decorator import scheduler
+
+@scheduler(
+    name="redis_task",
+    trigger="interval",
+    hours=1,
+    store="redis",  # Use Redis store
+    executor="threadpool"  # Use thread pool executor
+)
+async def task_with_redis():
+    await process_data()
+```
+
+---
+
+## Best Practices
+
+### 1. Use Environment Variables
+
+```python
+# Good - configurable
+import os
+
+class AppSettings(RavynSettings):
+    enable_scheduler: bool = os.getenv("ENABLE_SCHEDULER", "true") == "true"
+    
+    scheduler_config: AsynczConfig = AsynczConfig(
+        timezone=os.getenv("TIMEZONE", "UTC")
+    )
+```
+
+### 2. Organize Tasks
+
+```
+app/
+  tasks/
+    __init__.py
+    cleanup.py
+    reports.py
+    sync.py
+  app.py
+  settings.py
+```
+
+### 3. Use Descriptive Task Names
+
+```python
+# Good - clear names
+scheduler_tasks = {
+    "user_cleanup_daily": "tasks.cleanup.cleanup_inactive_users",
+    "sales_report_weekly": "tasks.reports.generate_sales_report",
+    "api_sync_hourly": "tasks.sync.sync_with_external_api"
+}
+```
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Scheduler Not Starting
+
+**Problem:** Forgot to enable scheduler.
+
+```python
+# Wrong - scheduler disabled
+app = Ravyn(
+    scheduler_config=AsynczConfig()
+    # Missing enable_scheduler=True!
+)
+```
+
+**Solution:** Enable the scheduler:
+
+```python
+# Correct
+app = Ravyn(
+    scheduler_config=AsynczConfig(),
+    enable_scheduler=True
+)
+```
+
+### Pitfall 2: Tasks Not Found
+
+**Problem:** Wrong import path.
+
+```python
+# Wrong - incorrect path
+scheduler_tasks = {
+    "cleanup": "cleanup_old_data"  # Missing module!
+}
+```
+
+**Solution:** Use full import path:
+
+```python
+# Correct
+scheduler_tasks = {
+    "cleanup": "tasks.cleanup_old_data"
+}
+```
+
+### Pitfall 3: Timezone Issues
+
+**Problem:** Tasks run at wrong times.
+
+```python
+# Wrong - using default UTC
+scheduler_config = AsynczConfig()  # Defaults to UTC
+```
+
+**Solution:** Set correct timezone:
+
+```python
+# Correct
+scheduler_config = AsynczConfig(
+    timezone="America/New_York"
+)
+```
+
+---
+
+## Scheduler Lifecycle
+
+The scheduler integrates with Ravyn's lifecycle:
+
+```python
+from ravyn import Ravyn
+
+app = Ravyn(
+    scheduler_config=AsynczConfig(),
+    enable_scheduler=True
+)
+
+# Scheduler starts on application startup
+# Scheduler stops on application shutdown
+```
+
+For custom lifecycle management, see [Lifespan Events](../lifespan-events.md).
+
+---
+
+## Learn More
+
+- [Asyncz Documentation](https://asyncz.dymmond.com) - Complete scheduler reference
+- [Task Handlers](./handler.md) - Create scheduled tasks
+- [SchedulerConfig](../configurations/scheduler.md) - Configuration options
+
+---
+
+## Next Steps
+
+- [Task Handlers](./handler.md) - Create your first task
+- [Background Tasks](../background-tasks.md) - One-off tasks
+- [Lifespan Events](../lifespan-events.md) - Application lifecycle

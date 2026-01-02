@@ -11,6 +11,7 @@ from ravyn import Inject, Injects, Factory
 ::: ravyn.Inject
     options:
         filters:
+
         - "!^model_config"
         - "!^__hash__"
         - "!^__call__"
@@ -19,6 +20,7 @@ from ravyn import Inject, Injects, Factory
 ::: ravyn.Injects
     options:
         filters:
+
         - "!^model_config"
         - "!^__hash__"
         - "!^__call__"
@@ -27,6 +29,7 @@ from ravyn import Inject, Injects, Factory
 ::: ravyn.Factory
     options:
         filters:
+
         - "!^model_config"
         - "!^__hash__"
         - "!^__call__"

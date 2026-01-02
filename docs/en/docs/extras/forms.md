@@ -58,7 +58,6 @@ The way the payload is sent to the API will always be the same no matter what, w
 is how you actually type it. In this example, we declared a `User` dataclass with two field
 `name` and `email` and we return exactly what we sent back into the response.
 
-
 ### Pydantic dataclass
 
 A Pydantic dataclass is the same as a normal python dataclass in the end but with some internal

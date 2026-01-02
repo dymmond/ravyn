@@ -42,7 +42,6 @@ from datetime import datetime, timedelta
 SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
 
-
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
@@ -60,7 +59,6 @@ from ravyn import HTTPException, Security
 from ravyn.security.oauth2 import OAuth2PasswordBearer
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
-
 
 async def get_current_user(token: str = Security(oauth2_scheme)) -> User:
     try:
@@ -81,7 +79,6 @@ async def get_current_user(token: str = Security(oauth2_scheme)) -> User:
 ```python
 from ravyn import get, Inject, Injects
 
-
 @get("/users/me", dependencies={"current_user": Inject(get_current_user)})
 async def read_users_me(current_user: User = Injects()) -> User:
     return current_user
@@ -97,14 +94,12 @@ from ravyn.security.http import HTTPBasic, HTTPBasicCredentials
 
 security = HTTPBasic()
 
-
 async def get_current_user(credentials: HTTPBasicCredentials = Security(security)) -> str:
     correct_username = secrets.compare_digest(credentials.username, "user")
     correct_password = secrets.compare_digest(credentials.password, "secret")
     if not (correct_username and correct_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return credentials.username
-
 
 @get("/profile", dependencies={"username": Inject(get_current_user)})
 async def profile(username: str = Injects()) -> dict:
@@ -131,7 +126,6 @@ These can be applied similarly using the `dependencies` parameter in your handle
 from ravyn.responses import JSONResponse
 from ravyn import get
 
-
 @get("/unauthorized")
 def unauthorized() -> JSONResponse:
     return JSONResponse({"error": "Access denied"}, status_code=403)
@@ -147,4 +141,4 @@ You're now equipped to:
 - Protect routes using Ravyn's `Inject` and `Injects`
 - Secure endpoints with Basic Auth, API Keys, and Scopes
 
-👉 Head to [testing](./02-testing) to learn how to test your secure Ravyn APIs.
+👉 Head to [testing](./02-testing.md) to learn how to test your secure Ravyn APIs.

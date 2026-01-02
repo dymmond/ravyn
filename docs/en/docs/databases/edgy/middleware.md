@@ -5,7 +5,7 @@ with the current [supported models](./models.md#user).
 
 ## JWTAuthMiddleware
 
-This simple but effective middleware extends the [AuthenticationMiddleware](../../middleware/middleware.md#authenticationmiddleware)
+This simple but effective middleware extends the [AuthenticationMiddleware](../../middleware/index.md#authenticationmiddleware)
 and enables the authentication via JWT.
 
 ```python

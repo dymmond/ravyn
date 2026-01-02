@@ -79,6 +79,7 @@ When no `--app` or no `RAVYN_DEFAULT_APP` environment variable is provided, Ravy
 
 * If Ravyn understand that none of those objects are type `Ravyn` (or subclasses), it will
 do one last attempt and try to find specific function declarations:
+
     * **get_application()**
     * **get_app()**
 
@@ -87,7 +88,6 @@ This is the way that Ravyn can `auto discover` your application.
 !!! Note
     Flask has a similar pattern for the functions called `create_app`. Ravyn doesn't use the
     `create_app`, instead uses the `get_application` or `get_app` as a pattern as it seems cleaner.
-
 
 ## Environment variables
 

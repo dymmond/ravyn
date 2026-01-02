@@ -6,6 +6,7 @@ attributes and functions.
 ::: ravyn.get
     options:
         members:
+
             - path
             - summary
             - description
@@ -31,6 +32,7 @@ attributes and functions.
 ::: ravyn.post
     options:
         members:
+
             - path
             - summary
             - description
@@ -56,6 +58,7 @@ attributes and functions.
 ::: ravyn.put
     options:
         members:
+
             - path
             - summary
             - description
@@ -81,6 +84,7 @@ attributes and functions.
 ::: ravyn.patch
     options:
         members:
+
             - path
             - summary
             - description
@@ -106,6 +110,7 @@ attributes and functions.
 ::: ravyn.delete
     options:
         members:
+
             - path
             - summary
             - description
@@ -131,6 +136,7 @@ attributes and functions.
 ::: ravyn.route
     options:
         members:
+
             - path
             - summary
             - description
@@ -156,6 +162,7 @@ attributes and functions.
 ::: ravyn.head
     options:
         members:
+
             - path
             - summary
             - description
@@ -181,6 +188,7 @@ attributes and functions.
 ::: ravyn.options
     options:
         members:
+
             - path
             - summary
             - description
@@ -206,6 +214,7 @@ attributes and functions.
 ::: ravyn.trace
     options:
         members:
+
             - path
             - summary
             - description
@@ -231,6 +240,7 @@ attributes and functions.
 ::: ravyn.websocket
     options:
         members:
+
             - path
             - dependencies
             - exception_handlers

@@ -4,7 +4,6 @@ Since [Edgy](https://edgy.dymmond.com) if from the same author of Ravyn, it give
 extra motivation for its use and therefore an example in how to use the
 [JWTAuthMiddleware](./middleware.md), even if in a very simplistic way, within your Ravyn application.
 
-
 Let us build a simple integration and application where we will be creating:
 
 - [Create user model](#create-user-model) by using the provided default from Ravyn.
