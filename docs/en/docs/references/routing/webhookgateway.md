@@ -12,6 +12,7 @@ from ravyn import WebhookGateway
 ::: ravyn.WebhookGateway
     options:
         members:
+
             - handler
             - name
             - include_in_schema

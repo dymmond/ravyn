@@ -22,11 +22,9 @@ from typing import List, Dict
 
 from ravyn import Ravyn, get, status, Gateway
 
-
 @get('/users', status_code=status.HTTP_208_ALREADY_REPORTED)
 async def all_users() -> List[Dict[str, str]]:
     return [{"name": "Natasha"}, {"name": "Tony"}, {"name": "Bruce"}]
-
 
 app = Ravyn(
     routes=[

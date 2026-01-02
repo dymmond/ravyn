@@ -11,4 +11,5 @@ this class instead of `BaseAuthMiddleware` for new projects.
 ::: ravyn.middleware.authentication.AuthResult
     options:
         filters:
+
         - "!^model_config"

@@ -14,6 +14,7 @@ from ravyn import StaticFilesConfig
 ::: ravyn.core.config.static_files.StaticFilesConfig
     options:
         filters:
+
         - "!^validate_path"
         - "!^to_app"
         - "!^_build_kwargs"
