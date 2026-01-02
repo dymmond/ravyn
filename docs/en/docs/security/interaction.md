@@ -76,6 +76,7 @@ Now, you can directly access the current user in the *path operation functions* 
 You can use any model or data for your security requirements (in this case, a Pydantic model `User`), but you're not limited to a specific data model, class, or type.
 
 For example:
+
 - Want to use an `id` and `email` instead of a `username` in your model? No problem, just use the same tools.
 - Prefer a `str` or a `dict`? Or perhaps a database class model instance directly? It all works seamlessly.
 - If you have bots, robots, or other systems logging in instead of users, and they only need an access token, that's fine too.

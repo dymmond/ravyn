@@ -1,100 +1,409 @@
 # SchedulerConfig
 
-What does this even mean?
+Configure task scheduling in your Ravyn application for running background jobs and periodic tasks.
 
-Well, this means that if you don't want to use [Asyncz][asyncz] for your own personal or applicational reasons, then
-you can simply build your own configuration and plug the scheduler into Ravyn.
+## What You'll Learn
 
-This is now possible due to the fact that Ravyn now implements the **SchedulerConfig**.
+- What task scheduling is
+- Configuring the scheduler
+- Creating scheduled tasks
+- Common scheduling patterns
 
-## How to import it
-
-You can import the configuration from the following:
-
-```python
-from ravyn.contrib.schedulers import SchedulerConfig
-```
-
-## The SchedulerConfig class
-
-When implementing a scheduler configurations **you must implement** two functions.
-
-1. [async def start()](#the-start-function)
-2. [async def shutdown()](#the-shutdown-function)
-
-This is what makes the SchedulerConfig modular because there are plenty of schedulers out there and each one of them
-with a lot of different options and configurations but the one thing they all have in common is the fact that all
-of them must start and shutdown at some point. The only thing Ravyn "cares" is that by encapsulating that functionality
-into two simple functions.
-
-### The start function
-
-The start function, as the name suggests, its the function that Ravyn calls internally to start the scheduler for you.
-This is important because when the `enable_scheduler` flag is set, it will look for the scheduler config and call the
-`start` on startup.
-
-### The shutdown function
-
-The shutdown function, as the name suggests, its the function that Ravyn calls internally to shutdown the scheduler for you.
-This is important because when the `enable_scheduler` flag is set, it will look for the scheduler config and call the
-`shutdown` on shutdown (usually when the application stops).
-
-### How to use it
-
-Ravyn already implements this interface with the custom `AsynczConfig`. This functionality is very handy since Asyncz
-has a lot of configurations that can be passed and used within an Ravyn application.
-
-Let us see how the implementation looks like.
+## Quick Start
 
 ```python
-{!> ../../../docs_src/scheduler/asyncz.py !}
+from ravyn import Ravyn
+from ravyn.config import SchedulerConfig
+
+app = Ravyn(
+    scheduler_config=SchedulerConfig(
+        enabled=True
+    )
+)
 ```
 
-We won't be dueling on the technicalities of this configuration because its unique to Asyncz provided by Ravyn but
-**it is not mandatory to use it as you can build your own** and pass it to Ravyn `scheduler_config` parameter.
+!!! info
+    Install scheduler support: `pip install ravyn[schedulers]` or `pip install asyncz`
 
-### SchedulerConfig and application
+---
 
-To use the `SchedulerConfig` in an application, like the one [shown above with asyncz](#how-to-use-it), you can simply do this:
+## What is Task Scheduling?
 
-!!! Note
-    We use the existing AsynczConfig as example but feel free to use your own if you require something else.
+**Task scheduling** allows you to run functions automatically at specific times or intervals. Perfect for:
+
+- **Periodic Tasks** - Run every hour, day, week
+
+- **Cleanup Jobs** - Delete old data regularly
+
+- **Data Sync** - Sync with external APIs
+
+- **Reports** - Generate daily/weekly reports
+
+- **Monitoring** - Health checks and alerts
+
+---
+
+## Basic Configuration
+
+### Minimal Setup
 
 ```python
-{!> ../../../docs_src/scheduler/example.py !}
+from ravyn import Ravyn
+from ravyn.config import SchedulerConfig
+
+app = Ravyn(
+    scheduler_config=SchedulerConfig(
+        enabled=True
+    )
+)
 ```
 
-If you want to know [more about how to use the AsynczConfig](../scheduler/index.md), check out the section.
-
-### Application lifecycle
-
-Ravyn scheduler is tight to the application lifecycle and that means the `on_startup/on_shutdown` and `lifespan`.
-You can [read more about this](../lifespan-events.md) in the appropriate section of the documentation.
-
-By default, the scheduler is linked to `on_startup/on_shutdown` events and those are automatically managed for you
-**but if you require the lifespan** instead, then you must do the appropriate adjustments.
-
-The following example serves as a suggestion but feel free to use your own design. Let us check how we could manage
-this using the `lifespan` instead.
+### Complete Configuration
 
 ```python
-{!> ../../../docs_src/scheduler/example2.py !}
+app = Ravyn(
+    scheduler_config=SchedulerConfig(
+        enabled=True,
+        timezone="UTC",
+        max_instances=3,
+        coalesce=True
+    )
+)
 ```
 
-Pretty easy, right? Ravyn then understands what needs to be done as normal.
+---
 
-### The SchedulerConfig and the settings
+## Configuration Parameters
 
-Like everything in Ravyn, the SchedulerConfig can be also made available via settings.
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `enabled` | bool | Enable scheduler | `False` |
+| `timezone` | str | Timezone for tasks | `"UTC"` |
+| `max_instances` | int | Max concurrent instances | `1` |
+| `coalesce` | bool | Combine missed runs | `False` |
+
+---
+
+## Creating Scheduled Tasks
+
+### Using @scheduler Decorator
 
 ```python
-{!> ../../../docs_src/scheduler/via_settings.py !}
+from ravyn import Ravyn
+from ravyn.config import SchedulerConfig
+from ravyn.contrib.schedulers.asyncz.decorator import scheduler
+
+app = Ravyn(
+    scheduler_config=SchedulerConfig(enabled=True)
+)
+
+@scheduler(name="cleanup_task", trigger="interval", hours=1)
+async def cleanup_old_data():
+    """Run every hour."""
+    await delete_old_records()
+    print("Cleanup completed")
 ```
 
-## Important Notes
+### Cron-Style Scheduling
 
-- You can create your own [custom scheduler config](#how-to-use-it).
-- You **must implement** the `start/shutdown` functions in any scheduler configuration.
-- You can use or `on_startup/shutdown` or `lifespan` events. The first is automatically managed for you.
+```python
+@scheduler(
+    name="daily_report",
+    trigger="cron",
+    hour=9,
+    minute=0
+)
+async def generate_daily_report():
+    """Run every day at 9:00 AM."""
+    report = await create_report()
+    await send_email(report)
+```
 
-[asyncz]: https://asyncz.dymmond.com
+---
+
+## Trigger Types
+
+### Interval Trigger
+
+Run at fixed intervals:
+
+```python
+# Every 30 minutes
+@scheduler(name="sync", trigger="interval", minutes=30)
+async def sync_data():
+    await sync_with_api()
+
+# Every 2 hours
+@scheduler(name="backup", trigger="interval", hours=2)
+async def backup_database():
+    await create_backup()
+
+# Every day
+@scheduler(name="cleanup", trigger="interval", days=1)
+async def daily_cleanup():
+    await cleanup()
+```
+
+### Cron Trigger
+
+Run at specific times:
+
+```python
+# Every day at 3:00 AM
+@scheduler(name="backup", trigger="cron", hour=3, minute=0)
+async def nightly_backup():
+    await backup_database()
+
+# Every Monday at 9:00 AM
+@scheduler(name="report", trigger="cron", day_of_week="mon", hour=9)
+async def weekly_report():
+    await generate_report()
+
+# Every 1st of month at midnight
+@scheduler(name="billing", trigger="cron", day=1, hour=0)
+async def monthly_billing():
+    await process_billing()
+```
+
+### Date Trigger
+
+Run once at a specific date/time:
+
+```python
+from datetime import datetime
+
+@scheduler(
+    name="campaign",
+    trigger="date",
+    run_date=datetime(2026, 12, 31, 23, 59)
+)
+async def end_campaign():
+    await close_campaign()
+```
+
+---
+
+## Common Patterns
+
+### Pattern 1: Database Cleanup
+
+```python
+@scheduler(name="cleanup", trigger="cron", hour=2, minute=0)
+async def cleanup_old_sessions():
+    """Delete old sessions every day at 2 AM."""
+    from datetime import datetime, timedelta
+    
+    cutoff = datetime.utcnow() - timedelta(days=30)
+    await Session.filter(created_at__lt=cutoff).delete()
+    
+    print(f"Cleaned up sessions older than {cutoff}")
+```
+
+### Pattern 2: API Sync
+
+```python
+@scheduler(name="sync_users", trigger="interval", minutes=15)
+async def sync_users_from_api():
+    """Sync users every 15 minutes."""
+    import httpx
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://api.example.com/users")
+        users = response.json()
+        
+        for user_data in users:
+            await User.update_or_create(
+                id=user_data["id"],
+                defaults=user_data
+            )
+```
+
+### Pattern 3: Report Generation
+
+```python
+@scheduler(name="daily_report", trigger="cron", hour=8, minute=0)
+async def send_daily_report():
+    """Send daily report at 8 AM."""
+    # Generate report
+    stats = await calculate_daily_stats()
+    
+    # Send email
+    await send_email(
+        to="admin@example.com",
+        subject="Daily Report",
+        body=f"Stats: {stats}"
+    )
+```
+
+---
+
+## Using with Settings
+
+```python
+from ravyn import RavynSettings
+from ravyn.config import SchedulerConfig
+
+class AppSettings(RavynSettings):
+    scheduler_config: SchedulerConfig = SchedulerConfig(
+        enabled=True,
+        timezone="America/New_York",
+        max_instances=3
+    )
+
+app = Ravyn(settings_module=AppSettings)
+```
+
+---
+
+## Advanced Features
+
+### Multiple Instances
+
+```python
+# Allow up to 3 concurrent instances
+@scheduler(
+    name="heavy_task",
+    trigger="interval",
+    minutes=5,
+    max_instances=3
+)
+async def heavy_processing():
+    await process_large_dataset()
+```
+
+### Coalescing
+
+```python
+# If missed runs, execute only once
+@scheduler(
+    name="sync",
+    trigger="interval",
+    minutes=10,
+    coalesce=True
+)
+async def sync_data():
+    await sync_with_external_api()
+```
+
+### Conditional Execution
+
+```python
+@scheduler(name="backup", trigger="cron", hour=3)
+async def conditional_backup():
+    """Only backup if data changed."""
+    if await has_data_changed():
+        await create_backup()
+    else:
+        print("No changes, skipping backup")
+```
+
+---
+
+## Best Practices
+
+### 1. Use Appropriate Intervals
+
+```python
+# Good - reasonable intervals
+@scheduler(name="health_check", trigger="interval", minutes=5)
+async def health_check():
+    pass
+
+# Wrong - too frequent
+@scheduler(name="check", trigger="interval", seconds=1)
+async def constant_check():
+    pass
+```
+
+### 2. Handle Errors Gracefully
+
+```python
+# Good - error handling
+@scheduler(name="sync", trigger="interval", hours=1)
+async def sync_with_retry():
+    try:
+        await sync_data()
+    except Exception as e:
+        logger.error(f"Sync failed: {e}")
+        # Maybe retry or alert
+```
+
+### 3. Use Timezone Aware Times
+
+```python
+# Good - explicit timezone
+app = Ravyn(
+    scheduler_config=SchedulerConfig(
+        enabled=True,
+        timezone="America/New_York"
+    )
+)
+```
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Forgot to Enable
+
+**Problem:** Scheduler not running.
+
+```python
+# Wrong - scheduler disabled
+app = Ravyn()  # enabled=False by default
+```
+
+**Solution:** Enable scheduler:
+
+```python
+# Correct
+app = Ravyn(
+    scheduler_config=SchedulerConfig(enabled=True)
+)
+```
+
+### Pitfall 2: Missing Dependencies
+
+**Problem:** Import error.
+
+```bash
+# Wrong - asyncz not installed
+ModuleNotFoundError: No module named 'asyncz'
+```
+
+**Solution:** Install dependencies:
+
+```bash
+# Correct
+pip install ravyn[schedulers]
+# or
+pip install asyncz
+```
+
+### Pitfall 3: Blocking Operations
+
+**Problem:** Using sync code in async task.
+
+```python
+# Wrong - blocking operation
+@scheduler(name="task", trigger="interval", minutes=5)
+async def blocking_task():
+    time.sleep(60)  # Blocks event loop!
+```
+
+**Solution:** Use async operations:
+
+```python
+# Correct
+@scheduler(name="task", trigger="interval", minutes=5)
+async def async_task():
+    await asyncio.sleep(60)  # Non-blocking
+```
+
+---
+
+## Next Steps
+
+- [LoggingConfig](./logging.md) - Application logging
+- [Lifespan Events](../lifespan-events.md) - Application lifecycle
+- [Background Tasks](../background-tasks.md) - One-off tasks

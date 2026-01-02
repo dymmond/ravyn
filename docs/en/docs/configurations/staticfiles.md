@@ -1,68 +1,231 @@
 # StaticFilesConfig
 
-StaticFilesConfig is simple set of configurations that when passed enables the built-in of Ravyn.
-When a StaticFilesConfig object is passed to an application instance, it will enable the static files serving.
+Configure static file serving for CSS, JavaScript, images, and other assets in your Ravyn application.
 
-!!! Check
-    StaticFiles are considered an `app` and they are pure Lilya app, so using Lilya StaticFiles
-    will also work with Ravyn.
+## What You'll Learn
 
-## StaticFilesConfig and application
+- Serving static files
+- Configuring static file paths
+- Multiple directories
+- Best practices
 
-To use the StaticFilesConfig in an application instance.
-
-```python hl_lines="3 9"
-{!> ../../../docs_src/configurations/staticfiles/example1.py!}
-```
-
-Another example
-
-```python hl_lines="3 10"
-{!> ../../../docs_src/configurations/staticfiles/example2.py!}
-```
-
-**With Packages and directory**:
-
-```python hl_lines="3 9"
-{!> ../../../docs_src/configurations/staticfiles/example3.py!}
-```
-
-## Parameters
-
-All the parameters and defaults are available in the [StaticFilesConfig Reference](../references/configurations/static_files.md).
-
-## StaticFilesConfig and application settings
-
-The StaticFilesConfig can be done directly via [application instantiation](#staticfilesconfig-and-application)
-but also via settings.
+## Quick Start
 
 ```python
-{!> ../../../docs_src/configurations/staticfiles/settings.py!}
+from ravyn import Ravyn
+from ravyn.config import StaticFilesConfig
+
+app = Ravyn(
+    static_files_config=StaticFilesConfig(
+        path="/static",
+        directory="static"
+    )
+)
+
+# Files in ./static/ served at /static/*
+# ./static/css/style.css → /static/css/style.css
 ```
 
-This will make sure you keep the settings clean, separated and without a bloated **Ravyn** instance.
+---
 
-## Multiple directories and multiple pathes (without fallthrough)
+## Basic Configuration
 
-Imagine, for example, you have multiple directories you would like to access including a `node_modules/` one.
-This is possible do do it by passing multiple `StaticFilesConfig` configurations and shown below:
+### Single Directory
 
 ```python
-{!> ../../../docs_src/configurations/staticfiles/example_multiple.py!}
+from ravyn import Ravyn
+from ravyn.config import StaticFilesConfig
+
+app = Ravyn(
+    static_files_config=StaticFilesConfig(
+        path="/static",      # URL path
+        directory="static"   # Local directory
+    )
+)
 ```
-The advantage is a fine granular configuration. Different options and packages can be set.
 
-!!! Note
-    The first path match is used and there is currently no fallthrough in case no file is found, so the order is very important.
-
-
-## Multiple directories with fallthrough
-
-Designers may want to provide overwrites to static files or have fallbacks. In the [former example](#multiple-directories-and-multiple-pathes-without-fallthrough) this wasn't possible.
-From the newest version of Lilya (0.11.5+) it is possible to provide multiple directories to lilya and get such a behavior
+### With Packages
 
 ```python
-{!> ../../../docs_src/configurations/staticfiles/example_multiple_fallthrough.py!}
+app = Ravyn(
+    static_files_config=StaticFilesConfig(
+        path="/static",
+        directory="static",
+        packages=["myapp"]  # Look in package directories
+    )
+)
 ```
 
-Both ways can be mixed.
+---
+
+## Configuration Parameters
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `path` | str | URL path prefix | **Required** |
+| `directory` | str/list | Local directory path(s) | **Required** |
+| `packages` | list | Package names to search | `None` |
+| `html` | bool | Serve HTML files | `False` |
+| `check_dir` | bool | Check if directory exists | `True` |
+
+---
+
+## Multiple Directories
+
+### Without Fallthrough
+
+```python
+from ravyn import Ravyn
+from ravyn.config import StaticFilesConfig
+
+app = Ravyn(
+    static_files_config=[
+        StaticFilesConfig(
+            path="/static",
+            directory="static"
+        ),
+        StaticFilesConfig(
+            path="/node_modules",
+            directory="node_modules"
+        )
+    ]
+)
+
+# /static/* → ./static/
+# /node_modules/* → ./node_modules/
+```
+
+!!! warning
+    First match wins - order matters!
+
+### With Fallthrough
+
+```python
+# Multiple directories with fallback
+app = Ravyn(
+    static_files_config=StaticFilesConfig(
+        path="/static",
+        directory=["custom_static", "static"]  # Try custom first, then static
+    )
+)
+
+# Looks in custom_static/ first, falls back to static/
+```
+
+---
+
+## Common Patterns
+
+### Pattern 1: Frontend Assets
+
+```python
+# Serve CSS, JS, images
+app = Ravyn(
+    static_files_config=StaticFilesConfig(
+        path="/static",
+        directory="static"
+    )
+)
+
+# Directory structure:
+# static/
+#   css/
+#     style.css
+#   js/
+#     app.js
+#   images/
+#     logo.png
+```
+
+### Pattern 2: Node Modules
+
+```python
+# Serve npm packages
+app = Ravyn(
+    static_files_config=[
+        StaticFilesConfig(path="/static", directory="static"),
+        StaticFilesConfig(path="/node_modules", directory="node_modules")
+    ]
+)
+```
+
+### Pattern 3: Custom Overrides
+
+```python
+# Custom files override defaults
+app = Ravyn(
+    static_files_config=StaticFilesConfig(
+        path="/static",
+        directory=["custom", "defaults"]  # custom overrides defaults
+    )
+)
+```
+
+---
+
+## Using with Settings
+
+```python
+from ravyn import RavynSettings
+from ravyn.config import StaticFilesConfig
+
+class AppSettings(RavynSettings):
+    static_files_config: StaticFilesConfig = StaticFilesConfig(
+        path="/static",
+        directory="static"
+    )
+
+app = Ravyn(settings_module=AppSettings)
+```
+
+---
+
+## Best Practices
+
+### 1. Use CDN in Production
+
+```python
+# Good - CDN for production
+import os
+
+if os.getenv("ENV") == "production":
+    # Use CDN, no static files config
+    app = Ravyn()
+else:
+    # Serve locally in development
+    app = Ravyn(
+        static_files_config=StaticFilesConfig(
+            path="/static",
+            directory="static"
+        )
+    )
+```
+
+### 2. Organize by Type
+
+```
+static/
+  css/
+    style.css
+  js/
+    app.js
+  images/
+    logo.png
+  fonts/
+    font.woff2
+```
+
+### 3. Use Versioning
+
+```html
+<!-- Add version to bust cache -->
+<link rel="stylesheet" href="/static/css/style.css?v=1.2.3">
+```
+
+---
+
+## Next Steps
+
+- [TemplateConfig](./template.md) - Template rendering
+- [CORSConfig](./cors.md) - CORS configuration
+- [Application Settings](../application/settings.md) - Configuration
