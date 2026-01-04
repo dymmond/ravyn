@@ -129,6 +129,36 @@ app = Ravyn()
 app.add_route(register)
 ```
 
+You can also pass background tasks via response classes:
+
+```python
+from ravyn import Ravyn, post, BackgroundTask, BackgroundTasks
+from ravyn.responses import JSONResponse
+
+def send_email(to: str):
+    print(f"Email sent to {to}")
+
+def log_event(event: str):
+    print(f"Event logged: {event}")
+
+@post("/register")
+def register(email: str) -> JSONResponse:
+    # Create multiple background tasks
+    tasks = BackgroundTasks(tasks=[
+        BackgroundTask(send_email, email),
+        BackgroundTask(log_event, "user_registered")
+    ])
+    
+    # Pass tasks via response
+    return JSONResponse(
+        {"registered": email},
+        background=tasks
+    )
+
+app = Ravyn()
+app.add_route(register)
+```
+
 ---
 
 ## Adding Tasks Via Response
