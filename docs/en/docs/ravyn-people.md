@@ -11,6 +11,16 @@ Ravyn is built and maintained by an amazing community of developers, contributor
 - Lead architect and maintainer
 - Vision and direction
 
+### Core Maintainers
+
+- **devkral** - [@devkral](https://github.com/devkral)
+  - Core maintainer and contributor
+  - Framework development and improvements
+
+- **kokoserver** - [@kokoserver](https://github.com/kokoserver)
+  - Core maintainer and contributor
+  - Documentation and framework development
+
 ---
 
 ## Contributors

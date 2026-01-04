@@ -18,7 +18,14 @@ If you love modern frameworks, you'll feel right at home, but faster, cleaner, a
 readme = "README.md"
 requires-python = ">=3.10"
 dynamic = ['version']
-authors = [{ name = "Tiago Silva", email = "tiago.silva@dymmond.com" }]
+authors = [
+    { name = "Tiago Silva", email = "tiago.silva@dymmond.com" },
+]
+maintainers = [
+    { name = "Tiago Silva", email = "tiago.silva@dymmond.com" },
+    { name = "devkral" },
+    { name = "kokoserver" },
+]
 classifiers = [
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
