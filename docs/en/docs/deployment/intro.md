@@ -1,72 +1,360 @@
-# Introduction
+# Deployment Introduction
 
-Deploying an **Ravyn** application is relatively easy.
+Deployment is the process of taking your application from your development environment and making it accessible to users worldwide. Just like moving a house to a new location where people can visit, deployment moves your application to a server where users can access it.
 
-## What is a deployment
+The good news? Ravyn is a standard ASGI application, which means you have countless deployment options.
 
-Deploying an application means to perform the necessary steps to make **your application available to others** to use
-outside of your local machine and/or development environment.
+## What You'll Learn
 
-Normally, deploying web APIs involves putting your code in remote machines with all the necessary requirements
-from memeory, CPU, storage to things like networking and all of that. It will depend on your needs.
+- What deployment means
+- Different deployment strategies
+- Choosing the right platform
+- Environment configuration best practices
+- Production readiness checklist
 
-## Strategies
+---
 
-There are many ways of deploying an application. Every case is unique and it will depends on a lot of factors that
-sometimes is not even related with the application itself. For example, **funds**.
+## What is Deployment?
 
-You could want to save money not **going to cloud** but that also means more personal maintenance of the infrastructure.
+**Deployment** is the process of making your application available to users outside your local development environment.
 
-You could also decide to go **cloud** and use an external provider such as **AWS**, **Azure**, **GCP** or even one that
-is very good and also affordable like **render.com** or **Heroku**. It is your choice really since it will depend on
-your needs.
+This involves:
 
-The goal is not to tall you what to do but to give you a simple example in the case you would like to use, for example,
-[docker](./docker.md) and the reason why it is very simple. **Every case is unique**.
+- **Hosting** - Finding a server or platform to run your code
+- **Configuration** - Setting up environment variables and secrets
+- **Infrastructure** - Ensuring adequate CPU, memory, and storage
+- **Networking** - Making your app accessible via the internet
+- **Monitoring** - Tracking performance and errors
 
-## Ravyn
+---
 
-We decided that we did not want to interfere with the way the people do deployments neither suggest that there is only
-one way of doing it but we thought that would be very useful to have at least one example just to help out a bit and
-to unblock some potential ideas.
+## Deployment Strategies
 
-We opted for using a standard, [docker](./docker.md).
+There's no one-size-fits-all approach. Your deployment strategy depends on:
 
-## Deploying using Pydantic
+### Budget
 
-Pydantic is fantastic handling with majority of the heavy lifting when it comes to read environment variables and
-assigning but there are some tricks to have in mind.
+**Self-Hosted (Lower Cost)**
+- VPS providers (DigitalOcean, Linode, Vultr)
+- Requires more maintenance
+- Full control over infrastructure
 
-### Loading List, dicts and complex types
+**Cloud Managed (Higher Cost, Less Maintenance)**
+- AWS, Azure, GCP
+- Render, Heroku, Railway
+- Automated scaling and management
 
-When loading those into your environment variables **it is imperative** that you understand that Pydantic reads them
-as a JSON like object.
+### Scale
 
-**Example**:
+**Small Applications**
+- Single server deployment
+- Shared hosting
+- Serverless functions
 
-```shell
-export ALLOWED_HOSTS="https://www.example.com,https://www.foobar.com"
+**Large Applications**
+- Multiple servers with load balancing
+- Container orchestration (Kubernetes)
+- Auto-scaling infrastructure
+
+### Technical Expertise
+
+**Beginner-Friendly**
+- Render, Heroku, Railway
+- One-click deployments
+- Managed databases
+
+**Advanced**
+- AWS, GCP, Azure
+- Docker + Kubernetes
+- Custom infrastructure
+
+---
+
+## Deployment Options
+
+### 1. Docker (Recommended)
+
+**Best for:** Consistency across environments
+
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-There are many ways of doing this but in the documentation of Pydantic (even a fix), they recommend to use the
-`parse_env` and handle the parsing there.
+**Advantages:**
+- Same environment everywhere
+- Easy to scale
+- Works on any platform
+
+[Complete Docker Guide →](./docker.md)
+
+### 2. Cloud Platforms
+
+**Render** (Easiest)
+```yaml
+# render.yaml
+services:
+  - type: web
+    name: myapp
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+**Heroku**
+```
+# Procfile
+web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+**AWS, Azure, GCP**
+- More complex setup
+- Greater flexibility
+- Better for large-scale apps
+
+### 3. Traditional VPS
+
+**Setup:**
+1. Rent a VPS (DigitalOcean, Linode)
+2. Install Python and dependencies
+3. Set up Nginx as reverse proxy
+4. Use systemd or supervisor for process management
+
+**Example systemd service:**
+```ini
+[Unit]
+Description=Ravyn Application
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/var/www/myapp
+ExecStart=/usr/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### 4. Serverless
+
+**AWS Lambda, Google Cloud Functions**
+
+Best for:
+- Event-driven applications
+- Infrequent traffic
+- Pay-per-request pricing
+
+**Limitations:**
+- Cold start latency
+- Execution time limits
+- Stateless only
+
+---
+
+## Environment Configuration
+
+### Using Pydantic Settings
+
+Ravyn uses Pydantic for settings, making environment configuration clean:
 
 ```python
+# settings.py
+from ravyn import RavynSettings
+from pydantic import Field
+
+class ProductionSettings(RavynSettings):
+    debug: bool = False
+    secret_key: str = Field(..., env='SECRET_KEY')
+    database_url: str = Field(..., env='DATABASE_URL')
+    allowed_hosts: list[str] = Field(default_factory=list)
+    
+    class Config:
+        @classmethod
+        def parse_env_var(cls, field_name: str, raw_val: str):
+            # Parse comma-separated lists
+            if field_name == "allowed_hosts":
+                return [host.strip() for host in raw_val.split(",")]
+            return cls.json_loads(raw_val)
+```
+
+### Environment Variables
+
+```shell
+# .env file (never commit this!)
+SECRET_KEY=your-secret-key-here
+DATABASE_URL=postgresql://user:pass@localhost/db
+ALLOWED_HOSTS=example.com,www.example.com
+```
+
+### Loading Complex Types
+
+For lists, dicts, and complex types:
+
+```python
+from typing import List, Any
 from ravyn import RavynSettings
 from pydantic import Field
 
 class AppSettings(RavynSettings):
     allowed_hosts: List[str] = Field(..., env='ALLOWED_HOSTS')
-
+    
     class Config:
         @classmethod
         def parse_env_var(cls, field_name: str, raw_val: str) -> Any:
-            if field_name in ("allowed_hosts"):
-                return [value for value in raw_val.split(",")]
+            if field_name == "allowed_hosts":
+                return [value.strip() for value in raw_val.split(",")]
             return cls.json_loads(raw_val)
-
 ```
 
-This should solve your problems of parsing 😁.
+See [Pydantic's environment variable parsing](https://github.com/pydantic/pydantic/pull/4406/files) for more details.
 
-You can see [more details](https://github.com/pydantic/pydantic/pull/4406/files) about the way it was merged.
+---
+
+## Production Checklist
+
+### Security ✅
+
+- [ ] Disable debug mode
+- [ ] Use HTTPS/SSL
+- [ ] Set strong secret keys
+- [ ] Configure CORS properly
+- [ ] Enable CSRF protection
+- [ ] Use environment variables for secrets
+- [ ] Disable OpenAPI docs (optional)
+
+### Performance ✅
+
+- [ ] Use production ASGI server (Uvicorn/Hypercorn)
+- [ ] Configure multiple workers
+- [ ] Set up caching
+- [ ] Optimize database queries
+- [ ] Enable gzip compression
+- [ ] Use a CDN for static files
+
+### Reliability ✅
+
+- [ ] Set up health checks
+- [ ] Configure logging
+- [ ] Implement error tracking (Sentry)
+- [ ] Set up monitoring (Datadog, New Relic)
+- [ ] Plan for backups
+- [ ] Test failover scenarios
+- [ ] Document deployment process
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Debug Mode in Production
+
+**Problem:** Sensitive information exposed.
+
+```python
+# Wrong
+app = Ravyn(debug=True)
+```
+
+**Solution:**
+```python
+# Correct
+import os
+app = Ravyn(debug=os.getenv("DEBUG", "false").lower() == "true")
+```
+
+### Pitfall 2: Hardcoded Configuration
+
+**Problem:** Can't change settings without code changes.
+
+**Solution:** Use environment variables:
+```python
+# settings.py
+import os
+
+class Settings(RavynSettings):
+    database_url: str = os.getenv("DATABASE_URL")
+    secret_key: str = os.getenv("SECRET_KEY")
+```
+
+### Pitfall 3: Single Worker
+
+**Problem:** Poor performance under load.
+
+**Solution:** Use multiple workers:
+```shell
+uvicorn app.main:app --workers 4
+```
+
+---
+
+## Best Practices
+
+### 1. Use Docker
+
+Ensures consistency across all environments:
+
+```dockerfile
+FROM python:3.11-slim
+# ... setup ...
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--workers", "4"]
+```
+
+### 2. Separate Settings by Environment
+
+```python
+# settings/development.py
+class DevelopmentSettings(RavynSettings):
+    debug: bool = True
+    
+# settings/production.py
+class ProductionSettings(RavynSettings):
+    debug: bool = False
+    enable_openapi: bool = False
+```
+
+### 3. Use a Reverse Proxy
+
+Nginx or Caddy in front of your ASGI server:
+
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+    
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+### 4. Monitor Everything
+
+```python
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+```
+
+---
+
+## Learn More
+
+- [Docker Deployment](./docker.md) - Complete containerization guide
+- [Uvicorn Documentation](https://www.uvicorn.org/) - ASGI server
+- [Pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) - Environment configuration
+
+---
+
+## Next Steps
+
+- [Docker Guide](./docker.md) - Containerize your application
+- [Settings](../application/settings.md) - Configure your app
+- [Security](../security/index.md) - Secure your deployment

@@ -139,7 +139,7 @@ app = Ravyn(routes=[
 
 ### Handler Level
 
-Most specific—overrides all other handlers:
+Most specific. overrides all other handlers:
 
 ```python
 from ravyn import get

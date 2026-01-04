@@ -192,7 +192,7 @@ def test_file_upload():
 
 ## Testing Async Handlers
 
-Tests can be sync or async—both work with `RavynTestClient`:
+Tests can be sync or async. both work with `RavynTestClient`:
 
 ### Sync Test (Recommended)
 

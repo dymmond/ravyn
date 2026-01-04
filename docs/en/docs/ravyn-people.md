@@ -138,7 +138,7 @@ Every contribution matters, no matter how small! ---
 
 ## Thank You
 
-To everyone who has contributed to Ravyn in any way—**thank you**. Your support, feedback, and contributions make Ravyn better for everyone.
+To everyone who has contributed to Ravyn in any way. **thank you**. Your support, feedback, and contributions make Ravyn better for everyone.
 
 Together, we're building something amazing. ---
 

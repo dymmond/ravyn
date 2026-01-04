@@ -99,13 +99,13 @@ Ravyn automatically generates interactive API documentation:
 
 ## Why Ravyn?
 
-Ravyn combines the best ideas from FastAPI, Django, Flask, and NestJS into a framework designed for real-world applications—from prototypes to enterprise systems.
+Ravyn combines the best ideas from FastAPI, Django, Flask, and NestJS into a framework designed for real-world applications. from prototypes to enterprise systems.
 
 ### Key Features
 
 - **⚡ Fast**: Built on [Lilya](https://lilya.dev/) and [Pydantic](https://pydantic-docs.helpmanual.io/), with async-first design
 - **🎯 Type-Safe**: Full Python 3.10+ type hints for better IDE support and fewer bugs
-- **🧩 Flexible**: Choose OOP (controllers) or functional style—or mix both
+- **🧩 Flexible**: Choose OOP (controllers) or functional style. or mix both
 - **🔋 Batteries Included**: Dependency injection, middleware, permissions, schedulers, and more
 - **Database Ready**: Native support for [Edgy ORM][edgy_orm] and [Mongoz ODM][mongoz_odm]
 - **🧪 Testable**: Built-in test client for easy testing
@@ -163,7 +163,7 @@ app = Ravyn(
 
 ### Dependency Injection
 
-Inject dependencies at any level—from application-wide to individual routes.
+Inject dependencies at any level. from application-wide to individual routes.
 
 ```python
 from ravyn import Ravyn, Gateway, Inject, Injects, get

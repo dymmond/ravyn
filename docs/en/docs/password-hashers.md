@@ -1,6 +1,6 @@
 # Password Hashers
 
-Password hashers provide secure, salted password hashing for your Ravyn application. Never store passwords in plain text—always hash them with a strong algorithm.
+Password hashers provide secure, salted password hashing for your Ravyn application. Never store passwords in plain text. always hash them with a strong algorithm.
 
 ## What You'll Learn
 

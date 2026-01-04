@@ -91,4 +91,4 @@ You've now learned how to:
 - Combine multiple tasks
 - Mix sync and async behavior
 
-👉 Next up: [dependencies](08-dependencies.md) — learn how to use `Inject`, `Injects`, and shared state across your app.
+👉 Next up: [dependencies](08-dependencies.md) .  learn how to use `Inject`, `Injects`, and shared state across your app.

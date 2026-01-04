@@ -6,7 +6,7 @@ hide:
 
 # Migration from Esmerald to Ravyn
 
-Esmerald is now Ravyn with a fresh new look! The migration process is simple and straightforward—mostly just updating import statements.
+Esmerald is now Ravyn with a fresh new look! The migration process is simple and straightforward. mostly just updating import statements.
 
 ## What You'll Learn
 

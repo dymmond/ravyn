@@ -2,7 +2,7 @@
 
 The `ravyn.contrib.mail` module provides a **powerful, async-native email system** built for modern applications.
 
-It’s designed to be lightweight yet as powerful as other’s email framework — but without blocking your event loop.
+It’s designed to be lightweight yet as powerful as other’s email framework .  but without blocking your event loop.
 
 Ravyn leverages the [Lilya mail system](https://www.lilya.dev/contrib/mail/) and applied
 **it's own dependency injection but the rest, you can even see in the Lilya documentation**.

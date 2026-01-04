@@ -77,7 +77,7 @@ class UserController:
         return {"users": []}
 ```
 
-Both work identically—use whichever you prefer!
+Both work identically. use whichever you prefer!
 
 ---
 
@@ -235,7 +235,7 @@ class UserController:
         return {"users": []}
 ```
 
-Choose based on your preference—both are fully supported!
+Choose based on your preference. both are fully supported!
 
 ---
 

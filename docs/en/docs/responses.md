@@ -1,6 +1,6 @@
 # Responses
 
-Responses determine how your API sends data back to clients. Ravyn supports multiple response types from simple JSON to file downloads, templates, and streaming—all with clean, type-safe syntax.
+Responses determine how your API sends data back to clients. Ravyn supports multiple response types from simple JSON to file downloads, templates, and streaming. all with clean, type-safe syntax.
 
 ## What You'll Learn
 
@@ -48,7 +48,7 @@ app.add_route(get_user)
 ```
 
 !!! tip
-    Return Pydantic models, dataclasses, or dicts directly—Ravyn converts them to JSON automatically.
+    Return Pydantic models, dataclasses, or dicts directly. Ravyn converts them to JSON automatically.
 
 ---
 
@@ -328,7 +328,7 @@ def create() -> JSONResponse:
     # Returns 202, not 201!
 ```
 
-**Solution:** Be consistent—use one or the other:
+**Solution:** Be consistent. use one or the other:
 
 ```python
 # Clear - use handler decorator

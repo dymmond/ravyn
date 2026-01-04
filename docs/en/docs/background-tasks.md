@@ -533,7 +533,7 @@ Learn more in the [Lilya Background Tasks docs](https://www.lilya.dev/tasks/).
 
 Now that you understand background tasks, explore:
 
-- [Scheduler](./scheduler.md) - Schedule recurring tasks
+- [Scheduler](./scheduler/scheduler.md) - Schedule recurring tasks
 - [Lifespan Events](./lifespan-events.md) - Run code on startup/shutdown
 - [Middleware](./middleware/index.md) - Process all requests
 - [Responses](./responses.md) - Different response types

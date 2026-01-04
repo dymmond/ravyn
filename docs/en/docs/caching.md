@@ -50,7 +50,7 @@ Caching temporarily stores computed results in fast memory. Instead of recalcula
 
 ### Real-World Analogy
 
-Imagine a coffee shop. If a customer orders the same drink repeatedly, the barista might pre-make a batch and serve it instantly. That's caching—storing results for quick retrieval.
+Imagine a coffee shop. If a customer orders the same drink repeatedly, the barista might pre-make a batch and serve it instantly. That's caching. storing results for quick retrieval.
 
 ### Benefits
 

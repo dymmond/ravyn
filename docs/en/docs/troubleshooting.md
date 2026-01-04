@@ -12,7 +12,7 @@ Common issues and solutions when working with Ravyn.
 
 1. Your route path matches exactly (including leading `/`)
 2. If using `Include`, ensure the namespace path is correct
-3. Route paths are registered in order—more specific routes should come first
+3. Route paths are registered in order. more specific routes should come first
 
 ```python
 # Wrong - generic route first

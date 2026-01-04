@@ -73,7 +73,7 @@ app = Ravyn(
 
 ### Automatic Gateway Wrapping
 
-You can pass handlers directly—Ravyn automatically wraps them in a Gateway:
+You can pass handlers directly. Ravyn automatically wraps them in a Gateway:
 
 ```python
 from ravyn import Ravyn, get
@@ -132,7 +132,7 @@ app = Ravyn(
 
 ### Include with Namespace
 
-The most common pattern—import routes from a module:
+The most common pattern. import routes from a module:
 
 ```python
 # accounts/urls.py

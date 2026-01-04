@@ -270,7 +270,7 @@ async def protected_route(request: Request) -> JSONResponse:
 
 * Returns a JSON payload in the form `{"error": message}`.
 * Sets HTTP status code to `401`.
-* Does **not** raise an exception — it simply returns a `JSONResponse`.
+* Does **not** raise an exception .  it simply returns a `JSONResponse`.
 
 #### Returns
 

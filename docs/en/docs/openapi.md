@@ -6,7 +6,7 @@ hide:
 
 # OpenAPI: Interactive API Documentation
 
-Ravyn automatically generates beautiful, interactive API documentation. Test your endpoints, authenticate, and explore your API—all from your browser.
+Ravyn automatically generates beautiful, interactive API documentation. Test your endpoints, authenticate, and explore your API. all from your browser.
 
 ## What You'll Learn
 

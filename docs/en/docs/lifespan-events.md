@@ -76,7 +76,7 @@ app = Ravyn(lifespan=lifespan)
 
 ## on_startup and on_shutdown Events
 
-The classic approach—simple and widely used.
+The classic approach. simple and widely used.
 
 ### Database Connection Example
 

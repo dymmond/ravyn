@@ -104,7 +104,7 @@ app = Ravyn(routes=[Gateway(handler=upload_files, name="upload-files")])
 
 ## 📝 Using the `File` Parameter
 
-You can also use `File` directly, which inherits from `Body`, to handle file uploads. This makes your code cleaner, as you don't need to specify the `media_type=EncodingType.MULTI_PART`—it’s set automatically.
+You can also use `File` directly, which inherits from `Body`, to handle file uploads. This makes your code cleaner, as you don't need to specify the `media_type=EncodingType.MULTI_PART`. it’s set automatically.
 
 ### Example: Single File Upload with `File`
 

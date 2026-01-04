@@ -1,6 +1,6 @@
 # Requests
 
-The `Request` object gives you access to all incoming data—path parameters, query strings, headers, cookies, request body, and more. It's your gateway to understanding what the client is asking for.
+The `Request` object gives you access to all incoming data. path parameters, query strings, headers, cookies, request body, and more. It's your gateway to understanding what the client is asking for.
 
 ## What You'll Learn
 

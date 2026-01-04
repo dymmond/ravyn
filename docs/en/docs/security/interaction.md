@@ -1,6 +1,6 @@
 # Interaction & Next Steps
 
-In the [previous chapter](./introduction.md), the security system—based on **Ravyn's** dependency injection system was providing the `path operation function` with a `token` as a `str`.
+In the [previous chapter](./introduction.md), the security system. based on **Ravyn's** dependency injection system was providing the `path operation function` with a `token` as a `str`.
 
 This token was extracted from the `Authorization` header of the incoming request. The security system automatically handled this, so the function didn't need to worry about how the token was retrieved. The function simply received the token as a string, which it could then use for further processing, such as verifying the token's validity or checking user permissions.
 
@@ -91,7 +91,7 @@ Here’s the key takeaway:
 
 The security and dependency injection setup is written **once**.
 
-You can make it as complex as you need, but it only needs to be defined in one place. The beauty of **Ravyn** is its flexibility—whether simple or complex, you only write this logic once.
+You can make it as complex as you need, but it only needs to be defined in one place. The beauty of **Ravyn** is its flexibility. whether simple or complex, you only write this logic once.
 
 And once it's set up, you can reuse it across **thousands of endpoints** (*path operations*).
 

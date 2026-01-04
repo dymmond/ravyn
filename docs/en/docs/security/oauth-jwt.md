@@ -96,7 +96,7 @@ Create a PassLib "context" to handle password hashing and verification.
 !!! Tip
     The PassLib context supports multiple hashing algorithms, including deprecated ones, enabling you to verify old hashes while using a secure algorithm like Bcrypt for new passwords.
 
-    This allows compatibility with existing systems (e.g., verifying Django-generated passwords) while ensuring stronger security for newly hashed passwords—all within the same application.
+    This allows compatibility with existing systems (e.g., verifying Django-generated passwords) while ensuring stronger security for newly hashed passwords. all within the same application.
 
 Create a utility function to hash a user's password, another to check if a given password matches the stored hash, and a third to authenticate the user and return their details.
 

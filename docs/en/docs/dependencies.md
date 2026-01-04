@@ -120,7 +120,7 @@ app = Ravyn(
 ```
 
 !!! tip
-    No need to instantiate the class yourself—just pass the class to `Factory()` and Ravyn handles the rest.
+    No need to instantiate the class yourself. just pass the class to `Factory()` and Ravyn handles the rest.
 
 ### Factory with Arguments
 

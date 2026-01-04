@@ -1,149 +1,346 @@
-# Example
+# Complete Authentication Example
 
-Since [Edgy](https://edgy.dymmond.com) if from the same author of Ravyn, it gives some
-extra motivation for its use and therefore an example in how to use the
-[JWTAuthMiddleware](./middleware.md), even if in a very simplistic way, within your Ravyn application.
+Building a secure authentication system from scratch can take days. Between password hashing, JWT tokens, user management, and protecting routes, there's a lot to get right. This example shows you how to build a production-ready auth system with Ravyn and Edgy in minutes, not days.
 
-Let us build a simple integration and application where we will be creating:
+Let's build a complete user authentication system with registration, login, and protected routes.
 
-- [Create user model](#create-user-model) by using the provided default from Ravyn.
-- [Create user API](#create-user-api) to create a user in the system.
-- [Login API](#login-api) to authenticate the user.
-- [Home API](#home-api) to authenticate the user and return the logged-in user email.
-- [Assemble the apis](#assemble-the-apis) where we wrap the application.
-- [Bonus - Refreshing the Token](#refreshing-the-token) where we will cover how to implement a token refresh API.
+## What You'll Learn
 
-We will be using SQLite for this example but feel free to integrate with your database.
+- Creating user models with Edgy
+- Building registration and login APIs
+- Implementing JWT authentication
+- Protecting routes with middleware
+- Refreshing JWT tokens
+- Testing the complete flow
 
-We will also be assuming the following:
+## What We're Building
 
-- Models are inside an `accounts/models.py`
-- Controllers/APIs are inside an `accounts/controllers.py`
-- The main application is inside an `app.py`
-- The [jwt_config](../../configurations/jwt.md#jwtconfig-and-application-settings)
-is inside your global [settings](../../application/settings.md).
+A complete authentication system with:
 
-**Lets go!**
+- **User Registration** - Create new accounts
+- **User Login** - Authenticate and get JWT token
+- **Protected Routes** - Access user-specific data
+- **Token Refresh** - Keep users logged in
+- **Password Security** - Automatic hashing with bcrypt
 
-## Create user model
+---
 
-First, we need to create a model that will be storing the users in the system. We will be
-defaulting to the one model provided by Ravyn out-of-the-box.
+## Project Structure
+
+We'll organize our code like this:
+
+```
+myapp/
+├── accounts/
+│   ├── models.py        # User model
+│   └── controllers.py   # API endpoints
+├── settings.py          # App configuration
+└── app.py              # Main application
+```
+
+**Assumptions:**
+- Models are in `accounts/models.py`
+- Controllers/APIs are in `accounts/controllers.py`
+- Main app is in `app.py`
+- [JWTConfig](../../configurations/jwt.md#jwtconfig-and-application-settings) is in your global [settings](../../application/settings.md)
+
+**Let's go!**
+
+---
+
+## Step 1: Create User Model
+
+First, define a User model using Ravyn's built-in authentication model:
 
 ```python title="accounts/models.py"
 {!> ../../../docs_src/databases/edgy/example/create_model.py !}
 ```
 
-## Create user API
+This gives you a complete User model with password hashing, validation, and all the fields you need.
 
-Now that the [user model](#create-user-model) is defined and created, it is time to create an api
-that allows the creation of users in the system.
+---
 
-This example won't cover corner cases like integrity in case of duplicates and so on as this is
-something that you can easily manage.
+## Step 2: Create User API
+
+Build an API endpoint to register new users:
 
 ```python title="accounts/controllers.py"
 {!> ../../../docs_src/databases/edgy/example/create_user.py !}
 ```
 
-## Login API
+**What this does:**
+- Accepts user registration data
+- Validates email and password
+- Creates user with hashed password
+- Returns success response
 
-Now the [create user](#create-user-api) is available to us to be used later on, we need a view
-that also allow us to login and return the JWT access token.
+!!! Note
+    This example doesn't handle edge cases like duplicate emails. In production, add proper error handling for integrity constraints.
 
-For this API to work, we need to guarantee the data being sent is valid, authenticate and then
-return the JWT token.
+---
+
+## Step 3: Login API
+
+Create an endpoint that authenticates users and returns a JWT token:
 
 ```python title="accounts/controllers.py"
 {!> ../../../docs_src/databases/edgy/example/login.py !}
 ```
 
-Ooof! There is a lot going on here right? Well, yes but this is also intentional. The `login`
-is actually very simple, it just receives a payload and throws that payload into validation
-inside the `BackendAuthentication`.
+**What's happening here:**
 
-For those familiar with similar objects, like Django backends, this `BackendAuthentication` does
-roughly the same thing and it is quite robust since it is using pydantic when creating the instance
-which takes advantage of the validations automatically for you.
+1. **Receive credentials** - Email and password from the request
+2. **Validate data** - `BackendAuthentication` uses Pydantic for validation
+3. **Authenticate user** - Checks password and generates JWT
+4. **Return token** - Client uses this for subsequent requests
 
-The `BackendAuthentication` once created inside the `login` and validated with the given fields,
-simply proceeds with the `authenticate` method where it will return the JWT for the user.
+The `BackendAuthentication` class handles all the heavy lifting:
+- Validates credentials
+- Checks password hash
+- Generates JWT token
+- Returns token or raises error
 
 !!! Warning
-    As mentioned before in the assumptions on the top of the document, it was assumed you put your
-    [jwt_config](../../configurations/jwt.md#jwtconfig-and-application-settings) inside your global settings.
+    Make sure your [JWTConfig](../../configurations/jwt.md#jwtconfig-and-application-settings) is configured in your global settings as assumed at the top of this document.
 
-## Home API
+---
 
-Now it is time to create the api that will be returning the email of the logged in user when hit.
-The API is pretty much simple and clean.
+## Step 4: Protected Home API
+
+Create an endpoint that requires authentication:
 
 ```python title="accounts/controllers.py"
 {!> ../../../docs_src/databases/edgy/example/home.py !}
 ```
 
-## Assemble the APIs
+**Simple and clean:**
+- Middleware validates JWT token
+- User is automatically injected into `request.user`
+- Return user-specific data
 
-Now it the time where we assemble everything in one place and create our Ravyn application.
+---
+
+## Step 5: Assemble the Application
+
+Put it all together in your main application:
 
 ```python title="app.py"
 {!> ../../../docs_src/databases/edgy/example/assemble.py !}
 ```
 
-Did you notice the import of the `JWTAuthMiddleware` is inside the
-[Include](../../routing/routes.md#include) and not in the main Ravyn instance?
+**Notice the middleware placement:**
 
-**It is intentional!** Each include handles its own middlewares and to create a user and login
-you **don't want to be logged-in** and for that reason, the `JWTAuthMiddleware` is only for those
-endpoints that **require authentication**.
+The `JWTAuthMiddleware` is inside the `Include` for `/`, not in the main Ravyn instance. This is intentional!
 
-Now this assembling is actually very clean, right? Yes and the reason for that is because Ravyn
-itself promotes clean design.
+- **Public routes** (`/create`, `/login`) - No authentication needed
+- **Protected routes** (`/`) - Authentication required
 
-We have imported all the APIs directly in the `app.py` but this **is not mandatory**. You can
-take advantage of the [Include](../../routing/routes.md#include) and clean your application
-even more.
+Each `Include` can have its own middleware, giving you fine-grained control over which routes require authentication.
 
-## Refreshing the token
+---
 
-All of these APIs are great to start with but an application using JWT usually needs something
-that allows to refresh the existing token. That process can be done in many different ways.
+## Step 6: Refreshing Tokens
 
-Ravyn provides an example how to [refresh the token](../../configurations/jwt.md#the-claims) with
-details that can serve and help you with your process.
+JWT tokens expire for security. Implement token refresh to keep users logged in without re-entering credentials.
 
-The example contains ways of taking advantage of the existing tools provided by Ravyn as well
-as assumptions how to structure it.
+Ravyn provides a complete guide for implementing refresh tokens:
 
-Check out [how to implement a refresh token](../../configurations/jwt.md#the-claims).
+[See refresh token implementation →](../../configurations/jwt.md#the-claims)
 
-## Extra
+**Key concepts:**
+- Issue both access and refresh tokens
+- Access tokens expire quickly (15 minutes)
+- Refresh tokens last longer (7 days)
+- Use refresh token to get new access token
 
-Come on, give it a try, create your own version and then try to access the `home`.
+---
 
-Let us see how we could access `/` using the current setup.
+## Testing the Flow
 
-For this will be using `httpx` but you are free to use whatever client you prefer.
+Let's test the complete authentication flow using `httpx`:
 
-### Steps
-
-1. Create a user.
-2. Login and get the jwt token.
-3. Access the home `/`.
+### Complete Test Script
 
 ```python
 {!> ../../../docs_src/databases/edgy/example/access.py !}
 ```
 
-Did you notice the `Authorization` in the `headers`? Well that is because the default `api_key_header`
-from the [JWTConfig](../../configurations/jwt.md#parameters) is called `Authorization` and the
-contrib middleware from Ravyn to provide integration with Edgy uses it to validate if is passed
-in the header or not.
+### Step-by-Step
 
-Like everything in Ravyn, that is also configurable. If you change the `header` to something else
-in that config, it will automatically reflect across the contib middlewares.
+**1. Create a user:**
+```python
+response = client.post("/create", json={
+    "email": "user@example.com",
+    "password": "securepass123"
+})
+```
 
-## Conclusions
+**2. Login and get token:**
+```python
+response = client.post("/login", json={
+    "email": "user@example.com",
+    "password": "securepass123"
+})
+token = response.json()["token"]
+```
 
-This is just a simple example how you could use Edgy with the provided `JWTAuthMiddleware`
-from **Ravyn** and build a quick, yet robust, login system and access protected APIs.
+**3. Access protected route:**
+```python
+response = client.get("/", headers={
+    "Authorization": f"Bearer {token}"
+})
+```
+
+**The Authorization header:**
+
+Notice the `Authorization` header format: `Bearer {token}`. This is the default expected by [JWTConfig](../../configurations/jwt.md#parameters). The header name (`Authorization`) is configurable in JWTConfig.
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Middleware on Wrong Routes
+
+**Problem:** Auth middleware on login/register routes.
+
+```python
+# Wrong - can't login if auth is required!
+app = Ravyn(
+    middleware=[JWTAuthMiddleware(...)],  # Applies to ALL routes
+    routes=[...]
+)
+```
+
+**Solution:** Apply middleware selectively:
+
+```python
+# Correct - auth only where needed
+app = Ravyn(routes=[
+    Gateway(handler=create_user),  # No auth
+    Gateway(handler=login),        # No auth
+    Include(
+        routes=[Gateway(handler=home)],
+        middleware=[JWTAuthMiddleware(...)]  # Auth required
+    )
+])
+```
+
+### Pitfall 2: Missing Token in Requests
+
+**Problem:** Forgetting to include JWT token.
+
+```javascript
+// Wrong
+fetch('/api/profile')
+```
+
+**Solution:** Always include Authorization header:
+
+```javascript
+// Correct
+fetch('/api/profile', {
+    headers: {
+        'Authorization': `Bearer ${token}`
+    }
+})
+```
+
+### Pitfall 3: Not Handling Token Expiration
+
+**Problem:** Tokens expire, users get logged out.
+
+**Solution:** Implement refresh tokens and handle 401 errors:
+
+```javascript
+// Check for 401, refresh token, retry request
+if (response.status === 401) {
+    await refreshToken();
+    return retry(request);
+}
+```
+
+---
+
+## Best Practices
+
+### 1. Use Environment Variables
+
+```python
+# settings.py
+import os
+
+class AppSettings(RavynSettings):
+    jwt_secret: str = os.getenv("JWT_SECRET")
+    database_url: str = os.getenv("DATABASE_URL")
+```
+
+### 2. Validate Input Data
+
+```python
+from pydantic import BaseModel, EmailStr
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    
+    @validator('password')
+    def password_strength(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password too short')
+        return v
+```
+
+### 3. Handle Errors Gracefully
+
+```python
+@post("/login")
+async def login(data: dict) -> JSONResponse:
+    try:
+        auth = BackendAuthentication(**data)
+        token = await auth.authenticate()
+        return JSONResponse({"token": token})
+    except AuthenticationError:
+        return JSONResponse(
+            {"error": "Invalid credentials"},
+            status_code=401
+        )
+```
+
+### 4. Use HTTPS in Production
+
+Always use HTTPS to protect JWT tokens in transit.
+
+---
+
+## Conclusion
+
+You've built a complete, production-ready authentication system with:
+
+✅ User registration with password hashing
+✅ Login with JWT token generation  
+✅ Protected routes with middleware
+✅ Clean, maintainable code structure
+
+This is just the beginning. You can extend this with:
+- Email verification
+- Password reset
+- Role-based permissions
+- OAuth integration
+- Two-factor authentication
+
+---
+
+## Learn More
+
+- [User Models](./models.md) - Deep dive into user models
+- [JWT Middleware](./middleware.md) - Middleware configuration
+- [JWTConfig](../../configurations/jwt.md) - JWT configuration options
+- [Refresh Tokens](../../configurations/jwt.md#the-claims) - Token refresh implementation
+
+---
+
+## Next Steps
+
+- [Mongoz Example](../mongoz/example.md) - MongoDB authentication
+- [Permissions](../../permissions/index.md) - Add role-based access
+- [Testing](../../guides/more-advanced/02-testing.md) - Test your authentication
