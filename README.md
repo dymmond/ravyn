@@ -185,9 +185,9 @@ based systems.
 
 And a lot more...
 
-## Relation to Starlette and other frameworks
+## Relation to Lilya and other frameworks
 
-Ravyn uses Starlette under the hood. The reason behind this decison comes with the fact that performance is there
+Ravyn uses Lilya under the hood. The reason behind this decison comes with the fact that performance is there
 and no issues with routing.
 
 Once the application is up, all the routes are mounted and therefore the url paths are defined.
