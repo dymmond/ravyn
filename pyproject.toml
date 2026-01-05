@@ -18,7 +18,14 @@ If you love modern frameworks, you'll feel right at home, but faster, cleaner, a
 readme = "README.md"
 requires-python = ">=3.10"
 dynamic = ['version']
-authors = [{ name = "Tiago Silva", email = "tiago.silva@dymmond.com" }]
+authors = [
+    { name = "Tiago Silva", email = "tiago.silva@dymmond.com" },
+]
+maintainers = [
+    { name = "Tiago Silva", email = "tiago.silva@dymmond.com" },
+    { name = "devkral" },
+    { name = "kokoserver" },
+]
 classifiers = [
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
@@ -254,13 +261,13 @@ format = "hatch fmt && hatch fmt --check && hatch run test:check_types"
 features = ["all", "docs"]
 
 [tool.hatch.envs.docs.scripts]
-update_languages = "scripts/docs.py update-languages"
-build = "hatch run docs:update_languages; scripts/docs.py build-all"
-build_lang = "hatch run docs:update_languages; scripts/docs.py build --lang {args}"
-serve = "hatch run docs:update_languages; scripts/docs.py live"
-dev = "hatch run docs:update_languages; scripts/docs.py serve"
-serve_lang = "hatch run docs:update_languages; scripts/docs.py live --lang {args}"
-new_lang = "hatch run docs:update_languages; scripts/docs.py new-lang --lang {args}"
+update_languages = "python scripts/docs.py update-languages"
+build = "python scripts/docs.py update-languages && python scripts/docs.py build-all"
+build_lang = "python scripts/docs.py update-languages && python scripts/docs.py build --lang {args}"
+serve = "python scripts/docs.py update-languages && python scripts/docs.py live"
+dev = "python scripts/docs.py update-languages && python scripts/docs.py serve"
+serve_lang = "python scripts/docs.py update-languages && python scripts/docs.py live --lang {args}"
+new_lang = "python scripts/docs.py update-languages && python scripts/docs.py new-lang --lang {args}"
 
 [tool.hatch.envs.test]
 features = ["all", "testing"]

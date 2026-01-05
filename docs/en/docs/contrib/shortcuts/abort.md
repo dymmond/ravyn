@@ -2,7 +2,7 @@
 
 This will immediately stop the request execution.
 
-The `abort()` shortcut in Ravyn lets you **immediately stop request processing** and raise an HTTP error response—exactly
+The `abort()` shortcut in Ravyn lets you **immediately stop request processing** and raise an HTTP error response. exactly
 like Flask's `abort()`, but async-native and fully integrated into Ravyn's exception system.
 
 It provides a concise, expressive way to signal HTTP errors from any handler, without manually raising or returning response objects.

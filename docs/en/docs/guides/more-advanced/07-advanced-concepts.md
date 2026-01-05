@@ -23,7 +23,6 @@ Permissions are declared using `BasePermission` and can be globally or locally a
 from ravyn.permissions import BasePermission
 from ravyn import Request
 
-
 class IsAdmin(BasePermission):
     def has_permission(self, request: Request) -> bool:  # or async def has_permission(...)
         return request.headers.get("X-ADMIN") == "true"
@@ -33,7 +32,6 @@ class IsAdmin(BasePermission):
 
 ```python
 from ravyn import get, HTTPException
-
 
 @get("/admin", permissions=[IsAdmin])
 def admin_dashboard() -> dict:
@@ -58,7 +56,6 @@ Observables provide an event-driven model in Ravyn to emit and listen for events
 ```python
 from ravyn import observable
 
-
 @observable(sender=["user_created"])
 def handle_user_created(payload: dict) -> None: ...
 ```
@@ -69,7 +66,6 @@ When declaring the `sender` automatically will trigger the event for those `list
 
 ```python
 from ravyn import observable
-
 
 @observable(listen=["user_created"])
 def handle_user_created() -> None:
@@ -92,7 +88,6 @@ from loguru import logger
 
 from ravyn import RavynInterceptor
 from lilya.types import Receive, Scope, Send
-
 
 class LoggingInterceptor(RavynInterceptor):
     async def intercept(self, scope: "Scope", receive: "Receive", send: "Send") -> None:
@@ -165,12 +160,10 @@ allows developers to integrate various data types without being constrained to s
 from typing import Any
 from ravyn.encoders import Encoder
 
-
 class Money:
     def __init__(self, amount: float, currency: str):
         self.amount = amount
         self.currency = currency
-
 
 class MoneyEncoder(Encoder):
     def is_type(self, value: any) -> bool:
@@ -216,7 +209,6 @@ Extensions allow you to add new functionality or integrate third-party systems i
 ```python
 from ravyn import Extension
 
-
 class MyDBExtension(Extension):
     def extend(self, app):
         app.state.db = connect_to_database()
@@ -243,13 +235,13 @@ More [details](../../extensions.md) can be found with a lot more examples to go 
 
 This document covered:
 
-✅ Permissions for access control
-✅ Observables for event-driven communication
-✅ Interceptors to wrap request/response
-✅ Decorators for reusable logic
-✅ Encoders for custom serialization
-✅ Extensions for third-party integrations
+Permissions for access control
+Observables for event-driven communication
+Interceptors to wrap request/response
+Decorators for reusable logic
+Encoders for custom serialization
+Extensions for third-party integrations
 
 These features together form a powerful advanced toolkit to build modular and maintainable Ravyn applications.
 
-👉 Ready to supercharge your app with high-performance caching? Continue to [caching](./08-caching) to learn about Ravyn’s caching system with memory and Redis support.
+👉 Ready to supercharge your app with high-performance caching? Continue to [caching](./08-caching.md) to learn about Ravyn’s caching system with memory and Redis support.

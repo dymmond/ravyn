@@ -1,439 +1,434 @@
 # Responses
 
-Like every application, there are many different responses that can be used for different use cases and scenarios.
+Responses determine how your API sends data back to clients. Ravyn supports multiple response types from simple JSON to file downloads, templates, and streaming. all with clean, type-safe syntax.
 
-Ravyn having `Lilya` under the hood also means that all available responses from it simply just work.
+## What You'll Learn
 
-You simply just need to decide which type of response your function will have and let `Ravyn` take care of the rest.
+- Available response types and when to use them
+- Returning JSON with different serializers (ORJSON, UJSON)
+- Serving templates, files, and streams
+- Managing status codes
+- Adding responses to OpenAPI documentation
 
-!!! Tip
+## Quick Start
 
-    Ravyn automatically understands if you are typing/returning a **dataclass**,
-    a **Pydantic dataclass** or a **Pydantic model** and converts
-    them automatically into a [JSON response](#jsonresponse).
-
-## Ravyn responses and the application
-
-The available responses from `Ravyn` are:
-
-* `Response`
-* `JSON`
-* `ORJSON`
-* `UJSON`
-* `Template`
-* `Redirect`
-* `File`
-* `Stream`
-
-## Important requirements
-
-Some responses use extra dependencies, such as [UJSON](#ujson) and [ORJSON](#orjson). To use these
-responses, you need to install:
-
-```shell
-$ pip install ujson orjson
-```
-
-This will allow you to use the [ORJSON](#orjson) and [UJSON](#ujson) as well as the
-[UJSONResponse](#ujsonresponse) and [ORJSONResponse](#orjsonresponse) in your projects.
-
-### Response
-
-Classic and generic `Response` that fits almost every single use case out there. It behaves like lilya `make_response` with a plain `Response` by default.
-It has a special mode for `media_type="application/json"` (used by handlers) in which it behaves like `make_response` with a plain `JSONResponse`.
-The special mode has an exception for strings, so you can return in handlers a string object without having it jsonified.
+### Simple JSON Response
 
 ```python
-{!> ../../../docs_src/responses/response.py !}
-```
-
-**Or a unique custom response**:
-
-```python
-{!> ../../../docs_src/responses/custom.py !}
-```
-
-Ravyn supports good design, structure and practices but does not force you to follow specific rules of anything
-unless you want to.
-
-#### API Reference
-
-Check out the [API Reference for Response](./references/responses/response.md) for more details.
-
-### JSON
-
-The classic JSON response for 99% of the responses used nowaday. The `JSON` returns a
-`JSONResponse` (ORJSON).
-
-```python
-{!> ../../../docs_src/responses/json.py !}
-```
-
-#### API Reference
-
-Check out the [API Reference for JSON](./references/responses/json.md) for more details.
-
-### JSONResponse (Lilya)
-
-You can always use directly the `JSONResponse` from Lilya without using the Ravyn wrapper.
-
-```python
-from lilya.responses import JSONResponse as JSONResponse
-```
-
-
-#### API Reference
-
-Check out the [API Reference for JSONResponse](./references/responses/json-response.md) for more details.
-
-### ORJSON
-
-Super fast JSON serialization/deserialization response.
-
-```python
-{!> ../../../docs_src/responses/orjson.py !}
-```
-
-!!! Warning
-    Please read the [important requirements](#important-requirements) before using this response.
-
-!!! Check
-    More details about the ORJSON can be [found here](https://github.com/ijl/orjson).
-
-#### API Reference
-
-Check out the [API Reference for OrJSON](./references/responses/orjson.md) for more details.
-
-### ORJSONResponse
-
-You can always use directly the `ORJSONResponse` from Ravyn without using the wrapper.
-
-```python
-from ravyn.responses.encoders import ORJSONResponse
-```
-
-or alternatively (we alias JSONResponse to ORJSONResponse because it is faster)
-
-```python
+from ravyn import Ravyn, get
 from ravyn.responses import JSONResponse
+
+@get("/users")
+def list_users() -> JSONResponse:
+    return JSONResponse({"users": ["Alice", "Bob"]})
+
+app = Ravyn()
+app.add_route(list_users)
 ```
 
-#### API Reference
+### Auto-Conversion (Recommended)
 
-Check out the [API Reference for ORJSONResponse](./references/responses/orjson-response.md) for more details.
-
-### UJSON
-
-Another super fast JSON serialization/deserialization response.
+Ravyn automatically converts Pydantic models, dataclasses, and dicts to JSON:
 
 ```python
-{!> ../../../docs_src/responses/ujson.py !}
+from ravyn import Ravyn, get
+from pydantic import BaseModel
+
+class User(BaseModel):
+    name: str
+    email: str
+
+@get("/user")
+def get_user() -> User:
+    return User(name="Alice", email="alice@example.com")
+    # Automatically converted to JSONResponse!
+
+app = Ravyn()
+app.add_route(get_user)
 ```
 
-!!! Warning
-    Please read the [important requirements](#important-requirements) before using this response.
+!!! tip
+    Return Pydantic models, dataclasses, or dicts directly. Ravyn converts them to JSON automatically.
 
-!!! Check
-    More details about the UJSON can be [found here](https://github.com/ultrajson/ultrajson).
-    For JSONResponse the way of doing it the same as ORJSONResponse and UJSONResponse.
+---
 
-#### API Reference
+## Available Response Types
 
-Check out the [API Reference for UJSON](./references/responses/ujson.md) for more details.
+| Response | Use Case | Example |
+|----------|----------|---------|
+| `JSONResponse` | API responses (default) | `{"status": "ok"}` |
+| `TemplateResponse` | HTML pages | Jinja2 templates |
+| `RedirectResponse` | Redirects | Login → Dashboard |
+| `FileResponse` | File downloads | PDFs, images |
+| `StreamingResponse` | Large data | Video streaming |
+| `PlainTextResponse` | Plain text | Simple messages |
 
-### UJSONResponse
+---
 
-You can always use directly the `UJSONResponse` from Ravyn without using the wrapper.
+## JSON Responses
+
+### JSONResponse (ORJSON - Fastest)
+
+Ravyn uses ORJSON by default for maximum performance:
+
+```python
+from ravyn import get
+from ravyn.responses import JSONResponse
+
+@get("/data")
+def get_data() -> JSONResponse:
+    return JSONResponse({
+        "items": [1, 2, 3],
+        "total": 3
+    })
+```
+
+### Direct Import
+
+```python
+from ravyn.responses import JSONResponse  # ORJSON-based
+```
+
+### UJSONResponse (Alternative)
+
+Another fast JSON serializer:
 
 ```python
 from ravyn.responses.encoders import UJSONResponse
+
+@get("/data")
+def get_data() -> UJSONResponse:
+    return UJSONResponse({"message": "Using UJSON"})
 ```
 
-#### API Reference
+!!! warning
+    UJSON and ORJSON require installation: `pip install ujson orjson`
 
-Check out the [API Reference for UJSONResponse](./references/responses/ujson-response.md) for more details.
+### Status Codes
 
-### Template
-
-As the name suggests, it is the response used to render HTML templates.
-
-This response returns a `TemplateResponse`.
+Control status codes in multiple ways:
 
 ```python
-{!> ../../../docs_src/responses/template.py !}
+from ravyn import get, post
+from ravyn.responses import JSONResponse
+
+# Option 1: In the response
+@get("/method1")
+def method1() -> JSONResponse:
+    return JSONResponse({"created": True}, status_code=201)
+
+# Option 2: In the handler decorator
+@post("/method2", status_code=201)
+def method2() -> JSONResponse:
+    return JSONResponse({"created": True})
+
+# Option 3: Both (response takes precedence!)
+@post("/method3", status_code=201)
+def method3() -> JSONResponse:
+    return JSONResponse({"created": True}, status_code=202)
+    # Returns 202, not 201!
 ```
 
-Note that TemplateResponse uses the name `template_name` instead of `name` of Template and requires the `template_engine` attribute of application.
-This can be very confusing when mixing both.
+**Priority:** Response `status_code` > Handler `status_code`
 
-#### API Reference
+---
 
-Check out the [API Reference for Template](./references/responses/template.md) for more details.
+## Template Responses
 
-####  Async templates
-
-If you want to iterate over QuerySets of Edgy you may need to checkout:
-[Async Templates](./configurations/template.md) how to enable the async feature of
-jinja.
-
-### Redirect
-
-As the name indicates, it is the response used to redirect to another endpoint/path.
-
-This response returns a `ResponseRedirect`.
+Render HTML templates with Jinja2:
 
 ```python
-{!> ../../../docs_src/responses/redirect.py !}
+from ravyn import get
+from ravyn.responses import Template
+
+@get("/profile")
+def profile(name: str) -> Template:
+    return Template(
+        name="profile.html",
+        context={"user_name": name}
+    )
 ```
 
-#### API Reference
+### Setup Template Engine
 
-Check out the [API Reference for Redirect](./references/responses/redirect.md) for more details.
-
-### File
-
-The File response sends a file. This response returns a `FileResponse`.
+Configure in settings:
 
 ```python
-{!> ../../../docs_src/responses/file.py !}
+from ravyn import RavynSettings
+from ravyn.configurations import TemplateConfig
+
+class Settings(RavynSettings):
+    @property
+    def template_config(self) -> TemplateConfig:
+        return TemplateConfig(directory="templates")
 ```
 
-#### API Reference
+> [!INFO]
+> For async templates (e.g., iterating over Edgy QuerySets), see [Template Configuration](./configurations/template.md).
 
-Check out the [API Reference for File](./references/responses/file.md) for more details.
+---
 
-### Stream
+## Redirect Responses
 
-The Stream response uses the `StreamResponse`.
+Redirect users to different URLs:
 
 ```python
-{!> ../../../docs_src/responses/stream.py !}
+from ravyn import get, post
+from ravyn.responses import Redirect
+
+@post("/login")
+def login(username: str, password: str) -> Redirect:
+    # Authenticate user...
+    return Redirect(path="/dashboard")
+
+@get("/old-page")
+def old_page() -> Redirect:
+    return Redirect(path="/new-page", status_code=301)  # Permanent redirect
 ```
 
-#### API Reference
+---
 
-Check out the [API Reference for Stream](./references/responses/stream.md) for more details.
+## File Responses
 
-## Important notes
-
-[Template](#template), [Redirect](#redirect), [File](#file) and [Stream](#stream) are wrappers
-around the Lilya `TemplateResponse`, `RedirectResponse`, `FileResponse` and `StreamResponse`.
-
-Those responses are also possible to be used directly without the need of using the wrapper.
-
-The wrappers, like Lilya, also accept the classic parameters such as `headers` and `cookies`.
-
-## Response status codes
-
-You need to be mindful when it comes to return a specific status code when using
-[JSON](#json), [ORJSON](#orjson) and [UJSON](#ujson) wrappers.
-
-Ravyn allows you to pass the status codes via [handler](./routing/handlers.md) and directly via
-return of that same response but the if the handler has a `status_code` declared, the returned
-`status_code` **takes precedence**.
-
-Let us use an example to be more clear. This example is applied to `JSON`, `UJSON` and `ORJSON`.
-
-### Status code without declaring in the handler
+Send files for download:
 
 ```python
-{!> ../../../docs_src/responses/status_direct.py !}
+from ravyn import get
+from ravyn.responses import File
+
+@get("/download")
+def download_report() -> File:
+    return File(
+        path="/reports/monthly.pdf",
+        filename="report.pdf"
+    )
+
+@get("/image")
+def get_image() -> File:
+    return File(
+        path="/images/logo.png",
+        media_type="image/png"
+    )
 ```
 
-In this example, the returned status code will be `202 Accepted` as it was declared directly in the
-response and not in the handler.
+---
 
-### Status code declared in the handler
+## Streaming Responses
+
+Stream large responses:
 
 ```python
-{!> ../../../docs_src/responses/status_handler.py !}
+from ravyn import get
+from ravyn.responses import Stream
+
+async def generate_data():
+    for i in range(1000):
+        yield f"data: {i}\n\n"
+
+@get("/stream")
+async def stream_data() -> Stream:
+    return Stream(generate_data())
 ```
 
-In this example, the returned status code will also be `202 Accepted` as it was declared directly
-in the handler response and not in the handler.
+---
 
-### Status code declared in the handler and in the return
+## Other Response Types
 
-Now what happens if we declare the status_code in both?
+### Plain Text
 
 ```python
-{!> ../../../docs_src/responses/status_both.py !}
+from ravyn.responses import PlainText
+
+@get("/health")
+def health() -> PlainText:
+    return PlainText("OK")
 ```
 
-This **will return 202 Accepted** and not `201 Created` and the reason for that is because the
-**return takes precedence** over the handler.
+### Direct Returns
 
-## OpenAPI Responses
-
-This is a special attribute that is used for OpenAPI specification purposes and can be created and added to a specific handler.
-You can add one or multiple different responses into your specification.
+Return basic Python types directly:
 
 ```python
-from typing import Union
+@get("/string")
+def return_string() -> str:
+    return "Hello, World!"
 
-from ravyn import post
+@get("/dict")
+def return_dict() -> dict:
+    return {"message": "Hello"}
+
+@get("/list")
+def return_list() -> list:
+    return [1, 2, 3]
+```
+
+Ravyn automatically wraps these in appropriate responses.
+
+---
+
+## OpenAPI Response Documentation
+
+Document multiple response types in your OpenAPI spec:
+
+```python
+from ravyn import get, post
 from ravyn.openapi.datastructures import OpenAPIResponse
 from pydantic import BaseModel
 
-
-class ItemOut(BaseModel):
+class Item(BaseModel):
     sku: str
     description: str
-
-
-@post(path='/create', summary="Creates an item", responses={200: OpenAPIResponse(model=ItemOut, description=...)})
-async def create() -> Union[None, ItemOut]:
-    ...
-```
-
-This will add an extra response description and details to your OpenAPI spec handler definition.
-
-### API Reference
-
-Check out the [API Reference for OpenAPIResponse](./references/responses/openapi-response.md) for more details.
-
-### Important
-
-When adding an `OpenAPIResponse` you can also vary and override the defaults of each handler. For
-example, the `@post` defaults to 201 but you might want to add a different response.
-
-```python hl_lines="13"
-from typing import Union
-
-from ravyn import post
-from ravyn.openapi.datastructures import OpenAPIResponse
-from pydantic import BaseModel
-
-
-class ItemOut(BaseModel):
-    sku: str
-    description: str
-
-
-@post(path='/create', summary="Creates an item", responses={201: OpenAPIResponse(model=ItemOut, description=...)})
-async def create() -> Union[None, ItemOut]:
-    ...
-```
-
-You also might want to add more than just one response to the handler, for instance, a `401` or any
-other.
-
-```python hl_lines="19-20"
-from typing import Union
-
-from ravyn import post
-from ravyn.openapi.datastructures import OpenAPIResponse
-from pydantic import BaseModel
-
-
-class ItemOut(BaseModel):
-    sku: str
-    description: str
-
 
 class Error(BaseModel):
     detail: str
-    line_number: int
 
-
-@post(path='/create', summary="Creates an item", responses={
-    201: OpenAPIResponse(model=ItemOut, description=...),
-    401: OpenAPIResponse(model=Error, description=...),
-}
-      )
-async def create() -> Union[None, ItemOut]:
-    ...
+@post(
+    "/items",
+    responses={
+        201: OpenAPIResponse(model=Item, description="Item created"),
+        400: OpenAPIResponse(model=Error, description="Validation error"),
+        401: OpenAPIResponse(model=Error, description="Not authorized")
+    }
+)
+def create_item() -> Item:
+    return Item(sku="ABC123", description="New item")
 ```
 
-### Lists
+### List Responses
 
-What if you want to specify in the response that you would like to have a list (array) of
-returned objects?
-
-Let us imagine we want to return a list of an item in one endpoint and a list of users in another.
-
-```python hl_lines="19 26"
-from typing import Union
-
-from ravyn import post
-from ravyn.openapi.datastructures import OpenAPIResponse
-from pydantic import BaseModel, EmailStr
-
-
-class ItemOut(BaseModel):
-    sku: str
-    description: str
-
-
-class UserOut(BaseModel):
-    name: str
-    email: EmailStr
-
-
-@get(path='/items', summary="Get all the items", responses={
-    201: OpenAPIResponse(model=[ItemOut], description=...),
-}
-     )
-async def get_items() -> Union[None, ItemOut]:
-    ...
-
-
-@get(path='/users', summary="Get all the users", responses={
-    201: OpenAPIResponse(model=[UserOut], description=...),
-}
-     )
-async def get_items() -> Union[None, UserOut]:
-    ...
-```
-
-As you could notice, we simply added `[]` in the model to reflect a list in the OpenAPI
-specification. That simple.
-
-#### Errors
-
-A `ValueError` is raised in the following scenarios:
-
-* You try to pass a model than one pydantic model into a list. The OpenAPIResponse is a mere
-representation of a response, so be compliant.
-* You try to pass a model that is not a subclass of a Pydantic `BaseModel`.
-* You try to pass a list of non Pydantic `BaseModels`.
-
-When one of these scenarios occur, the following error will be raised.
-
-> The representation of a list of models in OpenAPI can only be a total of one. Example: OpenAPIResponse(model=[MyModel])
-
-## Other responses
-
-There are other responses you can have that does not necessessarily have to be the ones provided here. Every case is
-unique and you might want to return directly a `string`, a `dict`, an `integer`, a `list` or whatever you want.
+Document array responses:
 
 ```python
-{!> ../../../docs_src/responses/others.py !}
-```
-### Example
-
-Below we have a few examples of possible responses recognised by Ravyn automatically.
-
-**Pydantic model**
-
-```python hl_lines="13 24 27"
-{!> ../../../docs_src/extras/form/model.py !}
+@get(
+    "/items",
+    responses={
+        200: OpenAPIResponse(model=[Item], description="List of items")
+    }
+)
+def list_items() -> list[Item]:
+    return [Item(sku="A", description="Item A")]
 ```
 
-**Pydantic dataclass**
+!!! tip
+    Use `model=[YourModel]` (list syntax) to indicate array responses in OpenAPI.
 
-```python hl_lines="14 25 28"
-{!> ../../../docs_src/extras/form/pydantic_dc.py !}
-```
+---
 
-**Python dataclass**
+## Common Pitfalls & Fixes
 
-```python hl_lines="15 26 29"
-{!> ../../../docs_src/extras/form/dataclass.py !}
-```
+### Pitfall 1: Status Code Confusion
 
-**MsgSpec**
+**Problem:** Handler status_code doesn't apply.
 
 ```python
-{!> ../../../docs_src/responses/msgspec.py !}
+# Confusing - which status code wins?
+@post("/create", status_code=201)
+def create() -> JSONResponse:
+    return JSONResponse({"created": True}, status_code=202)
+    # Returns 202, not 201!
 ```
+
+**Solution:** Be consistent. use one or the other:
+
+```python
+# Clear - use handler decorator
+@post("/create", status_code=201)
+def create() -> JSONResponse:
+    return JSONResponse({"created": True})
+
+# Or use response
+@post("/create")
+def create() -> JSONResponse:
+    return JSONResponse({"created": True}, status_code=201)
+```
+
+### Pitfall 2: Missing ORJSON/UJSON
+
+**Problem:** `ModuleNotFoundError` when using fast JSON serializers.
+
+```python
+# Error if orjson not installed
+from ravyn.responses import JSONResponse
+```
+
+**Solution:** Install the dependencies:
+
+```shell
+pip install orjson ujson
+```
+
+### Pitfall 3: Template Engine Not Configured
+
+**Problem:** `ImproperlyConfigured` when using templates.
+
+```python
+# Error - no template engine configured
+@get("/page")
+def page() -> Template:
+    return Template(name="page.html", context={})
+```
+
+**Solution:** Configure template engine in settings:
+
+```python
+from ravyn import RavynSettings
+from ravyn.configurations import TemplateConfig
+
+class Settings(RavynSettings):
+    @property
+    def template_config(self) -> TemplateConfig:
+        return TemplateConfig(directory="templates")
+```
+
+### Pitfall 4: File Path Errors
+
+**Problem:** File not found when serving files.
+
+```python
+# Wrong - relative path might not work
+@get("/download")
+def download() -> File:
+    return File(path="report.pdf")  # Where is this file?
+```
+
+**Solution:** Use absolute paths:
+
+```python
+# Correct
+from pathlib import Path
+
+@get("/download")
+def download() -> File:
+    file_path = Path(__file__).parent / "reports" / "report.pdf"
+    return File(path=str(file_path))
+```
+
+---
+
+## Response Headers and Cookies
+
+All responses support headers and cookies:
+
+```python
+from ravyn.responses import JSONResponse
+
+@get("/with-headers")
+def with_headers() -> JSONResponse:
+    return JSONResponse(
+        {"message": "Hello"},
+        headers={"X-Custom-Header": "value"},
+        cookies={"session_id": "abc123"}
+    )
+```
+
+---
+
+## Next Steps
+
+Now that you understand responses, explore:
+
+- [Requests](./requests.md) - Handle incoming data
+- [Handlers](./routing/handlers.md) - Different handler types
+- [OpenAPI Configuration](./configurations/openapi/config.md) - Customize API docs
+- [Template Configuration](./configurations/template.md) - Configure templates
+- [Exceptions](./exceptions.md) - Handle errors

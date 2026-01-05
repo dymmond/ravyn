@@ -1,6 +1,6 @@
 # Interaction & Next Steps
 
-In the [previous chapter](./introduction.md), the security system—based on **Ravyn's** dependency injection system was providing the `path operation function` with a `token` as a `str`.
+In the [previous chapter](./introduction.md), the security system. based on **Ravyn's** dependency injection system was providing the `path operation function` with a `token` as a `str`.
 
 This token was extracted from the `Authorization` header of the incoming request. The security system automatically handled this, so the function didn't need to worry about how the token was retrieved. The function simply received the token as a string, which it could then use for further processing, such as verifying the token's validity or checking user permissions.
 
@@ -76,6 +76,7 @@ Now, you can directly access the current user in the *path operation functions* 
 You can use any model or data for your security requirements (in this case, a Pydantic model `User`), but you're not limited to a specific data model, class, or type.
 
 For example:
+
 - Want to use an `id` and `email` instead of a `username` in your model? No problem, just use the same tools.
 - Prefer a `str` or a `dict`? Or perhaps a database class model instance directly? It all works seamlessly.
 - If you have bots, robots, or other systems logging in instead of users, and they only need an access token, that's fine too.
@@ -90,7 +91,7 @@ Here’s the key takeaway:
 
 The security and dependency injection setup is written **once**.
 
-You can make it as complex as you need, but it only needs to be defined in one place. The beauty of **Ravyn** is its flexibility—whether simple or complex, you only write this logic once.
+You can make it as complex as you need, but it only needs to be defined in one place. The beauty of **Ravyn** is its flexibility. whether simple or complex, you only write this logic once.
 
 And once it's set up, you can reuse it across **thousands of endpoints** (*path operations*).
 

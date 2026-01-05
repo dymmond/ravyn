@@ -10,6 +10,7 @@ after sending a response.
 Background tasks are functions that run asynchronously **after** the response is returned to the client.
 
 They're perfect for:
+
 - Sending emails
 - Writing logs
 - Triggering external webhooks
@@ -24,11 +25,9 @@ Ravyn provides a simple interface for background execution:
 ```python
 from ravyn import BackgroundTask, get
 
-
 async def notify_user(email: str):
     # Imagine this sends an email
     await some_email_function(email)
-
 
 @get("/send-notification", background=BackgroundTask(notify_user, "user@example.com"))
 def send_notification() -> dict:
@@ -46,14 +45,11 @@ You can queue multiple tasks with `BackgroundTasks`:
 ```python
 from ravyn import BackgroundTasks, post
 
-
 async def cleanup(file_path: str):
     await remove_file(file_path)
 
-
 async def log_event(event_id: int):
     await save_log(event_id)
-
 
 @post("/submit", background=BackgroundTasks(
     tasks=[
@@ -63,6 +59,33 @@ async def log_event(event_id: int):
 ))
 def submit(background: BackgroundTasks) -> dict:
     return {"status": "submitted"}
+```
+
+You can also pass background tasks via response classes:
+
+```python
+from ravyn import Ravyn, post, BackgroundTask, BackgroundTasks
+from ravyn.responses import JSONResponse
+
+def send_email(to: str):
+    print(f"Email sent to {to}")
+
+def log_event(event: str):
+    print(f"Event logged: {event}")
+
+@post("/register")
+def register(email: str) -> JSONResponse:
+    # Create multiple background tasks
+    tasks = BackgroundTasks(tasks=[
+        BackgroundTask(send_email, email),
+        BackgroundTask(log_event, "user_registered")
+    ])
+    
+    # Pass tasks via response
+    return JSONResponse(
+        {"registered": email},
+        background=tasks
+    )
 ```
 
 ---
@@ -90,8 +113,9 @@ def log():
 ## What's Next?
 
 You've now learned how to:
+
 - Add and run background tasks
 - Combine multiple tasks
 - Mix sync and async behavior
 
-👉 Next up: [dependencies](08-dependencies.md) — learn how to use `Inject`, `Injects`, and shared state across your app.
+👉 Next up: [dependencies](08-dependencies.md) .  learn how to use `Inject`, `Injects`, and shared state across your app.

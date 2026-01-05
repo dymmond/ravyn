@@ -32,7 +32,6 @@ from ravyn.utils.decorators import cache
 from ravyn.responses import JSONResponse
 from ravyn import get
 
-
 @get("/cached")
 @cache(ttl=60)  # Cache result for 60 seconds
 def cached_route() -> JSONResponse:
@@ -58,7 +57,6 @@ from ravyn.conf import RavynSettings
 from ravyn.core.caches.redis import RedisCache
 from ravyn.core.protocols.cache import CacheBackend
 
-
 class Settings(RavynSettings):
     cache_backend: CacheBackend = RedisCache("redis://localhost:6379")
 ```
@@ -74,7 +72,6 @@ You can override the default backend or TTL at the decorator level:
 ```python
 from ravyn.core.caches.memory import InMemoryCache
 from ravyn.utils.decorators import cache
-
 
 @get("/override")
 @cache(ttl=10, backend=InMemoryCache())
@@ -97,7 +94,6 @@ You can implement your own cache backend by subclassing `BaseCacheBackend`.
 
 ```python
 from ravyn.core.protocols.cache import CacheBackend
-
 
 class CustomCache(CacheBackend):
     async def get(self, key):
@@ -123,8 +119,8 @@ class CustomCache(CacheBackend):
 
 ## Summary
 
-✅ Ravyn supports in-memory and Redis caching
-✅ Decorator-based usage makes caching declarative
-✅ Custom backends and TTLs are supported
-✅ Encoders ensure correct serialization for cached content
-✅ Hooks enable flexible cache invalidation strategies
+Ravyn supports in-memory and Redis caching
+Decorator-based usage makes caching declarative
+Custom backends and TTLs are supported
+Encoders ensure correct serialization for cached content
+Hooks enable flexible cache invalidation strategies

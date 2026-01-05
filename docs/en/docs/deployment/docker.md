@@ -1,234 +1,479 @@
-# Using docker
+# Docker Deployment
 
-What is docker? Quoting them
+Imagine packing for a trip. Instead of hoping your destination has everything you need, you pack your own suitcase with clothes, toiletries, and essentials. Docker works the same way. It packages your application with everything it needs to run, ensuring it works identically everywhere.
 
-> Docker is a set of platform as a service products that use OS-level virtualization to deliver software in packages
-called containers.
+No more "it works on my machine" problems!
 
-## The conventional way
+## What You'll Learn
 
-When you deploy usually you need to:
+- What Docker is and why use it
+- Creating a Dockerfile for Ravyn
+- Docker Compose for multi-container setups
+- Production-ready Docker configuration
+- Nginx + Supervisor setup
+- Testing and deploying your container
 
-* Decide how many environments you will deploy (testing, staging, production...)
-* Prepare the requirements.
-* Prepare possible environment variables.
-* Prepare secrets to be passed onto the application.
-* Possibly, prepare the database accesses via those same environment variables.
-* Orchestration.
-* ...
+## Quick Start
 
-And in the end, a lot of hope that everything will work flawlessly in every single environment as long as those are
-exactly the same.
+### Simple Dockerfile
 
-**This is great but prompt to human mistakes**.
+```dockerfile
+FROM python:3.11-slim
 
-## The docker way
+WORKDIR /app
 
-Using docker you still need to think about infrastructure and resources for your application but reduces the
-fact that you need to install the same binaries in every single environment since it will be managed by a
-**container**.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-Imagine a container as a zip file. You simply put together all that is needed for your Ravyn to work in one place
-and "zip it" which in this case, you will "dockerize it". Which means in every single environment the binaries will
-be **exactly the same** and not reliant on humans reducing the complexity.
+COPY . .
 
-## Ravyn and docker example
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
 
-Let's assume we want to deploy a simple **Ravyn** application using docker. Assuming that external resources
-are already handled and managed by you.
+### Build and Run
 
-Let's use:
+```shell
+# Build the image
+docker build -t myapp .
 
-* [Nginx configuration](#nginx) - Web server.
-* Supervisor - Process manager.
-* Ravyn dockerized application.
+# Run the container
+docker run -d -p 8000:8000 myapp
 
-**Assumptions**:
+# Visit http://localhost:8000
+```
 
-* All of configrations will be places in a folder called `/deployment`.
-* The application will have a simple folder structure
+---
 
-    ```txt
-    .
-    ├── app
-    │   ├── __init__.py
-    │   └── main.py
-    ├── Dockerfile
-    ├── deployment/
-    │   ├── nginx.conf
-    │   └── supervisor.conf
-    └── requirements.txt
-    ```
+## What is Docker?
 
-* The requirements file
+> Docker is a platform that uses OS-level virtualization to deliver software in packages called containers.
 
-    ```txt
-    ravyn
-    uvicorn
-    nginx
-    supervisor
-    ```
+**In simple terms:** Docker creates isolated environments (containers) that include your code and all its dependencies, ensuring your app runs the same way everywhere.
 
-**As mentioned in these docs, we will be using uvicorn for our examples but you are free to use whatever you want**.
+### Why Docker?
 
-### The application
+**Traditional Deployment Problems:**
+- "Works on my machine" syndrome
+- Different environments have different dependencies
+- Manual setup on each server
+- Difficult to reproduce issues
 
-Let's start with a simple, single file application just to send an hello world.
+**Docker Solutions:**
+- Consistent environment everywhere
+- All dependencies packaged together
+- Easy to scale and replicate
+- Simplified deployment process
 
-```python title='app/main.py'
+---
+
+## Basic Dockerfile
+
+### Minimal Setup
+
+```dockerfile
+# Start from official Python image
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Run the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### With Multiple Workers
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+# Run with 4 workers for better performance
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+```
+
+---
+
+## Production-Ready Setup
+
+For production, use Nginx as a reverse proxy and Supervisor to manage processes.
+
+### Project Structure
+
+```
+.
+├── app/
+│   ├── __init__.py
+│   └── main.py
+├── deployment/
+│   ├── nginx.conf
+│   └── supervisor.conf
+├── Dockerfile
+└── requirements.txt
+```
+
+### Requirements
+
+```txt
+ravyn
+uvicorn
+nginx
+supervisor
+```
+
+### Application
+
+```python
+# app/main.py
 {!> ../../../docs_src/deployment/app.py !}
 ```
 
-### Nginx
+### Nginx Configuration
 
-Nginx is a web server that can also be used as a reverse proxy, load balancer, mail proxy and HTTP cache.
-
-You find more details about Nginx but exploring [their documentation](https://www.nginx.com/) and how to use it.
-
-Let's start by building our simple nginx application.
+Nginx acts as a reverse proxy, handling SSL, static files, and load balancing:
 
 ```nginx
 {!> ../../../docs_src/deployment/nginx.conf !}
 ```
 
-We have created a simple `nginx` configuration with some level of security to make sure we protect the application
-on every level.
+**What this does:**
+- Listens on port 80
+- Proxies requests to Uvicorn (port 8000)
+- Adds security headers
+- Handles timeouts
 
-### Supervisor
+### Supervisor Configuration
 
-Supervisor is a simple, yet powerful, process manager that allows to monitor and control a number of processes
-on a UNIX-like operating systems.
-
-[Their documentation](http://supervisord.org/) will help you to understand better how to use it.
-
-Now it is time to create a supervisor configuration.
+Supervisor manages and monitors your processes:
 
 ```ini
 {!> ../../../docs_src/deployment/supervisor.conf !}
 ```
 
-It looks complex and big but let's translate what this configuration is actually doing.
+**What this does:**
+1. Configures Supervisor daemon
+2. Manages Nginx process
+3. Manages Uvicorn process
+4. Auto-restarts on failure
 
-1. Creates the initial configurations for the `supervisor` and `supervisord`.
-2. Declares instructions how to start the [nginx](#nginx).
-3. Declares the instructions how to start the `uvicorn` and the ravyn application.
+### Production Dockerfile
 
-### Dockefile
+```dockerfile
+# Start from Python base image
+FROM python:3.11-slim
 
-The Dockerfile is where you place all the instructions needed to start your application once it is deployed,
-for example, start the [supervisor](#supervisor) which will then start all the processes declared inside.
-
-```{ .dockerfile .annotate }
-# (1)
-FROM python:3.9
-
-# (2)
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        libatlas-base-dev gfortran nginx supervisor nginx-extras
+        nginx supervisor nginx-extras && \
+    rm -rf /var/lib/apt/lists/*
 
-# (3)
-WORKDIR /src
+# Set working directory
+WORKDIR /app
 
-# (4)
-COPY ./requirements.txt /src/requirements.txt
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# (5)
-RUN pip install --no-cache-dir --upgrade -r /src/requirements.txt
+# Copy application code
+COPY ./app /app/app
 
-# (6)
-COPY ./app /src/app
-
+# Copy configuration files
 COPY deployment/nginx.conf /etc/nginx/
 COPY deployment/nginx.conf /etc/nginx/sites-enabled/default
-COPY deployment/supervisord.conf /etc/
+COPY deployment/supervisor.conf /etc/supervisor/conf.d/
 
-# (7)
-CMD ["/usr/bin/supervisord"]
+# Expose port
+EXPOSE 80
+
+# Start Supervisor (which starts Nginx and Uvicorn)
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
 ```
 
-1. Start from an official python base image.
-2. Install the minimum requirements to run the nginx and the supervisor.
-3. Set the current working directory to `/src`.
+**Dockerfile explained:**
 
-    This is where you will be putting the `requirements.txt` and the `app` directory.
+1. **Base image** - Start with Python 3.11
+2. **System packages** - Install Nginx and Supervisor
+3. **Working directory** - Set to `/app`
+4. **Dependencies** - Install Python packages
+5. **Application** - Copy your code
+6. **Configuration** - Copy Nginx and Supervisor configs
+7. **Start** - Run Supervisor (manages everything)
 
-4. Copy the requirements for your project.
+---
 
-    You should only copy the requirements and not the rest of the code and the reason for it is the **cache**
-    from docker. If the file doesn't change too often, then it will cache and the next time you need to rebuild
-    the image, it won't repeat the same steps all the time.
+## Docker Compose
 
-5. Install the requirements.
+For multi-container setups (app + database):
 
-    The `--no-cache-dir` is optional. You can simply add it to tell pip not to cache the packages locally.
+```yaml
+# docker-compose.yml
+version: '3.8'
 
-    The `--upgrade` is to make sure that pip upgrades the current installed packages to the latest.
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:pass@db:5432/myapp
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - db
+  
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=myapp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
-6. Copy the `./app` to the `/src` directory.
-
-    Also copies the necessary created `nginx.conf` and `supervisor.conf` previously created to the corresponding
-    system folders.
-
-7. Tells `supervisor` to start running. The system will be using the `supervisor.conf` file created and it will
-trigger the instructions declared like starting the nginx and uvicorn.
-
-## Build the docker image
-
-With the [Dockerfile](#dockefile) created it is now time to build the image.
+volumes:
+  postgres_data:
+```
 
 ```shell
-$ docker build -t myapp-image .
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
 ```
 
-### Test the image locally
+---
 
-You can test your image locally before deploying and see if it works as you want.
+## Building and Testing
+
+### Build the Image
 
 ```shell
-$ docker run -d --name mycontainer -p 80:80 myapp-image
+docker build -t myapp:latest .
 ```
 
-### Verify it
+### Test Locally
 
-After [building the image](#build-the-docker-image) and [start it locally](#test-the-image-locally) you can then
-check if it works as you need it to work.
+```shell
+# Run the container
+docker run -d --name myapp-container -p 80:80 myapp:latest
 
-**Example**:
+# Check if it's running
+docker ps
 
-* [http://127.0.0.1/](http://127.0.0.1/)
-* [http://127.0.0.1/users/5?q=somequery](http://127.0.0.1/users/5?q=somequery)
+# View logs
+docker logs myapp-container
 
-## Important
+# Stop the container
+docker stop myapp-container
 
-It was given an example of how to build some files similar to the ones needed for a given deployment.
+# Remove the container
+docker rm myapp-container
+```
 
-**You should always check and change any of the examples to fit your needs and make sure it works for you**
+### Verify Endpoints
 
-## OpenAPI docs
+Test your application:
 
-Ravyn provides the [OpenAPI](../configurations/openapi/config.md) documentation ready to be used and always active
-and you can acess via:
+- [http://localhost/](http://localhost/)
+- [http://localhost/users/5?q=test](http://localhost/users/5?q=test)
 
-* [http://127.0.0.1/swagger](http://127.0.0.1/docs/swagger)
-* [http://127.0.0.1/redoc](http://127.0.0.1/docs/redoc)
-* [http://127.0.0.1/elements](http://127.0.0.1/docs/elements)
-* [http://127.0.0.1/rapidoc](http://127.0.0.1/docs/rapidoc)
+### OpenAPI Documentation
 
+Access API docs (if enabled):
 
-### Documentation in production
+- [http://localhost/docs/swagger](http://localhost/docs/swagger)
+- [http://localhost/docs/redoc](http://localhost/docs/redoc)
+- [http://localhost/docs/elements](http://localhost/docs/elements)
 
-By design, the docs will be always available but majority of the applications will not have the documentation
-available in production for many reasons.
+---
 
-To disable the documentation for being generated you can simply use the internal flag `enable_openapi`.
+## Disabling OpenAPI in Production
 
-```python hl_lines="21"
+By default, OpenAPI docs are enabled. Disable them in production:
+
+### Via Code
+
+```python
 {!> ../../../docs_src/deployment/flag.py !}
 ```
 
-Or do it via your [custom settings](../application/settings.md#custom-settings)
+### Via Settings
 
 ```python
 {!> ../../../docs_src/deployment/settings.py !}
 ```
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Large Image Size
+
+**Problem:** Docker image is too large.
+
+**Solution:** Use multi-stage builds:
+
+```dockerfile
+# Build stage
+FROM python:3.11 as builder
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Runtime stage
+FROM python:3.11-slim
+WORKDIR /app
+COPY --from=builder /root/.local /root/.local
+COPY . .
+ENV PATH=/root/.local/bin:$PATH
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0"]
+```
+
+### Pitfall 2: Not Using .dockerignore
+
+**Problem:** Copying unnecessary files.
+
+**Solution:** Create `.dockerignore`:
+
+```
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.git
+.gitignore
+.env
+*.log
+```
+
+### Pitfall 3: Running as Root
+
+**Problem:** Security risk.
+
+**Solution:** Create a non-root user:
+
+```dockerfile
+FROM python:3.11-slim
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Switch to non-root user
+USER appuser
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0"]
+```
+
+---
+
+## Best Practices
+
+### 1. Use Specific Image Tags
+
+```dockerfile
+# Good - specific version
+FROM python:3.11.5-slim
+
+# Avoid - can change unexpectedly
+FROM python:latest
+```
+
+### 2. Leverage Build Cache
+
+```dockerfile
+# Copy requirements first (changes less often)
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Copy code last (changes more often)
+COPY . .
+```
+
+### 3. Use Health Checks
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:8000/health || exit 1
+```
+
+### 4. Set Resource Limits
+
+```shell
+docker run -d \
+  --memory="512m" \
+  --cpus="1.0" \
+  -p 8000:8000 \
+  myapp
+```
+
+---
+
+## Deployment to Cloud
+
+### Docker Hub
+
+```shell
+# Tag your image
+docker tag myapp:latest username/myapp:latest
+
+# Push to Docker Hub
+docker push username/myapp:latest
+```
+
+### AWS ECR
+
+```shell
+# Authenticate
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 123456789.dkr.ecr.us-east-1.amazonaws.com
+
+# Tag and push
+docker tag myapp:latest 123456789.dkr.ecr.us-east-1.amazonaws.com/myapp:latest
+docker push 123456789.dkr.ecr.us-east-1.amazonaws.com/myapp:latest
+```
+
+---
+
+## Learn More
+
+- [Docker Documentation](https://docs.docker.com/) - Official Docker docs
+- [Docker Compose](https://docs.docker.com/compose/) - Multi-container apps
+- [Uvicorn](https://www.uvicorn.org/) - ASGI server
+- [Nginx](https://nginx.org/en/docs/) - Web server
+
+---
+
+## Next Steps
+
+- [Deployment Introduction](./intro.md) - Deployment concepts
+- [Settings](../application/settings.md) - Configure your app
+- [Security](../security/index.md) - Secure your deployment

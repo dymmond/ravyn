@@ -1,78 +1,107 @@
-# gRPC Integration in Ravyn (Experimental)
+# gRPC Integration (Experimental)
+
+Imagine you're building a city with different neighborhoods that need to talk to each other. REST APIs are like sending letters. simple and universal, but slower. gRPC is like having a direct phone line. faster, more efficient, and you know exactly what format the conversation will take.
+
+Ravyn's gRPC integration lets you build high-performance microservices that speak both gRPC and HTTP.
 
 !!! Warning
-    **⚠️ Experimental Feature**
-
+    **Experimental Feature**
+    
     The gRPC integration in Ravyn is currently experimental and subject to change.
     While it is stable enough for real use-cases, APIs may evolve based on community feedback.
+
+## What You'll Learn
+
+- What gRPC is and when to use it
+- Setting up gRPC services in Ravyn
+- Exposing services via both gRPC and HTTP
+- Testing gRPC endpoints
+- Advanced gRPC features
+
+## Quick Start
+
+```python
+from ravyn import Ravyn
+from ravyn.contrib.grpc import GrpcGateway
+from ravyn.contrib.grpc.register import register_grpc_http_routes
+
+# Create gRPC gateway
+grpc_gateway = GrpcGateway(
+    path="/grpc",
+    services=[GreeterService],
+    expose_http=True
+)
+
+# Register with Ravyn
+app = Ravyn()
+register_grpc_http_routes(app, [grpc_gateway])
+```
 
 ---
 
 ## What is gRPC?
 
-[gRPC](https://grpc.io/) is a high-performance, open-source remote procedure call (RPC) framework that enables communication between services in different languages. It uses Protocol Buffers (protobuf) as its interface definition language (IDL) and supports streaming, authentication, and more.
+[gRPC](https://grpc.io/) is a high-performance, open-source Remote Procedure Call (RPC) framework that enables efficient communication between services.
 
-With gRPC, clients can call methods on a server as if they were local, enabling efficient and strongly typed communication.
+**Key Features:**
+- **Fast** - Uses HTTP/2 and binary serialization (Protocol Buffers)
+- **Strongly Typed** - Contract-first API design with `.proto` files
+- **Streaming** - Supports client, server, and bidirectional streaming
+- **Language Agnostic** - Works across Python, Go, Java, C++, and more
+- **Production Ready** - Used by Google, Netflix, Square, and others
 
-## Benefits of gRPC
+### How It Works
 
-- **Language Agnostic**: Works across multiple languages like Python, Go, Java, and more.
-- **High Performance**: Uses HTTP/2 under the hood and binary serialization (protobuf), resulting in low latency and high throughput.
-- **Streaming**: Supports client-side, server-side, and bidirectional streaming.
-- **Contract-First**: The API is defined using `.proto` files, making it clear and consistent.
-- **Tooling Support**: Comes with a rich ecosystem of code generation and debugging tools.
+1. **Define** - Write a `.proto` file describing your service
+2. **Generate** - Create code from the proto file
+3. **Implement** - Write your service logic
+4. **Deploy** - Run as a gRPC server
 
-## When Should You Use gRPC?
+---
 
-Use gRPC when:
+## When to Use gRPC
 
-- You need high performance and low latency between microservices.
-- You want strongly-typed contracts for service interfaces.
-- You need streaming capabilities.
-- You’re working in a polyglot environment where services are written in different languages.
-- Your system architecture is microservice-based or uses service mesh patterns.
+### Perfect For:
 
-Avoid gRPC when:
+**Microservices** - High-performance service-to-service communication
 
-- You need to expose APIs directly to web browsers (gRPC is not well-supported in browsers without additional setup).
-- You prefer human-readable JSON APIs.
+**Real-time Systems** - Low latency requirements
 
-## gRPC and Ravyn
+**Streaming** - Server-sent events, live updates, file uploads
 
-Ravyn supports gRPC integration via the `GrpcGateway`, allowing services to:
+**Polyglot Environments** - Services in different languages
 
-- Run as gRPC servers using `grpc.aio`.
-- Optionally expose HTTP endpoints that call into gRPC service methods.
+**Mobile Backends** - Efficient binary protocol saves bandwidth
 
-This makes it easy to write business logic once and expose it over both HTTP and gRPC.
+### Not Ideal For:
 
-## GrpcGateway Overview
+**Browser APIs** - Limited browser support (requires grpc-web)
 
-The `GrpcGateway` class bridges the world of gRPC and HTTP:
+**Public APIs** - REST/JSON is more accessible
 
-```python
-GrpcGateway(
-    path="/grpc",
-    services=[GreeterService],
-    expose_http=True,
-    http_methods=["POST"],
-    host="127.0.0.1",
-    port=50051,
-)
-```
+**Simple CRUD** - REST is simpler for basic operations
 
-### Key Parameters:
+**Human-Readable APIs** - Binary format isn't debuggable without tools
 
-- `path`: HTTP base path for the exposed routes.
-- `services`: List of gRPC service classes (must implement `__add_to_server__`).
-- `expose_http`: Whether to expose HTTP endpoints for service methods.
-- `http_methods`: Restrict allowed HTTP methods. If none are provided, all methods are allowed.
-- `is_secure`: Enables TLS if set to `True`.
-- `server_credentials`: Credentials required for TLS if `is_secure=True`.
+---
 
-## How to Use GrpcGateway with Ravyn
+## gRPC in Ravyn
 
-### Step 1: Define the gRPC Protobuf File
+Ravyn's `GrpcGateway` provides:
+
+- **Dual Protocol** - Expose services via both gRPC and HTTP
+- **Automatic Routing** - HTTP endpoints generated from proto definitions
+- **Unified Implementation** - Write once, serve both protocols
+- **TLS Support** - Secure gRPC connections
+- **Error Handling** - Proper gRPC status codes
+
+---
+
+## Step-by-Step Guide
+
+### Step 1: Define Your Service
+
+Create a `.proto` file:
 
 ```proto
 syntax = "proto3";
@@ -90,18 +119,21 @@ message HelloReply {
 }
 ```
 
-Generate Python code using `grpcio-tools`:
+### Step 2: Generate Python Code
 
 ```bash
+# Install grpcio-tools
+pip install grpcio-tools
+
+# Generate code
 python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. greeter.proto
 ```
 
-### Step 2: Implement the gRPC Service in Python
+This creates:
+- `greeter_pb2.py` - Message classes
+- `greeter_pb2_grpc.py` - Service classes
 
-To implement the gRPC service, create a class that inherits from `GreeterServicer` and implements the methods defined in
-the protobuf file.
-
-Ravyn will also use the `__add_to_server__` method to register the service with the gRPC server.
+### Step 3: Implement the Service
 
 ```python
 from greeter_pb2 import HelloReply
@@ -110,21 +142,22 @@ import grpc
 
 class GreeterService(GreeterServicer):
     async def SayHello(self, request, context):
+        # Validate input
         if request.name == "error":
             context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
             context.set_details("Invalid request")
             return HelloReply()
-
+        
+        # Return response
         return HelloReply(message=f"Hello, {request.name}!")
-
+    
     @classmethod
     def __add_to_server__(cls, instance, server):
+        """Required method for Ravyn integration"""
         add_GreeterServicer_to_server(instance, server)
 ```
 
-### Step 3: Create the GrpcGateway
-
-To create a gRPC gateway, instantiate `GrpcGateway` with the desired parameters:
+### Step 4: Create the Gateway
 
 ```python
 from ravyn.contrib.grpc import GrpcGateway
@@ -132,13 +165,26 @@ from ravyn.contrib.grpc import GrpcGateway
 grpc_gateway = GrpcGateway(
     path="/grpc",
     services=[GreeterService],
-    expose_http=True
+    expose_http=True,
+    host="127.0.0.1",
+    port=50051
 )
 ```
 
-### Step 4: Register HTTP Routes
+**Parameters:**
 
-To register the gRPC service with Ravyn, use the `register_grpc_http_routes` function:
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `path` | str | HTTP base path | Required |
+| `services` | list | gRPC service classes | Required |
+| `expose_http` | bool | Enable HTTP endpoints | `False` |
+| `http_methods` | list | Allowed HTTP methods | All |
+| `host` | str | gRPC server host | `"127.0.0.1"` |
+| `port` | int | gRPC server port | `50051` |
+| `is_secure` | bool | Enable TLS | `False` |
+| `server_credentials` | grpc.ServerCredentials | TLS credentials | `None` |
+
+### Step 5: Register with Ravyn
 
 ```python
 from ravyn import Ravyn
@@ -146,98 +192,273 @@ from ravyn.contrib.grpc.register import register_grpc_http_routes
 
 app = Ravyn()
 
+# Register gRPC routes
 register_grpc_http_routes(app, [grpc_gateway])
 ```
 
-### Step 5: Start the gRPC Server
-
-Call `await grpc_gateway.startup()` during app startup and `await grpc_gateway.shutdown()` during shutdown.
-
-## Dual Protocol: HTTP and gRPC
-
-With `GrpcGateway`, you can:
-
-- Call `/grpc/greeterservice/sayhello` using an HTTP POST with JSON payload:
-
-```json
-{
-  "name": "World"
-}
-```
-
-- Or use a gRPC client with the protobuf service definition.
-
-### HTTP Equivalent Handler
-
-The HTTP request is internally converted into a gRPC call using a simulated context. This enables one implementation
-for both protocols.
-
-## Unit Test Examples
-
-### HTTP Test:
+### Step 6: Start the Server
 
 ```python
-response = http_client.post("/grpc/greeterservice/sayhello", json={"name": "World"})
-assert response.status_code == 200
-assert response.json() == {"message": "Hello, World!"}
-```
+# In your lifespan or startup event
+await grpc_gateway.startup()
 
-### gRPC Test:
-
-```python
-async with aio.insecure_channel("127.0.0.1:50051") as channel:
-    stub = GreeterStub(channel)
-    message = await stub.SayHello("GRPC")
-    assert message == "Hello, GRPC!"
-```
-
-### Error Test:
-
-```python
-response = http_client.post("/grpc/greeterservice/sayhello", json={"name": "error"})
-assert response.status_code == 400
-assert response.json()["detail"] == "Invalid request"
-```
-
-## Advanced Use Cases
-
-- **Secure gRPC**:
-
-```python
-GrpcGateway(
-    path="/secure",
-    services=[SecureService],
-    is_secure=True,
-    server_credentials=grpc.ssl_server_credentials([...])
-)
-```
-
-- **Limiting HTTP Methods**:
-
-```python
-GrpcGateway(
-    path="/grpc",
-    services=[MyService],
-    http_methods=["POST"]
-)
-```
-
-- **Custom Route Base Path**:
-
-```python
-register_grpc_http_routes(app, [gateway], base_path="/api")
+# In your shutdown event
+await grpc_gateway.shutdown()
 ```
 
 ---
 
-## Summary
+## Dual Protocol: gRPC + HTTP
 
-With the experimental `GrpcGateway`, Ravyn provides a powerful way to combine gRPC and HTTP APIs using a shared codebase and contract. This allows developers to:
+With `expose_http=True`, your service is accessible via both protocols:
 
-- Serve both gRPC and HTTP clients.
-- Build robust microservice interfaces.
-- Leverage HTTP for debugging while running gRPC in production.
+### HTTP Request
 
-As this feature evolves, expect improvements in type safety, streaming support, and tooling integration.
+```bash
+curl -X POST http://localhost:8000/grpc/greeterservice/sayhello \
+  -H "Content-Type: application/json" \
+  -d '{"name": "World"}'
+```
 
-Want more? Let us know what features or improvements you'd like to see for gRPC support in Ravyn!
+**Response:**
+```json
+{
+  "message": "Hello, World!"
+}
+```
+
+### gRPC Request
+
+```python
+import grpc
+from greeter_pb2 import HelloRequest
+from greeter_pb2_grpc import GreeterStub
+
+async with grpc.aio.insecure_channel("127.0.0.1:50051") as channel:
+    stub = GreeterStub(channel)
+    response = await stub.SayHello(HelloRequest(name="World"))
+    print(response.message)  # "Hello, World!"
+```
+
+---
+
+## Testing Your Service
+
+### HTTP Testing
+
+```python
+from ravyn.testclient import TestClient
+
+client = TestClient(app)
+
+# Test successful request
+response = client.post("/grpc/greeterservice/sayhello", json={"name": "World"})
+assert response.status_code == 200
+assert response.json() == {"message": "Hello, World!"}
+
+# Test error handling
+response = client.post("/grpc/greeterservice/sayhello", json={"name": "error"})
+assert response.status_code == 400
+assert response.json()["detail"] == "Invalid request"
+```
+
+### gRPC Testing
+
+```python
+import grpc.aio as aio
+from greeter_pb2 import HelloRequest
+from greeter_pb2_grpc import GreeterStub
+
+async def test_grpc():
+    async with aio.insecure_channel("127.0.0.1:50051") as channel:
+        stub = GreeterStub(channel)
+        response = await stub.SayHello(HelloRequest(name="GRPC"))
+        assert response.message == "Hello, GRPC!"
+```
+
+---
+
+## Advanced Features
+
+### Secure gRPC (TLS)
+
+```python
+import grpc
+
+# Load TLS credentials
+with open("server.key", "rb") as f:
+    private_key = f.read()
+with open("server.crt", "rb") as f:
+    certificate_chain = f.read()
+
+credentials = grpc.ssl_server_credentials([(private_key, certificate_chain)])
+
+# Create secure gateway
+grpc_gateway = GrpcGateway(
+    path="/secure",
+    services=[SecureService],
+    is_secure=True,
+    server_credentials=credentials
+)
+```
+
+### Limiting HTTP Methods
+
+```python
+grpc_gateway = GrpcGateway(
+    path="/grpc",
+    services=[MyService],
+    http_methods=["POST"]  # Only allow POST
+)
+```
+
+### Custom Base Path
+
+```python
+register_grpc_http_routes(
+    app,
+    [grpc_gateway],
+    base_path="/api/v1"  # Routes become /api/v1/grpc/...
+)
+```
+
+### Multiple Services
+
+```python
+grpc_gateway = GrpcGateway(
+    path="/grpc",
+    services=[
+        GreeterService,
+        UserService,
+        ProductService
+    ],
+    expose_http=True
+)
+```
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Missing `__add_to_server__`
+
+**Problem:** Service not registered.
+
+**Solution:** Add the required method:
+
+```python
+@classmethod
+def __add_to_server__(cls, instance, server):
+    add_YourServicer_to_server(instance, server)
+```
+
+### Pitfall 2: Port Conflicts
+
+**Problem:** gRPC server fails to start.
+
+**Solution:** Use a different port:
+
+```python
+grpc_gateway = GrpcGateway(
+    path="/grpc",
+    services=[MyService],
+    port=50052  # Different port
+)
+```
+
+### Pitfall 3: Not Starting the Server
+
+**Problem:** gRPC calls fail.
+
+**Solution:** Call startup in lifespan:
+
+```python
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    await grpc_gateway.startup()
+    yield
+    await grpc_gateway.shutdown()
+
+app = Ravyn(lifespan=lifespan)
+```
+
+---
+
+## Best Practices
+
+### 1. Use Versioned Proto Files
+
+```proto
+syntax = "proto3";
+
+package myapp.v1;
+
+service UserService {
+  rpc GetUser (GetUserRequest) returns (User);
+}
+```
+
+### 2. Handle Errors Properly
+
+```python
+async def GetUser(self, request, context):
+    try:
+        user = await get_user(request.id)
+        return user
+    except UserNotFound:
+        context.set_code(grpc.StatusCode.NOT_FOUND)
+        context.set_details("User not found")
+        return User()
+```
+
+### 3. Use Streaming for Large Data
+
+```proto
+service FileService {
+  rpc DownloadFile (FileRequest) returns (stream FileChunk);
+}
+```
+
+### 4. Monitor Performance
+
+```python
+import time
+
+async def SayHello(self, request, context):
+    start = time.time()
+    result = await process_request(request)
+    duration = time.time() - start
+    logger.info(f"SayHello took {duration:.3f}s")
+    return result
+```
+
+---
+
+## Learn More
+
+- [gRPC Official Documentation](https://grpc.io/docs/) - Complete gRPC guide
+- [Protocol Buffers](https://developers.google.com/protocol-buffers) - Proto file syntax
+- [grpcio Python](https://grpc.github.io/grpc/python/) - Python gRPC library
+- [gRPC Best Practices](https://grpc.io/docs/guides/performance/) - Performance tips
+
+---
+
+## Feedback Welcome!
+
+This is an experimental feature. We'd love to hear:
+
+- How you're using gRPC in Ravyn
+- What features you'd like to see
+- Any issues or improvements
+
+[Share your feedback →](https://github.com/dymmond/ravyn/discussions)
+
+---
+
+## Next Steps
+
+- [Experimental Features](./index.md) - Other experimental features
+- [Microservices](../application/index.md) - Build microservice architectures
+- [Testing](../guides/more-advanced/02-testing.md) - Test your gRPC services

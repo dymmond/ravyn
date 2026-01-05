@@ -14,4 +14,5 @@ from ravyn import TemplateConfig
 ::: ravyn.core.config.template.TemplateConfig
     options:
         filters:
+
         - "!^model_config"

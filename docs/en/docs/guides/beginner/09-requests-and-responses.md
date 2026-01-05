@@ -12,11 +12,9 @@ Ravyn uses Pydantic to define and validate incoming request bodies:
 from pydantic import BaseModel
 from ravyn import post
 
-
 class Item(BaseModel):
     name: str
     price: float
-
 
 @post("/items")
 def create_item(data: Item) -> dict:
@@ -45,7 +43,6 @@ You can use type annotations to declare query and path parameters:
 
 ```python
 from ravyn import get
-
 
 @get("/items/{item_id}")
 def get_item(item_id: int, q: str = "") -> dict:
@@ -77,7 +74,6 @@ You can return your own response:
 ```python
 from ravyn.responses import JSONResponse
 
-
 @get("/custom")
 def custom() -> JSONResponse:
     return JSONResponse({"message": "Custom"}, status_code=201)
@@ -91,7 +87,6 @@ You can also extract headers, cookies, and file uploads via parameters:
 
 ```python
 from ravyn import Header, Cookie, UploadFile, post, File
-
 
 @post("/upload")
 async def upload(

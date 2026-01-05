@@ -12,11 +12,9 @@ Ravyn allows you to access cookies sent with incoming requests seamlessly by uti
 from pydantic import BaseModel
 from ravyn import Ravyn, Gateway, Cookie, JSONResponse, post
 
-
 class User(BaseModel):
     name: str
     email: str
-
 
 @post("/create")
 async def create_user(
@@ -31,7 +29,6 @@ async def create_user(
         "user": data.model_dump(),
         "ads_id": ads_id
     })
-
 
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
@@ -57,11 +54,9 @@ from pydantic import BaseModel, EmailStr
 from ravyn import Ravyn, Gateway, Response, post
 from ravyn.core.datastructures import Cookie
 
-
 class User(BaseModel):
     name: str
     email: EmailStr
-
 
 @post(
     path="/create",
@@ -80,7 +75,6 @@ async def create_user(data: User) -> Response:
     """
     # Your logic to create the user
     return Response(content={"message": "User created"})
-
 
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```
@@ -113,11 +107,9 @@ form data, providing flexibility in handling various input formats.
 from pydantic import BaseModel
 from ravyn import Ravyn, Gateway, Cookie, JSONResponse, post
 
-
 class User(BaseModel):
     name: str
     email: str
-
 
 @post("/create")
 async def create_user(
@@ -132,7 +124,6 @@ async def create_user(
         "user": data.model_dump(),
         "ads_id": ads_id
     })
-
 
 app = Ravyn(routes=[Gateway(handler=create_user)])
 ```

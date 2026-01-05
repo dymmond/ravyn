@@ -2,7 +2,7 @@
 
 The `ravyn.contrib.mail` module provides a **powerful, async-native email system** built for modern applications.
 
-It’s designed to be lightweight yet as powerful as other’s email framework — but without blocking your event loop.
+It’s designed to be lightweight yet as powerful as other’s email framework .  but without blocking your event loop.
 
 Ravyn leverages the [Lilya mail system](https://www.lilya.dev/contrib/mail/) and applied
 **it's own dependency injection but the rest, you can even see in the Lilya documentation**.
@@ -86,7 +86,6 @@ async def signup_handler() -> None:
 from ravyn import Ravyn
 
 app = Ravyn()
-
 
 @app.get("/welcome")
 async def send_welcome() -> dict[str, str]:
@@ -184,7 +183,6 @@ msgs = [
     EmailMessage(subject="One", to=["a@example.com"], body_text="Message one"),
     EmailMessage(subject="Two", to=["b@example.com"], body_text="Message two"),
 ]
-
 
 mailer = Mailer(backend=ConsoleBackend())
 await mailer.send_many(msgs)
@@ -341,7 +339,6 @@ from ravyn import Ravyn, JSONResponse, Request
 
 app = Ravyn()
 
-
 @app.post("/signup")
 async def signup(request: Request) -> JSONResponse:
     data = await request.json()
@@ -444,7 +441,6 @@ from ravyn.contrib.mail.dependencies import Mail
 from lilya.contrib.mail import EmailMessage
 from lilya.routing import Path
 
-
 @get(dependencies={"mailer": Mail})
 async def send_welcome(mailer: Any = Injects()) -> JSONResponse:
     msg = EmailMessage(
@@ -454,7 +450,6 @@ async def send_welcome(mailer: Any = Injects()) -> JSONResponse:
     )
     await mailer.send(msg)
     return JSONResponse({"status": "sent"})
-
 
 app = Ravyn(routes=[
     Gateway("/welcome", send_welcome)
@@ -490,7 +485,6 @@ from ravyn import Ravyn, Inject, Injects
 from ravyn.contrib.mail.dependencies import Mail
 from lilya.dependencies import Provide
 
-
 class FakeMailer:
     def __init__(self) -> None:
         self.sent = []
@@ -498,10 +492,8 @@ class FakeMailer:
     async def send(self, message: str) -> None:
         self.sent.append(message)
 
-
 app = Ravyn()
 fake = FakeMailer()
-
 
 @app.post("/test", dependencies={"mailer": Inject(lambda request: fake)})
 async def test_handler(mailer: Any = Injects()) -> dict[str, bool]:
@@ -521,7 +513,6 @@ Because `Mail` is a normal dependency, you can also use it inside background tas
 from typing import Any
 
 from ravyn.background import BackgroundTask
-
 
 @app.post("/signup", dependencies={"mailer": Mail})
 async def signup(user: dict, mailer: Mail) -> dict[str, Any]:

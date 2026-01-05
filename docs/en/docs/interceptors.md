@@ -1,218 +1,439 @@
 # Interceptors
 
-Interceptors are special Ravyn objects that implement the `InterceptorProtocol` via
-[RavynInterceptor](#ravyninterceptor).
+Interceptors let you execute code before requests reach your route handlers. They're perfect for logging, data transformation, validation, and adding cross-cutting concerns without cluttering your handlers.
 
-## What are the interceptors
+## What You'll Learn
 
-In many occasions you will find yourself needing some sort of logic that captures the request before
-hitting your final API endpoint.
+- What interceptors are and when to use them
+- Creating interceptors with RavynInterceptor
+- Applying interceptors at different levels
+- Using interceptors for logging and validation
 
-These can be extremely useful, for example, to capture some data
-before passing to the API, for logging anything particulary useful or any other useful logic.
+## Quick Start
 
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1673451429/ravyn/resources/interceptors_tyohjr.png" alt="Interceptors" />
+```python
+from ravyn import Ravyn, Gateway, get, RavynInterceptor
 
-## Overview
+class LoggingInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        print(f"Request to: {request.url.path}")
+        # Request continues to handler after this
 
-Interceptors have a set of useful capabilities inspired by
-<a href="https://en.wikipedia.org/wiki/Aspect-oriented_programming" target="_blank">AOP (Aspect Oriented Programming)</a>
-techniques. This makes it possible to:
+@get("/users")
+def list_users() -> dict:
+    return {"users": ["Alice", "Bob"]}
 
-- Add extra logic before request
-- Throw exceptions before hitting the route handler
-- Extend basic the functionality
-- Add extra logic to it. E.g: Caching, logging...
+app = Ravyn(
+    routes=[Gateway("/users", handler=list_users)],
+    interceptors=[LoggingInterceptor]
+)
+```
 
-And whatever you might see suitable.
+Every request to `/users` logs the path before the handler executes.
 
-Ravyn **does not implement** two way method execution, meaning, interceptors are used to capture
-the request but not the response.
+---
 
-## RavynInterceptor
+## What Are Interceptors?
 
-This is the main object that should be used to create your own interceptors. Every class **should**
-derive from this object and implement the `intercept` functionality.
+Interceptors capture requests **before** they reach handlers. They're inspired by Aspect-Oriented Programming (AOP) and let you:
+
+- Add logging before requests
+- Transform request data
+- Validate authentication tokens
+- Throw exceptions early
+- Add caching logic
+- Measure request timing
+
+![Interceptors Flow](https://res.cloudinary.com/dymmond/image/upload/v1673451429/ravyn/resources/interceptors_tyohjr.png)
+
+!!! warning
+    Interceptors only work **before** handlers execute. They don't intercept responses. Use [middleware](./middleware/index.md) for request/response processing.
+
+---
+
+## Creating Interceptors
+
+### Basic Interceptor
+
+All interceptors should inherit from `RavynInterceptor` and implement `intercept()`:
 
 ```python
 from ravyn import RavynInterceptor
+
+class SimpleInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        # Your logic here
+        print(f"Intercepted: {request.method} {request.url.path}")
 ```
 
-or
+### Import
 
 ```python
+from ravyn import RavynInterceptor
+
+# Or
 from ravyn.core.interceptors.interceptor import RavynInterceptor
 ```
 
-### Example
+---
 
-Let us assume you need to create one `interceptor` that will log a simple message before hitting the
-[route handler](./routing/handlers.md).
+## Practical Examples
 
-We will be creating:
-
-- A logging interceptor
-- The route handler
-
-**The logging interceptor**
+### Example 1: Request Logging
 
 ```python
-{!> ../../../docs_src/interceptors/logging.py !}
+from ravyn import RavynInterceptor
+import logging
+
+logger = logging.getLogger(__name__)
+
+class RequestLogInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        logger.info(
+            f"{request.method} {request.url.path} "
+            f"from {request.client.host}"
+        )
 ```
 
-**The application with handlers and applying the interceptor**
-
-```python hl_lines="11"
-{!> ../../../docs_src/interceptors/app.py !}
-```
-
-## Custom interceptor
-
-Is this the only way of creating an interceptor? No but **it is advised** to subclass the
-[RavynInterceptor](#ravyninterceptor) as shown above.
-
-Let us see how it would look like the same app with a custom interceptor then.
-
-**The logging interceptor**
-
-```python hl_lines="7"
-{!> ../../../docs_src/interceptors/custom/logging.py !}
-```
-
-**The application with handlers and applying the interceptor**
-
-```python hl_lines="11"
-{!> ../../../docs_src/interceptors/app.py !}
-```
-
-It is very similar correct? Yes but the main difference here happens within the
-[RavynInterceptor](#ravyninterceptor) as this one implements the `InterceptorProtocol` from
-Ravyn and therefore makes it the right way of using it.
-
-## Interceptors and levels
-
-Like everything in Ravyn works in [levels](./application/levels.md), the `interceptors` are no
-exception to this but has some constraints.
-
-- The interceptors only work on [Ravyn](./application/applications.md),
-[ChildRavyn](./routing/router.md#child-ravyn-application),
-[Router](./routing/router.md#router),
-[Gateway](./routing/routes.md#gateway),
-[WebsocketGateway](./routing/routes.md#websocketgateway) and [Include](./routing/routes.md#include)
-**and do not work on handlers directly**.
-- When working with Ravyn and ChildRavyn, the [interceptors work in isolation](#working-in-isolation).
-
-### Examples using levels
-
-Let us assume we have two interceptors. One intercepts and changes the value of the
-request parameter and another tries to parse a value into an `int` type.
-
-The examples below are just that, examples and you will not be doing too much with those but
-you can get the idea of it.
-
-**RequestParamInterceptor**
+### Example 2: Header Validation
 
 ```python
-{!> ../../../docs_src/interceptors/request_interceptor.py !}
+from ravyn import RavynInterceptor
+from ravyn.exceptions import NotAuthorized
+
+class APIKeyInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        api_key = request.headers.get("X-API-Key")
+        
+        if not api_key:
+            raise NotAuthorized("API key required")
+        
+        if not self.validate_api_key(api_key):
+            raise NotAuthorized("Invalid API key")
+    
+    def validate_api_key(self, key: str) -> bool:
+        # Your validation logic
+        return key in ["valid-key-1", "valid-key-2"]
 ```
 
-**CookieInterceptor**
+### Example 3: Request Timing
 
 ```python
-{!> ../../../docs_src/interceptors/cookie_interceptor.py !}
+from ravyn import RavynInterceptor
+import time
+
+class TimingInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        request.state.start_time = time.time()
+        # Handler executes after this
+        # Note: Can't measure total time here (no response interception)
 ```
 
-**The application**
-
-The application calling both interceptors on different levels, the `app` level and the `gateway`
-level.
-
-```python hl_lines="12-13"
-{!> ../../../docs_src/interceptors/app_with_levels.py !}
-```
-
-The same logic can algo be applied to [Include](./routing/routes.md#include) and
-[nested Include](./routing/routes.md#nested-routes).
-
-All of the levels described here allow to pass `interceptors`.
-
-## Working in isolation
-
-Every **Ravyn** and **ChildRavyn** application is considered independent, which means,
-the resources can be "isolated" but Ravyn also allows the share of the resources across parent
-and children.
-
-For example, using the example from before, adding `RequestParamInterceptor` on the top of
-an Ravyn app and adding the `CookieInterceptor` in the ChildRavyn will work separately.
-
-```python hl_lines="17 22"
-{!> ../../../docs_src/interceptors/child.py !}
-```
-
-The `RequestParamInterceptor` will work for the routes of the Ravyn and subsequent chilren,
-the ChildRavyn, which means, you can also achieve the same result by doing this:
-
-```python hl_lines="17"
-{!> ../../../docs_src/interceptors/child_shared.py !}
-```
-
-## Interceptors and the application
-
-To add interceptors to the main application as defaults, the way of doing it is by passing the
-parameters when creating the application.
-
-```python hl_lines="13"
-{!> ../../../docs_src/interceptors/interceptors_and_app.py !}
-```
-
-## Interceptors and settings module
-
-Like everything in Ravyn, the settings also allow to pass the interceptors instead of passing
-directly when creating the Ravyn instance. A cleaner way of doing it.
-
-**settings.py**
+### Example 4: Data Transformation
 
 ```python
-{!> ../../../docs_src/interceptors/settings.py !}
+from ravyn import RavynInterceptor
+
+class NormalizeDataInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        # Modify request before handler
+        if hasattr(request.state, "user_input"):
+            request.state.user_input = request.state.user_input.strip().lower()
 ```
 
-**app.py**
+---
+
+## Applying Interceptors at Different Levels
+
+Interceptors work at multiple levels in Ravyn's hierarchy.
+
+### Application Level
+
+Apply to all routes:
 
 ```python
-{!> ../../../docs_src/interceptors/clean_app.py !}
+from ravyn import Ravyn
+
+app = Ravyn(
+    routes=[...],
+    interceptors=[LoggingInterceptor, APIKeyInterceptor]
+)
 ```
 
-With the `settings` and the `app` created you can simply start the server and pass the newly
-settings module.
+### Gateway Level
 
-=== "MacOS & Linux"
+Apply to specific routes:
 
-    ```shell
-    RAVYN_SETTINGS_MODULE=settings.AppSettings uvicorn src:app --reload
+```python
+from ravyn import Gateway, get
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
+@get()
+def protected_route() -> dict:
+    return {"data": "sensitive"}
 
-=== "Windows"
+app = Ravyn(routes=[
+    Gateway(
+        "/protected",
+        handler=protected_route,
+        interceptors=[APIKeyInterceptor]
+    )
+])
+```
 
-    ```shell
-    $env:RAVYN_SETTINGS_MODULE="settings.AppSettings"; uvicorn src:app --reload
+### Include Level
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
+Apply to groups of routes:
 
-!!! Note
-    You should replace the location of the settings in the example by the one you have
-    in your project. This was used as example only.
+```python
+from ravyn import Include
 
-## API Reference
+app = Ravyn(routes=[
+    Include(
+        "/api",
+        namespace="myapp.api.urls",
+        interceptors=[LoggingInterceptor, APIKeyInterceptor]
+    )
+])
+```
 
-Check out the [API Reference for Interceptors](./references/interceptors.md) for more details.
+### Multiple Levels
+
+Interceptors execute from parent to child:
+
+```python
+from ravyn import Ravyn, Include, Gateway
+
+# Execution order: App → Include → Gateway → Handler
+app = Ravyn(
+    routes=[
+        Include(
+            "/api",
+            interceptors=[LoggingInterceptor],
+            routes=[
+                Gateway(
+                    "/users",
+                    handler=list_users,
+                    interceptors=[APIKeyInterceptor]
+                )
+            ]
+        )
+    ],
+    interceptors=[TimingInterceptor]
+)
+
+# Order: TimingInterceptor → LoggingInterceptor → APIKeyInterceptor → Handler
+```
+
+---
+
+## Interceptors with ChildRavyn
+
+ChildRavyn applications have isolated interceptors:
+
+```python
+from ravyn import Ravyn, ChildRavyn, Include
+
+class ParentInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        print("Parent interceptor")
+
+class ChildInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        print("Child interceptor")
+
+child_app = ChildRavyn(
+    routes=[...],
+    interceptors=[ChildInterceptor]
+)
+
+app = Ravyn(
+    routes=[Include("/child", app=child_app)],
+    interceptors=[ParentInterceptor]
+)
+
+# Requests to /child/* run: ParentInterceptor → ChildInterceptor → Handler
+```
+
+---
+
+## Interceptors in Settings
+
+Keep your code clean by defining interceptors in settings:
+
+```python
+# settings.py
+from ravyn import RavynSettings
+
+class AppSettings(RavynSettings):
+    @property
+    def interceptors(self):
+        return [
+            "myapp.interceptors.LoggingInterceptor",
+            "myapp.interceptors.APIKeyInterceptor"
+        ]
+```
+
+```python
+# app.py
+from ravyn import Ravyn
+
+app = Ravyn()  # Interceptors loaded from settings
+```
+
+Run with settings:
+
+```shell
+# MacOS/Linux
+RAVYN_SETTINGS_MODULE='settings.AppSettings' uvicorn app:app
+
+# Windows
+$env:RAVYN_SETTINGS_MODULE="settings.AppSettings"; uvicorn app:app
+```
+
+---
+
+## Custom Interceptor (Without RavynInterceptor)
+
+You can create interceptors without inheriting from `RavynInterceptor`, but it's **not recommended**:
+
+```python
+class CustomInterceptor:
+    async def intercept(self, request):
+        print("Custom interceptor")
+```
+
+!!! tip
+    Always use `RavynInterceptor` as it implements the `InterceptorProtocol` correctly and provides better type safety.
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Trying to Intercept Responses
+
+**Problem:** Interceptors only work on requests, not responses.
+
+```python
+# Won't work - can't intercept response
+class ResponseInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        # Can't access response here!
+        pass
+```
+
+**Solution:** Use middleware for response processing:
+
+```python
+# Use middleware instead
+from lilya.middleware import DefineMiddleware
+
+class ResponseMiddleware:
+    async def __call__(self, request, call_next):
+        response = await call_next(request)
+        # Process response here
+        return response
+
+app = Ravyn(
+    middleware=[DefineMiddleware(ResponseMiddleware)]
+)
+```
+
+### Pitfall 2: Using Interceptors on Handlers
+
+**Problem:** Interceptors don't work directly on handler decorators.
+
+```python
+# Won't work
+@get("/users", interceptors=[LoggingInterceptor])  # Not supported
+def list_users() -> dict:
+    return {"users": []}
+```
+
+**Solution:** Use Gateway, Include, or application level:
+
+```python
+# Use Gateway
+app = Ravyn(routes=[
+    Gateway(
+        "/users",
+        handler=list_users,
+        interceptors=[LoggingInterceptor]
+    )
+])
+```
+
+### Pitfall 3: Forgetting Async
+
+**Problem:** Interceptor method is not async.
+
+```python
+# Missing async
+class MyInterceptor(RavynInterceptor):
+    def intercept(self, request):  # Should be async!
+        print("Intercepted")
+```
+
+**Solution:** Always use `async def`:
+
+```python
+# Correct
+class MyInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        print("Intercepted")
+```
+
+### Pitfall 4: Modifying Request Incorrectly
+
+**Problem:** Trying to modify immutable request properties.
+
+```python
+# Can't modify request.url directly
+class BadInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        request.url.path = "/new-path"  # Won't work!
+```
+
+**Solution:** Use `request.state` for custom data:
+
+```python
+# Use request.state
+class GoodInterceptor(RavynInterceptor):
+    async def intercept(self, request):
+        request.state.custom_data = "value"
+        # Access in handler via request.state.custom_data
+```
+
+---
+
+## When to Use Interceptors vs Middleware
+
+| Feature | Interceptors | Middleware |
+|---------|-------------|------------|
+| **Timing** | Before handler only | Before & after handler |
+| **Scope** | Specific routes/levels | All requests |
+| **Response Access** | No | Yes |
+| **Granular Control** | Yes (per route) | No (global) |
+| **Use Case** | Route-specific logic | Cross-cutting concerns |
+
+**Use Interceptors for:**
+- Route-specific validation
+- Logging specific endpoints
+- Pre-processing for certain routes
+
+**Use Middleware for:**
+- Authentication (all routes)
+- Response modification
+- CORS headers
+- Request/response logging
+
+---
+
+## Next Steps
+
+Now that you understand interceptors, explore:
+
+- [Middleware](./middleware/index.md) - Request/response processing
+- [Exception Handlers](./exception-handlers.md) - Handle errors
+- [Permissions](./permissions/index.md) - Access control
+- [Application Levels](./application/levels.md) - Understand hierarchy
+- [API Reference](./references/interceptors.md) - Complete interceptor reference

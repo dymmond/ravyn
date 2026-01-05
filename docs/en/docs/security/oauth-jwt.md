@@ -20,7 +20,6 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4
     The previous example was extracted from [https://jwt.io/](https://jwt.io) if you decide to play around
     and see what you can do with it.
 
-
 JWT tokens are not encrypted, meaning their contents can be read if intercepted. However, they are signed, ensuring you can verify that the token was issued by you and hasn't been tampered with.
 
 This allows you to issue a token with a set expiration, for example, one week. If the user returns the next day with the token, you can verify they are still logged into your system. After the token expires, the user will no longer be authorized and must log in again to obtain a new one.
@@ -41,7 +40,6 @@ $ pip install ravyn[jwt]
 
 !!! Warning
     It is strongly advised to use virtual environments to isolate your packages from the core system ones and avoiding to break them by accident.
-
 
 To use digital signature algorithms like RSA or ECDSA, make sure to install the `cryptography` library by adding the `pyjwt[crypto]` dependency.
 
@@ -98,7 +96,7 @@ Create a PassLib "context" to handle password hashing and verification.
 !!! Tip
     The PassLib context supports multiple hashing algorithms, including deprecated ones, enabling you to verify old hashes while using a secure algorithm like Bcrypt for new passwords.
 
-    This allows compatibility with existing systems (e.g., verifying Django-generated passwords) while ensuring stronger security for newly hashed passwords—all within the same application.
+    This allows compatibility with existing systems (e.g., verifying Django-generated passwords) while ensuring stronger security for newly hashed passwords. all within the same application.
 
 Create a utility function to hash a user's password, another to check if a given password matches the stored hash, and a third to authenticate the user and return their details.
 

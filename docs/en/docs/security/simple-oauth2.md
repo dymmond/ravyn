@@ -113,7 +113,7 @@ Hashing transforms a value (like a password) into a seemingly random sequence of
 
 ##### Why Use Password Hashing?
 
-If your database is compromised, the attacker won't have access to the user's plaintext passwords—only the hashes.
+If your database is compromised, the attacker won't have access to the user's plaintext passwords. only the hashes.
 
 This protects users because the attacker cannot reuse their passwords on other systems (a common risk since many people reuse passwords).
 
@@ -222,7 +222,6 @@ You will get a payload similar to this:
 Now, if you logout by clicking in the logout icon, you should receive a 401.
 
 <img src="https://res.cloudinary.com/dymmond/image/upload/v1733759352/esmerald/security/not_auth_nwd72q.png" alt="Not authenticated">
-
 
 ## Inactive users
 

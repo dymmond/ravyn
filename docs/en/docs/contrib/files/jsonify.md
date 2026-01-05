@@ -25,11 +25,9 @@ Use `jsonify` when you want to:
 from ravyn import Ravyn, Gateway, get
 from ravyn.contrib.responses.json import jsonify
 
-
 @get()
 async def hello():
     return jsonify(message="Hello, World!", status="ok")
-
 
 app = Ravyn(routes=[
     Gateway("/hello", hello)
@@ -133,7 +131,7 @@ Set-Cookie: session=abc123; Path=/
 It’s not allowed to mix both positional arguments and keyword arguments:
 
 ```python
-# ❌ This raises TypeError
+# This raises TypeError
 return jsonify({"a": 1}, b=2)
 ```
 

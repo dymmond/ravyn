@@ -1,110 +1,504 @@
 # Protocols
 
-These are unique to `Ravyn` and are used to help having some structure in your application.
+Protocols define interfaces (contracts) for your application, helping you separate business logic from request handlers. Think of them as blueprints that ensure consistent patterns across your codebase.
 
-Protocols are the equivalent of *interfaces* in other languages and very helpful when it comes to establish some
-sort of *contracts* among systems communicating with each other.
+## What You'll Learn
 
-!!! Notes
-    More information and examples about Protocols and how to use them, we recommend this
-    [very simple yet great article](https://andrewbrookins.com/technology/building-implicit-interfaces-in-python-with-protocol-classes/).
+- What protocols are and why they matter
+- Using the DAO pattern for data access
+- Separating business logic from handlers
+- Creating clean, maintainable code
+- Implementing custom protocols
 
-## Ravyn protocols
-
-In this documentation, the protocols were mentioned when talking [middleware](./middleware/middleware.md) and the whole
-reason behind it but there are two more protocols that we classify as [business oriented](#business-oriented).
-
-## Business oriented
-
-**What does it mean being business oriented protocols? **
-
-A lot of companies nowadays use frameworks or microframeworks to build APIs quickly and with just a few lines of code.
-
-The problem we have identified is that usually these frameworks don't have a business scope in mind and that
-does not mean it is not possible, because of course it is!
-
-When `Ravyn` means business oriented protocols is in fact referring to the separation between the data logic,
-where the database models and connections are and the **business objects** where as the name suggests, manages the
-business logic of an application.
-
-### Why the separation
-
-It is better to explain by using an example.
-
-Let's imagine you need one handler that manages the creation of a user. Your application will have:
-
-* `Database connections`. Let's use the current supported [Edgy](./databases/edgy/motivation.md).
-* `Database models`. What is used to map python classes and database obbjects.
-* `The handler`. What you will be calling.
+## Quick Start
 
 ```python
-{!> ../../../docs_src/protocols/example1.py !}
+from ravyn import Ravyn, get, post
+from ravyn import AsyncDAOProtocol
+
+class UserDAO(AsyncDAOProtocol):
+    async def get(self, user_id: int):
+        # Get user from database
+        return {"id": user_id, "name": "Alice"}
+    
+    async def get_all(self):
+        # Get all users
+        return [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
+    
+    async def create(self, data: dict):
+        # Create user
+        return {"id": 3, **data}
+    
+    async def update(self, user_id: int, data: dict):
+        # Update user
+        return {"id": user_id, **data}
+    
+    async def delete(self, user_id: int):
+        # Delete user
+        return {"deleted": True}
+
+# Use in handlers
+user_dao = UserDAO()
+
+@get("/users")
+async def list_users() -> dict:
+    users = await user_dao.get_all()
+    return {"users": users}
+
+@post("/users")
+async def create_user(name: str, email: str) -> dict:
+    user = await user_dao.create({"name": name, "email": email})
+    return user
+
+app = Ravyn()
+app.add_route(list_users)
+app.add_route(create_user)
 ```
 
-!!! Check
-    Since we are using Edgy, all the database connections and configurations are handled by our settings.
+---
 
-In this example, the handler manages to check if there is a user already with these details and creates if not but all
-of this is managed in the handler itself. Sometimes is ok when is this simple but sometimes you might want to extend
-the functionality to do something else, for example, send an email confirming the creation of the record to the user,
-update external sources with the signal that the user has been created or even trigger another completely independent
-pipeline once the data is in.
+## Why Use Protocols?
 
-Again, all of this can be done inside the handler but,
-**what if you want to separate the logic of creation from the view** and isolate *all things user* in one place?
+### Benefits:
 
-Enters the [DAO/AyncDAO](#dao).
+- **Separation of Concerns** - Business logic separate from handlers
 
-## DAO
+- **Single Source of Truth** - All user operations in one place
 
-DAO extends for Data Access Object and it is used to separate the low level data accessing the API or operations
-from the high level business services.
+- **Testability** - Easy to mock and test
+
+- **Maintainability** - Changes in one place, not scattered
+
+- **Consistency** - Enforced patterns across codebase
+
+### Without Protocols (Bad):
 
 ```python
-from ravyn import DaoProtocol, AsyncDAOProtocol
+# Handler does everything - hard to maintain
+@post("/users")
+async def create_user(name: str, email: str) -> dict:
+    # Check if user exists
+    existing = await db.fetch_one("SELECT * FROM users WHERE email = ?", email)
+    if existing:
+        raise ValidationError("User exists")
+    
+    # Create user
+    user_id = await db.execute("INSERT INTO users (name, email) VALUES (?, ?)", name, email)
+    
+    # Send welcome email
+    await send_email(email, "Welcome!")
+    
+    # Log creation
+    await log_event("user_created", user_id)
+    
+    return {"user_id": user_id}
 ```
 
-The DAO is nothing too special alone but it is used to grant good pratices of separation of responsabilities.
-
-Ravyn `DAO`/`AsyncDAO` comes with five operations that must be implemented when subclassing.
-
-* `get`
-* `get_all`
-* `update`
-* `delete`
-* `create`
-
-Let's see how it would look if you were using a `DAO`.
+### With Protocols (Good):
 
 ```python
-{!> ../../../docs_src/protocols/syncdao.py !}
+# Clean handler - delegates to DAO
+@post("/users")
+async def create_user(name: str, email: str) -> dict:
+    user = await user_dao.create({"name": name, "email": email})
+    return user
+
+# All logic in DAO
+class UserDAO(AsyncDAOProtocol):
+    async def create(self, data: dict):
+        # Check if exists
+        if await self._user_exists(data["email"]):
+            raise ValidationError("User exists")
+        
+        # Create user
+        user_id = await db.execute("INSERT INTO users ...")
+        
+        # Send email
+        await send_email(data["email"], "Welcome!")
+        
+        # Log event
+        await log_event("user_created", user_id)
+        
+        return {"user_id": user_id, **data}
 ```
 
-Although it looks like "more work", in fact you are separating what the handler should be doing from what a business
-object should be also doing.
+---
 
-In the example, simple CRUD was used but from there you can extend the functionality to, for instance, send emails,
-call external services... With a big difference. From now one, all of your `User` operations will be managed by
-that same `DAO` and not by the view.
+## DAO Protocol
 
-Advantage? You have **one single source of truth** and not too many handlers
-across the codebase doing similar `User` operations and increasing the probability of getting more errors and
-also increasing the level of maintenance.
+DAO (Data Access Object) separates data access logic from business logic.
 
-DAO/AsyncDAO are your friends.
+### AsyncDAOProtocol
 
-!!! Info
-    DAO and AsyncDAO are fundamentally the same but one is for `sync` and the other supports `async`.
+For async operations:
+
+```python
+from ravyn import AsyncDAOProtocol
+
+class ProductDAO(AsyncDAOProtocol):
+    async def get(self, product_id: int):
+        """Get single product"""
+        return await db.fetch_one("SELECT * FROM products WHERE id = ?", product_id)
+    
+    async def get_all(self):
+        """Get all products"""
+        return await db.fetch_all("SELECT * FROM products")
+    
+    async def create(self, data: dict):
+        """Create product"""
+        product_id = await db.execute(
+            "INSERT INTO products (name, price) VALUES (?, ?)",
+            data["name"], data["price"]
+        )
+        return {"id": product_id, **data}
+    
+    async def update(self, product_id: int, data: dict):
+        """Update product"""
+        await db.execute(
+            "UPDATE products SET name = ?, price = ? WHERE id = ?",
+            data["name"], data["price"], product_id
+        )
+        return {"id": product_id, **data}
+    
+    async def delete(self, product_id: int):
+        """Delete product"""
+        await db.execute("DELETE FROM products WHERE id = ?", product_id)
+        return {"deleted": True}
+```
+
+### DAOProtocol
+
+For sync operations:
+
+```python
+from ravyn import DAOProtocol
+
+class UserDAO(DAOProtocol):
+    def get(self, user_id: int):
+        return db.query("SELECT * FROM users WHERE id = ?", user_id)
+    
+    def get_all(self):
+        return db.query("SELECT * FROM users")
+    
+    def create(self, data: dict):
+        user_id = db.execute("INSERT INTO users ...", data)
+        return {"id": user_id, **data}
+    
+    def update(self, user_id: int, data: dict):
+        db.execute("UPDATE users ...", data, user_id)
+        return {"id": user_id, **data}
+    
+    def delete(self, user_id: int):
+        db.execute("DELETE FROM users WHERE id = ?", user_id)
+        return {"deleted": True}
+```
+
+---
+
+## Required Methods
+
+Both `AsyncDAOProtocol` and `DAOProtocol` require these methods:
+
+| Method | Purpose | Parameters | Returns |
+|--------|---------|------------|---------|
+| `get()` | Get single item | ID or key | Single item |
+| `get_all()` | Get all items | None | List of items |
+| `create()` | Create item | Data dict | Created item |
+| `update()` | Update item | ID, Data dict | Updated item |
+| `delete()` | Delete item | ID | Deletion confirmation |
+
+!!! info
+    You can add additional methods beyond these five required ones!
+
+---
+
+## Practical Examples
+
+### Example 1: Complete User DAO
+
+```python
+from ravyn import AsyncDAOProtocol
+from ravyn.exceptions import NotFound, ValidationError
+
+class UserDAO(AsyncDAOProtocol):
+    async def get(self, user_id: int):
+        user = await db.fetch_one("SELECT * FROM users WHERE id = ?", user_id)
+        if not user:
+            raise NotFound(f"User {user_id} not found")
+        return user
+    
+    async def get_all(self):
+        return await db.fetch_all("SELECT * FROM users")
+    
+    async def create(self, data: dict):
+        # Validate
+        if await self.email_exists(data["email"]):
+            raise ValidationError("Email already exists")
+        
+        # Create
+        user_id = await db.execute(
+            "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+            data["name"], data["email"], data["password"]
+        )
+        
+        # Send welcome email
+        await self._send_welcome_email(data["email"])
+        
+        return {"id": user_id, **data}
+    
+    async def update(self, user_id: int, data: dict):
+        # Check exists
+        if not await self.exists(user_id):
+            raise NotFound(f"User {user_id} not found")
+        
+        # Update
+        await db.execute(
+            "UPDATE users SET name = ?, email = ? WHERE id = ?",
+            data["name"], data["email"], user_id
+        )
+        
+        return {"id": user_id, **data}
+    
+    async def delete(self, user_id: int):
+        await db.execute("DELETE FROM users WHERE id = ?", user_id)
+        return {"deleted": True}
+    
+    # Additional custom methods
+    async def email_exists(self, email: str) -> bool:
+        result = await db.fetch_one("SELECT id FROM users WHERE email = ?", email)
+        return result is not None
+    
+    async def exists(self, user_id: int) -> bool:
+        result = await db.fetch_one("SELECT id FROM users WHERE id = ?", user_id)
+        return result is not None
+    
+    async def _send_welcome_email(self, email: str):
+        # Email sending logic
+        pass
+```
+
+### Example 2: Using DAO in Handlers
+
+```python
+from ravyn import get, post, put, delete
+
+user_dao = UserDAO()
+
+@get("/users")
+async def list_users() -> dict:
+    users = await user_dao.get_all()
+    return {"users": users}
+
+@get("/users/{user_id}")
+async def get_user(user_id: int) -> dict:
+    user = await user_dao.get(user_id)
+    return user
+
+@post("/users")
+async def create_user(name: str, email: str, password: str) -> dict:
+    user = await user_dao.create({
+        "name": name,
+        "email": email,
+        "password": password
+    })
+    return user
+
+@put("/users/{user_id}")
+async def update_user(user_id: int, name: str, email: str) -> dict:
+    user = await user_dao.update(user_id, {"name": name, "email": email})
+    return user
+
+@delete("/users/{user_id}")
+async def delete_user(user_id: int) -> dict:
+    result = await user_dao.delete(user_id)
+    return result
+```
+
+---
+
+## Common Pitfalls & Fixes
+
+### Pitfall 1: Not Implementing All Methods
+
+**Problem:** Missing required methods.
+
+```python
+# Wrong - missing methods
+class UserDAO(AsyncDAOProtocol):
+    async def get(self, user_id: int):
+        return await db.fetch_one("SELECT * FROM users WHERE id = ?", user_id)
+    
+    # Missing: get_all, create, update, delete
+```
+
+**Solution:** Implement all five required methods:
+
+```python
+# Correct
+class UserDAO(AsyncDAOProtocol):
+    async def get(self, user_id: int):
+        pass
+    
+    async def get_all(self):
+        pass
+    
+    async def create(self, data: dict):
+        pass
+    
+    async def update(self, user_id: int, data: dict):
+        pass
+    
+    async def delete(self, user_id: int):
+        pass
+```
+
+### Pitfall 2: Business Logic in Handlers
+
+**Problem:** Handler contains business logic.
+
+```python
+# Wrong - logic in handler
+@post("/users")
+async def create_user(email: str) -> dict:
+    # Check if exists
+    existing = await db.fetch_one("SELECT * FROM users WHERE email = ?", email)
+    if existing:
+        raise ValidationError("User exists")
+    
+    # Create user
+    user_id = await db.execute("INSERT INTO users ...")
+    
+    # Send email
+    await send_email(email, "Welcome!")
+    
+    return {"user_id": user_id}
+```
+
+**Solution:** Move logic to DAO:
+
+```python
+# Correct - logic in DAO
+@post("/users")
+async def create_user(email: str) -> dict:
+    user = await user_dao.create({"email": email})
+    return user
+
+class UserDAO(AsyncDAOProtocol):
+    async def create(self, data: dict):
+        # All logic here
+        if await self.email_exists(data["email"]):
+            raise ValidationError("User exists")
+        
+        user_id = await db.execute("INSERT INTO users ...")
+        await send_email(data["email"], "Welcome!")
+        
+        return {"user_id": user_id, **data}
+```
+
+### Pitfall 3: Not Using Type Hints
+
+**Problem:** Missing type hints make code unclear.
+
+```python
+# Wrong - no type hints
+class UserDAO(AsyncDAOProtocol):
+    async def get(self, user_id):
+        return await db.fetch_one("SELECT * FROM users WHERE id = ?", user_id)
+```
+
+**Solution:** Add type hints:
+
+```python
+# Correct
+class UserDAO(AsyncDAOProtocol):
+    async def get(self, user_id: int) -> dict:
+        return await db.fetch_one("SELECT * FROM users WHERE id = ?", user_id)
+```
+
+---
+
+## Best Practices
+
+### 1. One DAO Per Entity
+
+```python
+# Good - separate DAOs
+class UserDAO(AsyncDAOProtocol):
+    pass
+
+class ProductDAO(AsyncDAOProtocol):
+    pass
+
+class OrderDAO(AsyncDAOProtocol):
+    pass
+```
+
+### 2. Add Custom Methods
+
+```python
+# Good - custom methods beyond required ones
+class UserDAO(AsyncDAOProtocol):
+    # Required methods
+    async def get(self, user_id: int):
+        pass
+    
+    # ... other required methods ...
+    
+    # Custom methods
+    async def get_by_email(self, email: str):
+        return await db.fetch_one("SELECT * FROM users WHERE email = ?", email)
+    
+    async def get_active_users(self):
+        return await db.fetch_all("SELECT * FROM users WHERE active = true")
+    
+    async def deactivate(self, user_id: int):
+        await db.execute("UPDATE users SET active = false WHERE id = ?", user_id)
+```
+
+### 3. Handle Errors in DAO
+
+```python
+# Good - error handling in DAO
+class UserDAO(AsyncDAOProtocol):
+    async def get(self, user_id: int):
+        user = await db.fetch_one("SELECT * FROM users WHERE id = ?", user_id)
+        if not user:
+            raise NotFound(f"User {user_id} not found")
+        return user
+```
+
+---
 
 ## InterceptorProtocol
 
-This is a special protocol used to implement [interceptors](./interceptors.md) for Ravyn. Check the
-[document](./interceptors.md) for more details about how to use it.
+For creating custom interceptors:
 
-## Notes
+```python
+from ravyn.protocols import InterceptorProtocol
 
-Implementing the DAO/AsyncDAO protocol is as simple as subclassing it and implement the methods but this does not mean
-that you are only allowed to use those methods. No!
+class MyInterceptor(InterceptorProtocol):
+    async def intercept(self, request, call_next):
+        # Pre-request logic
+        print(f"Request: {request.url.path}")
+        
+        # Call handler
+        response = await call_next(request)
+        
+        # Post-request logic
+        print(f"Response: {response.status_code}")
+        
+        return response
+```
 
-In fact, that only means that when extending the DAO/AsyncDAO
-you need **at least** to have those methods but you can have whatever you need for your business objects to operate.
+See [Interceptors](./interceptors.md) for more details.
+
+---
+
+## Next Steps
+
+Now that you understand protocols, explore:
+
+- [Dependencies](./dependencies.md) - Inject DAOs into handlers
+- [Interceptors](./interceptors.md) - Request interception
+- [Edgy ORM](./databases/edgy/motivation.md) - Database integration
+- [Testing](./testclient.md) - Test your DAOs

@@ -8,4 +8,5 @@ attributes and functions.
 ::: ravyn.middleware.authentication.AuthResult
     options:
         filters:
+
         - "!^model_config"

@@ -12,6 +12,7 @@ from ravyn import Gateway
 ::: ravyn.Gateway
     options:
         members:
+
             - path
             - handler
             - parent

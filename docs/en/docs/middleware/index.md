@@ -1,12 +1,44 @@
-# Available Middleware
+# Middleware
 
-Ravyn includes several middleware classes unique to the application but also allowing some other ways of designing
-them by using [protocols](../protocols.md). Inspired by other great frameworks, Ravyn has a similar approach
-for the middleware protocol. Let's be honest, it is not that we can reinvent the wheel on something already working out
-of the box.
+Middleware processes every request and response in your Ravyn application. Use it for logging, authentication, CORS, compression, and more. Ravyn supports both Lilya-style middleware and protocol-based middleware for maximum flexibility.
 
-There are two ways of designing the middleware for Ravyn. [Lilya middleware](#lilya-middleware) and
-[Ravyn protocols](#ravyn-protocols) as both work quite well together.
+## What You'll Learn
+
+- What middleware is and when to use it
+- Creating Lilya-style middleware
+- Using Ravyn's MiddlewareProtocol
+- Built-in middleware (CORS, CSRF, Sessions, etc.)
+- Adding middleware at different application levels
+- Authentication middleware patterns
+
+## Quick Start
+
+```python
+from ravyn import Ravyn, get
+from lilya.middleware import DefineMiddleware
+
+# Simple logging middleware
+class LoggingMiddleware:
+    def __init__(self, app):
+        self.app = app
+    
+    async def __call__(self, scope, receive, send):
+        print(f"Request: {scope['method']} {scope['path']}")
+        await self.app(scope, receive, send)
+
+@get("/")
+def homepage() -> dict:
+    return {"message": "Hello"}
+
+app = Ravyn(
+    routes=[...],
+    middleware=[DefineMiddleware(LoggingMiddleware)]
+)
+```
+
+---
+
+## What is Middleware?
 
 ## Lilya middleware
 
@@ -137,7 +169,6 @@ Check out the [API Reference for BasseAuthMiddleware](../references/middleware/b
     from ravyn import Ravyn
     from .middleware.jwt import JWTAuthMiddleware
 
-
     app = Ravyn(routes=[...], middleware=[JWTAuthMiddleware])
     ```
 
@@ -149,7 +180,6 @@ Check out the [API Reference for BasseAuthMiddleware](../references/middleware/b
     from ravyn import RavynSettings
     from ravyn.types import Middleware
     from .middleware.jwt import JWTAuthMiddleware
-
 
     class AppSettings(RavynSettings):
 

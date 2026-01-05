@@ -1,14 +1,47 @@
 # Authentication Middleware
 
-This special middleware comes from **Lilya** and is used to authenticate users on every request but adapted for Ravyn.
+Authenticate users on every request using Ravyn's authentication middleware. Built on Lilya's authentication system with support for multiple backends, JWT, basic auth, and custom authentication schemes.
 
-These are a very special middlewares and helps with any authentication middleware that can be used within
-a **Ravyn** application but like everything else, you can design your own.
+## What You'll Learn
 
-`AuthenticationMiddleware` is an implementation using backends and most people will prefer it.
-See [Authentication](#authentication) for more details.
+- What authentication middleware is and when to use it
+- Setting up AuthenticationMiddleware with backends
+- Creating custom authentication backends
+- Accessing `request.user` and `request.auth`
+- Handling authentication errors
+- Using multiple authentication backends
 
-Majority of the things here are from Lilya and we just added the ability to use it as a Ravyn middleware with almost no changes.
+## Quick Start
+
+```python
+from ravyn import Ravyn, get
+from lilya.middleware import DefineMiddleware
+from ravyn.middleware.authentication import AuthenticationMiddleware, AuthenticationBackend
+from ravyn.types import AuthCredentials, UserInterface
+
+class JWTBackend(AuthenticationBackend):
+    async def authenticate(self, request):
+        token = request.headers.get("Authorization")
+        if not token:
+            return None
+        
+        # Verify JWT and get user
+        user = verify_jwt(token)
+        return AuthCredentials(["authenticated"]), user
+
+@get("/profile")
+def get_profile(request) -> dict:
+    return {"user": request.user.display_name}
+
+app = Ravyn(
+    routes=[...],
+    middleware=[DefineMiddleware(AuthenticationMiddleware, backend=JWTBackend())]
+)
+```
+
+---
+
+## How Authentication Works
 
 ### Example of a JWT middleware class
 
@@ -28,7 +61,6 @@ Majority of the things here are from Lilya and we just added the ability to use 
     from lilya.middleware import DefineMiddleware
     from .middleware.jwt import JWTAuthMiddleware
 
-
     app = Ravyn(routes=[...], middleware=[DefineMiddleware(JWTAuthMiddleware, ...)])
     ```
 
@@ -37,7 +69,6 @@ Majority of the things here are from Lilya and we just added the ability to use 
     ```python
     from ravyn import Ravyn, RavynSettings
     from lilya.middleware import DefineMiddleware
-
 
     class AppSettings(RavynSettings):
 
@@ -126,7 +157,6 @@ from lilya.middleware import DefineMiddleware
 
 from ravyn import JSONResponse, Ravyn, Request
 from ravyn.middleware.authentication import AuthenticationMiddleware
-
 
 def on_auth_error(request: Request, exc: Exception):
     return JSONResponse({"error": str(exc)}, status_code=401)
