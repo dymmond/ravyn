@@ -498,9 +498,42 @@ We are committed to providing a welcoming and inclusive environment. Please:
 
 ---
 
-## License
+## Releasing
 
-By contributing to Ravyn, you agree that your contributions will be licensed under the same license as the project (MIT License).
+*This section is for the maintainers of `Ravyn`*.
+
+### Building the Ravyn for release
+
+Before releasing a new package into production some considerations need to be taken into account.
+
+* **Changelog**
+    * Like many projects, we follow the format from [keepchangelog](https://keepachangelog.com/en/1.0.0/).
+    * [Compare](https://github.com/dymmond/ravyn/compare/) `main` with the release tag and list of the entries
+that are of interest to the users of the framework.
+        * What **must** go in the changelog? added, changed, removed or deprecated features and the bug fixes.
+        * What is **should not go** in the changelog? Documentation changes, tests or anything not specified in the
+point above.
+        * Make sure the order of the entries are sorted by importance.
+        * Keep it simple.
+
+* *Version bump*
+    * The version should be in `__init__.py` of the main package.
+
+#### Releasing
+
+Once the `release` PR is merged, create a new [release](https://github.com/dymmond/ravyn/releases/new)
+that includes:
+
+Example:
+
+There will be a release of the version `0.2.3`, this is what it should include.
+
+* Release title: `Version 0.2.3`.
+* Tag: `0.2.3`.
+* The description should be copied from the changelog.
+
+Once the release is created, it should automatically upload the new version to PyPI. If something
+does not work with PyPI the release can be done by running `scripts/release`.
 
 ---
 
