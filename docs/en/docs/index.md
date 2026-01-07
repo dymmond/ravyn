@@ -409,7 +409,7 @@ Ravyn is an open source project and we love your contribution!
     <a href="https://github.com/dymmond/ravyn" target="_blank">
         <img src="https://img.shields.io/github/stars/dymmond/ravyn?style=social" alt="GitHub stars">
     </a>
-    <a href="https://discord.gg/ravyn" target="_blank">
+    <a href="https://discord.gg/eMrM9sWWvu" target="_blank">
         <img src="https://img.shields.io/discord/1072166683833204736?label=discord&style=social" alt="Discord">
     </a>
     <a href="https://twitter.com/ravyn_framework" target="_blank">
