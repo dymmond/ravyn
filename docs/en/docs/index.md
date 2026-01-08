@@ -399,8 +399,6 @@ Learn more in [About Ravyn](./about.md).
 
 ---
 
----
-
 ## Join the Community
 
 Ravyn is an open source project and we love your contribution!
@@ -420,6 +418,22 @@ Ravyn is an open source project and we love your contribution!
 - **Star us on GitHub** to show your support! ⭐️
 - **Join our Discord** to ask questions and share your projects.
 - **Follow us on X (Twitter)** for the latest updates.
+
+## Sponsors
+
+Currently there are no sponsors of Ravyn but you can financially help and support the author though
+[GitHub sponsors](https://github.com/sponsors/tarsil) and become a **Special one** or a **Legend**.
+
+### Powered by
+
+Worth mentioning who is helping us.
+
+**JetBrains**
+
+[![JetBrains logo.](https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg)](https://jb.gg/OpenSourceSupport)
+
+[edgy_orm]: https://ravyn.dev/databases/edgy/motivation
+[mongoz_odm]: https://ravyn.dev/databases/mongoz/motivation
 
 [edgy_orm]: ./databases/edgy/motivation.md
 [mongoz_odm]: ./databases/mongoz/motivation.md
