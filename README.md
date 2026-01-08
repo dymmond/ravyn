@@ -1,9 +1,3 @@
----
-hide:
-
-  - navigation
----
-
 <p align="center">
   <a href="https://ravyn.dev"><img src="https://res.cloudinary.com/dymmond/image/upload/v1759490296/ravyn/img/logo_pb3fis.png" alt='Ravyn'></a>
 </p>
