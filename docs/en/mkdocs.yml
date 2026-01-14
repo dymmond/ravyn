@@ -160,6 +160,7 @@ nav:
     - Available Security: security/available-security.md
     - Password Hashers: password-hashers.md
 - Features:
+  - Introspection: introspection.md
   - Middleware:
     - middleware/index.md
     - Authentication: middleware/authentication.md
@@ -222,6 +223,7 @@ nav:
     - Mail: contrib/mail.md
     - Send File: contrib/files/send-file.md
     - Jsonify: contrib/files/jsonify.md
+    - contrib/cqrs.md
     - Shortcuts:
       - Abort: contrib/shortcuts/abort.md
       - Responses: contrib/shortcuts/responses.md

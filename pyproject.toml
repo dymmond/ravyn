@@ -53,7 +53,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
-    "lilya[standard]>=0.23.0",
+    "lilya[standard]>=0.23.1",
     "pydantic-settings>=2.9.0",
     "orjson>=3.8.5,<4.0.0",
     "msgspec>=0.20.0,<0.21.0",
@@ -234,7 +234,7 @@ testing = [
 docs = [
     "a2wsgi>=1.9.0",
     "httpx>=0.25.0",
-    "lilya[standard]>=0.23.0",
+    "lilya[standard]>=0.23.1",
     "griffe-typingdoc>=0.2.2,<1.0",
     "mkdocs>=1.1.2,<2.0.0",
     "mkdocs-material>=9.4.4",

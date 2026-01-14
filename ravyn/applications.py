@@ -15,6 +15,7 @@ from typing import (
 
 from lilya.apps import BaseLilya
 from lilya.conf import _monkay as monkay
+from lilya.introspection import ApplicationGraph
 from lilya.logging import setup_logging
 from lilya.middleware import DefineMiddleware  # noqa
 from lilya.types import Lifespan, Receive, Scope, Send
@@ -36,6 +37,7 @@ from ravyn.core.config import (
     StaticFilesConfig,
 )
 from ravyn.core.datastructures import State
+from ravyn.core.instrospection._builder import GraphBuilder
 from ravyn.core.interceptors.types import Interceptor
 from ravyn.core.protocols.template import TemplateEngineProtocol
 from ravyn.encoders import (
@@ -1039,7 +1041,7 @@ class Application(BaseLilya):
             ),
         ] = None,
         middleware: Annotated[
-            Optional[Sequence["Middleware"]],
+            Optional[Sequence["Middleware"]] | Optional[list[Any]],
             Doc(
                 """
                 A global sequence of Lilya middlewares or `ravyn.middlewares` that are
@@ -1766,6 +1768,25 @@ class Application(BaseLilya):
 
         if self.logging_config is not None:
             setup_logging(self.logging_config)
+
+    @property
+    def graph(self) -> ApplicationGraph:
+        """
+        Returns an introspection graph of the application.
+
+        **Example**
+
+        ```python
+        from lilya.apps import Lilya
+
+        app = Lilya()
+        print(app.graph)
+        ```
+        """
+        if not hasattr(self, "_graph"):
+            builder = GraphBuilder()
+            self._graph = builder.build(self)
+        return self._graph
 
     def load_settings_value(
         self, name: str, value: Optional[Any] = None, is_boolean: bool = False
