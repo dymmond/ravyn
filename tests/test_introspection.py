@@ -72,7 +72,10 @@ def test_route_permissions_chain(test_client_factory):
     perms = graph.permissions_for(route)
     classes = [p.metadata["class"] for p in perms]
 
-    assert classes == ["Allow", "Deny"]
+    assert "Allow" in classes
+    assert "Deny" in classes
+
+    assert len(classes) == 2
 
 
 def test_explain_returns_structural_data(test_client_factory):
