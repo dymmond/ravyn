@@ -160,6 +160,7 @@ nav:
     - Available Security: security/available-security.md
     - Password Hashers: password-hashers.md
 - Features:
+  - Introspection: introspection.md
   - Middleware:
     - middleware/index.md
     - Authentication: middleware/authentication.md

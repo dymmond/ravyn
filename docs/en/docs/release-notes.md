@@ -5,6 +5,18 @@ hide:
 
 # Release Notes
 
+## 0.3.5
+
+### Added
+
+- [Introspection](./introspection.md) graph accessible via `app.graph`. This is particularly useful if you want to create any
+visuals from your Lilya application or even for framework creators and developers that want to understand in a graph manner, the
+state and internals of the current application.
+
+### Changed
+
+- Bump Lilya to 0.23.1 mininum.
+
 ## 0.3.4
 
 ### Added
