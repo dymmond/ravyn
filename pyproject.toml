@@ -18,9 +18,7 @@ If you love modern frameworks, you'll feel right at home, but faster, cleaner, a
 readme = "README.md"
 requires-python = ">=3.10"
 dynamic = ['version']
-authors = [
-    { name = "Tiago Silva", email = "tiago.silva@dymmond.com" },
-]
+authors = [{ name = "Tiago Silva", email = "tiago.silva@dymmond.com" }]
 maintainers = [
     { name = "Tiago Silva", email = "tiago.silva@dymmond.com" },
     { name = "devkral" },
@@ -53,11 +51,11 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
-    "lilya[standard]>=0.23.1",
+    "lilya[standard]>=0.23.3",
     "pydantic-settings>=2.9.0",
     "orjson>=3.8.5,<4.0.0",
     "msgspec>=0.20.0,<0.21.0",
-    "monkay>=0.5.0"
+    "monkay>=0.5.0",
 ]
 keywords = [
     # Core web framework
