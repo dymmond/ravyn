@@ -7,19 +7,19 @@ Ravyn is built and maintained by an amazing community of developers, contributor
 ### Creator & Lead Maintainer
 
 - **Tiago Silva** - [@tarsil](https://github.com/tarsil)
-- Creator of Ravyn (formerly Esmerald)
-- Lead architect and maintainer
-- Vision and direction
+    - Creator of Ravyn (formerly Esmerald)
+    - Lead architect and maintainer
+    - Vision and direction
 
 ### Core Maintainers
 
 - **devkral** - [@devkral](https://github.com/devkral)
-  - Core maintainer and contributor
-  - Framework development and improvements
+    - Core maintainer and contributor
+    - Framework development and improvements
 
 - **kokoserver** - [@kokoserver](https://github.com/kokoserver)
-  - Core maintainer and contributor
-  - Documentation and framework development
+    - Core maintainer and contributor
+    - Documentation and framework development
 
 ---
 
@@ -134,13 +134,17 @@ Want to see your name on this page? Here's how:
 3. **Help Others** - Answer questions, review PRs
 4. **Share** - Write about Ravyn, create tutorials
 
-Every contribution matters, no matter how small! ---
+Every contribution matters, no matter how small!
+
+---
 
 ## Thank You
 
-To everyone who has contributed to Ravyn in any way. **thank you**. Your support, feedback, and contributions make Ravyn better for everyone.
+To everyone who has contributed to Ravyn in any waym **thank you**. Your support, feedback, and contributions make Ravyn better for everyone.
 
-Together, we're building something amazing. ---
+Together, we're building something amazing.
+
+---
 
 ## Next Steps
 
