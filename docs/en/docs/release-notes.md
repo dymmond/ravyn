@@ -17,6 +17,7 @@ hide:
 - Transformers regex was moved to outter function speeding up the handling.
 - `ravyn createdeployment` directive files (nginx and docker) updated to the latest stable versions.
 - The `createproject` directive tests was not placing the right contents in conftest.py.
+- Default loader for exception handler from the settings.
 
 ## 0.3.5
 
