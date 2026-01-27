@@ -1,4 +1,4 @@
-user {{ project_name }}
+user {{ project_name }};
 pid /run/nginx.pid;
 
 events {
@@ -28,7 +28,7 @@ http {
                         '"http_referrer": "$http_referer", '
                         '"http_user_agent": "$http_user_agent" } }';
 
-    access_log off;
+    access_log /dev/stdout json_format;
     error_log /dev/stderr;
 
     gzip on;
@@ -74,7 +74,7 @@ http {
             root   /usr/share/nginx/html;
         }
 
-        access_log off;
+        access_log /dev/stdout;
         error_log /dev/stderr;
 
         gzip on;

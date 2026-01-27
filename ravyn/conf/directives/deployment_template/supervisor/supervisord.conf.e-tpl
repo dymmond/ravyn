@@ -32,9 +32,8 @@ stdout_logfile_maxbytes = 0
 stderr_logfile = /dev/stderr
 stderr_logfile_maxbytes = 0
 
-[fcgi-program:gunicorn]
+[program:gunicorn]
 command = gunicorn {{ project_name }}.main:app -c /var/www/gunicorn_conf.py
-socket = unix:///var/www/{{ project_name }}.sock
 user = {{ project_name }}
 socket_mode = 0755
 directory = /var/www/

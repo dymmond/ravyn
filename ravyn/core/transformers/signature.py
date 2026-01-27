@@ -54,6 +54,7 @@ if TYPE_CHECKING:
 
 
 object_setattr = object.__setattr__
+error_pattern = re.compile(r"`\$\.(.+)`$")
 
 
 def is_server_error(error: Any, klass: Type["SignatureModel"]) -> bool:
@@ -307,7 +308,7 @@ class SignatureModel(ArbitraryBaseModel):
             Returns:
                 dict: Dictionary containing the extracted error message.
             """
-            error_pattern = re.compile(r"`\$\.(.+)`$")
+
             match = error_pattern.search(str(exception))
 
             if match:

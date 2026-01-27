@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.3.6
+
+### Fixed
+
+- Transformers regex was moved to outter function speeding up the handling.
+
 ## 0.3.5
 
 ### Added
