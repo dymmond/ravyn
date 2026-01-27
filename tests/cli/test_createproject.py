@@ -18,6 +18,8 @@ def create_folders():
         pass
     try:
         shutil.rmtree("myproject")
+        shutil.rmtree("another")
+        shutil.rmtree("multiple")
     except OSError:
         pass
     try:
@@ -33,6 +35,8 @@ def create_folders():
         pass
     try:
         shutil.rmtree("myproject")
+        shutil.rmtree("another")
+        shutil.rmtree("multiple")
     except OSError:
         pass
     try:
