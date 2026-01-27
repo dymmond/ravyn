@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
+import click
 from sayer import Argument, Option, command, error, success
 
 from ravyn.core.directives.exceptions import DirectiveError
@@ -12,7 +13,14 @@ from ravyn.utils.crypto import get_random_secret_key
 
 @command(name="createproject")
 def create_project(
-    name: Annotated[str, Argument(help="The name of the project to create.")],
+    names: Annotated[
+        list[str],
+        Argument(
+            nargs=-1,
+            type=click.UNPROCESSED,
+            help="The name of the project or list of projects to create.",
+        ),
+    ],
     verbosity: Annotated[int, Option(1, "-v", help="Verbosity level for the output.")],
     with_deployment: Annotated[
         bool,
@@ -23,14 +31,6 @@ def create_project(
         Option(
             "deployment",
             help="The name of the folder for the deployment files.",
-            show_default=True,
-        ),
-    ],
-    with_structure: Annotated[
-        bool,
-        Option(
-            False,
-            help="Creates a project with a given structure of folders and files.",
             show_default=True,
         ),
     ],
@@ -74,8 +74,9 @@ def create_project(
     }
     directive = TemplateDirective()
 
-    try:
-        directive.handle("project", name=name, **options)
-        success(f" Project {name} generated successfully!")
-    except DirectiveError as e:
-        error(str(e))
+    for name in names:
+        try:
+            directive.handle("project", name=name, **options)
+            success(f" Project {name} generated successfully!")
+        except DirectiveError as e:
+            error(str(e))

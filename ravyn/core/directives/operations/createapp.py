@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
+import click
 from sayer import Argument, Option, command, error, success
 
 from ravyn.core.directives.exceptions import DirectiveError
@@ -12,7 +13,14 @@ from ravyn.utils.crypto import get_random_secret_key
 
 @command(name="createapp")
 def create_app(
-    name: Annotated[str, Argument(help="The name of the app.")],
+    names: Annotated[
+        list[str],
+        Argument(
+            nargs=-1,
+            type=click.UNPROCESSED,
+            help="The name of the app or list of apps to create.",
+        ),
+    ],
     verbosity: Annotated[int, Option(1, "-v", help="Displays the files generated")],
     with_basic_controller: Annotated[
         bool, Option(False, help="Should generate a basic controller")
@@ -46,8 +54,9 @@ def create_app(
     }
     directive = TemplateDirective()
 
-    try:
-        directive.handle("app", name=name, **options)
-        success(f" App {name} generated successfully!")
-    except DirectiveError as e:
-        error(str(e))
+    for name in names:
+        try:
+            directive.handle("app", name=name, **options)
+            success(f" App {name} generated successfully!")
+        except DirectiveError as e:
+            error(str(e))
