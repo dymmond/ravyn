@@ -44,9 +44,7 @@ def create_folders():
 
 
 def test_create_project_with_structure(create_folders):
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app", "ravyn createproject myproject --with-structure --location ./auto"
-    )
+    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createproject myproject --location ./auto")
     assert ss == 0
 
     with open("auto/myproject/.gitignore") as f:
@@ -80,7 +78,7 @@ def _run_asserts():
 def test_create_project_files_with_env_var(create_folders):
     (o, e, ss) = run_cmd(
         "tests.cli.main:app",
-        "ravyn createproject myproject  --with-structure --location ./auto",
+        "ravyn createproject myproject  --location ./auto",
     )
     assert ss == 0
 
@@ -90,7 +88,7 @@ def test_create_project_files_with_env_var(create_folders):
 def test_create_project_files_without_env_var(create_folders):
     (o, e, ss) = run_cmd(
         "tests.cli.main:app",
-        "ravyn createproject myproject --with-structure --location ./auto",
+        "ravyn createproject myproject --location ./auto",
         is_app=False,
     )
     assert ss == 0
@@ -101,7 +99,7 @@ def test_create_project_files_without_env_var(create_folders):
 def test_create_project_files_without_env_var_and_with_app_flag(create_folders):
     (o, e, ss) = run_cmd(
         "tests.cli.main:app",
-        "ravyn --app tests.cli.main:app createproject myproject --with-structure --location ./auto",
+        "ravyn --app tests.cli.main:app createproject myproject --location ./auto",
         is_app=False,
     )
     assert ss == 0

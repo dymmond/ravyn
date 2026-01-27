@@ -29,7 +29,7 @@ def sendtest(
         Option(default="console", help="Backend to use for sending (default: console)."),
     ] = "console",
 ) -> None:
-    """Send a test email using Lilya's mail contrib system.
+    """Send a test email using Ravyn's mail contrib system.
 
     Examples:
 
@@ -61,6 +61,6 @@ def sendtest(
     asyncio.run(_send())
 
 
-mail = Sayer(help="Send a test email using Lilya's mail contrib system.")
+mail = Sayer(help="Send a test email using Ravyn's mail contrib system.")
 
 mail.add_command(sendtest)

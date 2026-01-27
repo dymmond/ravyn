@@ -1,4 +1,21 @@
 import pytest
+from ravyn.testclient import RavynTestClient
+
+from ..main import get_application
+
+
+def create_app():
+    app = get_application()
+    return app
+
+
+def get_client():
+    return RavynTestClient(create_app())
+
+
+@pytest.fixture
+def client():
+    return get_client()
 
 
 @pytest.fixture(scope="module")

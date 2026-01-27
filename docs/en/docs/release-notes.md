@@ -5,6 +5,19 @@ hide:
 
 # Release Notes
 
+## 0.3.6
+
+### Added
+
+- `createproject` allows to pass multiple names instead of only one if you want to create multiple projects in one go.
+- `createapp` allows to pass multiple names instead of only one if you want to create multiple apps in one go.
+
+### Fixed
+
+- Transformers regex was moved to outter function speeding up the handling.
+- `ravyn createdeployment` directive files (nginx and docker) updated to the latest stable versions.
+- The `createproject` directive tests was not placing the right contents in conftest.py.
+
 ## 0.3.5
 
 ### Added

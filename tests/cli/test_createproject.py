@@ -18,6 +18,8 @@ def create_folders():
         pass
     try:
         shutil.rmtree("myproject")
+        shutil.rmtree("another")
+        shutil.rmtree("multiple")
     except OSError:
         pass
     try:
@@ -33,6 +35,8 @@ def create_folders():
         pass
     try:
         shutil.rmtree("myproject")
+        shutil.rmtree("another")
+        shutil.rmtree("multiple")
     except OSError:
         pass
     try:
@@ -51,26 +55,48 @@ def test_create_project(create_folders):
         assert f.readline().strip() == '"""myproject Routes Configuration'
 
 
-def _run_asserts():
-    assert os.path.isfile("myproject/Taskfile.yaml") is True
-    assert os.path.isfile("myproject/README.md") is True
-    assert os.path.isfile("myproject/.gitignore") is True
-    assert os.path.isfile("myproject/myproject/__init__.py") is True
-    assert os.path.isfile("myproject/myproject/main.py") is True
-    assert os.path.isfile("myproject/myproject/serve.py") is True
-    assert os.path.isfile("myproject/myproject/urls.py") is True
-    assert os.path.isfile("myproject/myproject/tests/__init__.py") is True
-    assert os.path.isfile("myproject/myproject/tests/test_app.py") is True
-    assert os.path.isfile("myproject/myproject/configs/__init__.py") is True
-    assert os.path.isfile("myproject/myproject/configs/settings.py") is True
-    assert os.path.isfile("myproject/myproject/configs/development/__init__.py") is True
-    assert os.path.isfile("myproject/myproject/configs/development/settings.py") is True
-    assert os.path.isfile("myproject/myproject/configs/testing/__init__.py") is True
-    assert os.path.isfile("myproject/myproject/configs/testing/settings.py") is True
-    assert os.path.isfile("myproject/myproject/apps/__init__.py") is True
-    assert os.path.isfile("myproject/requirements/base.txt") is True
-    assert os.path.isfile("myproject/requirements/testing.txt") is True
-    assert os.path.isfile("myproject/requirements/development.txt") is True
+def _run_asserts(names: list[str] | None = None):
+    if names is None:
+        assert os.path.isfile("myproject/Taskfile.yaml") is True
+        assert os.path.isfile("myproject/README.md") is True
+        assert os.path.isfile("myproject/.gitignore") is True
+        assert os.path.isfile("myproject/myproject/__init__.py") is True
+        assert os.path.isfile("myproject/myproject/main.py") is True
+        assert os.path.isfile("myproject/myproject/serve.py") is True
+        assert os.path.isfile("myproject/myproject/urls.py") is True
+        assert os.path.isfile("myproject/myproject/tests/__init__.py") is True
+        assert os.path.isfile("myproject/myproject/tests/test_app.py") is True
+        assert os.path.isfile("myproject/myproject/configs/__init__.py") is True
+        assert os.path.isfile("myproject/myproject/configs/settings.py") is True
+        assert os.path.isfile("myproject/myproject/configs/development/__init__.py") is True
+        assert os.path.isfile("myproject/myproject/configs/development/settings.py") is True
+        assert os.path.isfile("myproject/myproject/configs/testing/__init__.py") is True
+        assert os.path.isfile("myproject/myproject/configs/testing/settings.py") is True
+        assert os.path.isfile("myproject/myproject/apps/__init__.py") is True
+        assert os.path.isfile("myproject/requirements/base.txt") is True
+        assert os.path.isfile("myproject/requirements/testing.txt") is True
+        assert os.path.isfile("myproject/requirements/development.txt") is True
+    else:
+        for name in names:
+            assert os.path.isfile(f"{name}/Taskfile.yaml") is True
+            assert os.path.isfile(f"{name}/README.md") is True
+            assert os.path.isfile(f"{name}/.gitignore") is True
+            assert os.path.isfile(f"{name}/{name}/__init__.py") is True
+            assert os.path.isfile(f"{name}/{name}/main.py") is True
+            assert os.path.isfile(f"{name}/{name}/serve.py") is True
+            assert os.path.isfile(f"{name}/{name}/urls.py") is True
+            assert os.path.isfile(f"{name}/{name}/tests/__init__.py") is True
+            assert os.path.isfile(f"{name}/{name}/tests/test_app.py") is True
+            assert os.path.isfile(f"{name}/{name}/configs/__init__.py") is True
+            assert os.path.isfile(f"{name}/{name}/configs/settings.py") is True
+            assert os.path.isfile(f"{name}/{name}/configs/development/__init__.py") is True
+            assert os.path.isfile(f"{name}/{name}/configs/development/settings.py") is True
+            assert os.path.isfile(f"{name}/{name}/configs/testing/__init__.py") is True
+            assert os.path.isfile(f"{name}/{name}/configs/testing/settings.py") is True
+            assert os.path.isfile(f"{name}/{name}/apps/__init__.py") is True
+            assert os.path.isfile(f"{name}/requirements/base.txt") is True
+            assert os.path.isfile(f"{name}/requirements/testing.txt") is True
+            assert os.path.isfile(f"{name}/requirements/development.txt") is True
 
 
 def test_create_project_files_with_env_var(create_folders):
@@ -90,9 +116,9 @@ def test_create_project_files_without_env_var(create_folders):
 def test_create_project_files_without_env_var_and_with_app_flag(create_folders):
     (o, e, ss) = run_cmd(
         "tests.cli.main:app",
-        "ravyn --app tests.cli.main:app createproject myproject",
+        "ravyn --app tests.cli.main:app createproject myproject another multiple",
         is_app=False,
     )
     assert ss == 0
 
-    _run_asserts()
+    _run_asserts(["myproject", "another", "multiple"])

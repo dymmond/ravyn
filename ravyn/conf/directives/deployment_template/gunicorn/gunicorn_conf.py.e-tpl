@@ -2,7 +2,8 @@ import multiprocessing
 import os
 
 loglevel = os.getenv("LOG_LEVEL", "info")
-access_log = True
+access_log = "-"
+errorlog = "-"
 host = os.getenv("HOST", "0.0.0.0")
 port = os.getenv("PORT", "80")
 
