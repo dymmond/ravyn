@@ -1622,8 +1622,10 @@ class Application(BaseLilya):
         self.timezone = self.load_settings_value("timezone", timezone)
         self.root_path = self.load_settings_value("root_path", root_path)
         self._middleware = self.load_settings_value("middleware", middleware) or []
-        _exception_handlers = self.load_settings_value("exception_handlers", exception_handlers)
-        self.exception_handlers = {} if _exception_handlers is None else dict(_exception_handlers)
+
+        self.exception_handlers = (
+            self.load_settings_value("exception_handlers", exception_handlers) or {}
+        )
         self.on_startup = self.load_settings_value("on_startup", on_startup)
         self.on_shutdown = self.load_settings_value("on_shutdown", on_shutdown)
         self.lifespan = self.load_settings_value("lifespan", lifespan)
