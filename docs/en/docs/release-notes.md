@@ -7,6 +7,11 @@ hide:
 
 ## 0.3.7
 
+!!! Note
+    There was a release of Lilya to version 0.24.0 that internally had a performance boost but broken a small
+    interface in Ravyn that needed to be there. If you are having issues with Ravyn prior to version 0.3.7, you
+    just need to upgrade to 0.3.7 and it should be it.
+
 ### Changed
 
 - Update to the latest fastest Lilya and fix broken internal interface.
