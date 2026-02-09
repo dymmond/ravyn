@@ -236,8 +236,8 @@ def test_websocket_raise_custom_exception(client):
         response = session.receive()
         assert response == {
             "type": "websocket.close",
-            "code": status.WS_1013_TRY_AGAIN_LATER,
-            "reason": "",
+            "code": 4500,
+            "reason": "CustomWSException()",
         }
 
 

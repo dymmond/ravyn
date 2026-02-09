@@ -108,7 +108,7 @@ class RavynAPIException:  # pragma: no cover
 
             if isinstance(ex, WebSocketException):
                 code = ex.code
-                reason = ex.detail
+                reason = ex.reason
             elif isinstance(ex, LilyaException):
                 code = ex.status_code + 4000
                 reason = ex.detail
