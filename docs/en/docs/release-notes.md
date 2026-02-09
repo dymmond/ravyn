@@ -5,6 +5,29 @@ hide:
 
 # Release Notes
 
+## 0.3.8
+
+!!! Note
+    This release focuses on performance and request-path optimization while preserving
+    existing routing and middleware behavior.
+
+### Added
+
+- New `benchmark_mode` setting for Ravyn applications.
+  When enabled, Ravyn uses a minimal middleware pipeline that runs directly through the router,
+  making micro-benchmark runs more representative of pure routing/handler overhead.
+
+### Changed
+
+- Optimized static HTTP route dispatch with an exact `method + path` fast lookup for safe route layouts.
+- Added a zero-kwargs handler fast path for simple endpoints, reducing per-request overhead when no request-bound kwargs are required.
+- Improved internal routing activation flow to precompute and refresh fast dispatch structures.
+
+### Fixed
+
+- Preserved route precedence guarantees for complex routing trees while introducing fast dispatch (includes, hosts, and dynamic routes continue to behave as expected).
+- Added tests validating benchmark mode wiring and middleware stack behavior.
+
 ## 0.3.7
 
 !!! Note
