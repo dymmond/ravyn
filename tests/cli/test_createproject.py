@@ -74,7 +74,7 @@ def _run_asserts(names: list[str] | None = None):
         assert os.path.isfile("myproject/myproject/configs/testing/settings.py") is True
         assert os.path.isfile("myproject/myproject/apps/__init__.py") is True
         assert os.path.isfile("myproject/pyproject.toml") is True
-
+    else:
         for name in names:
             assert os.path.isfile(f"{name}/Taskfile.yaml") is True
             assert os.path.isfile(f"{name}/README.md") is True
