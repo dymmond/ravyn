@@ -1581,7 +1581,7 @@ class Application(BaseLilya):
             raise ImproperlyConfigured("It can be only allow_origins or cors_config but not both.")
 
         self.parent = parent
-
+        self._fast_http: bool = False
         self._debug = self.load_settings_value("debug", debug, is_boolean=True)
         self.debug = self._debug
 
