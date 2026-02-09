@@ -15,4 +15,4 @@ tasks:
   requirements:
     desc: Install requirements
     cmds:
-      - pip install -r requirements/development.txt
+      - pip install -e .[dev,test]

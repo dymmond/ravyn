@@ -131,11 +131,7 @@ You should have a folder called `myproject` with a similar structure to this:
 │   │   ├── __init__.py
 │   │   └── test_app.py
 │   └── urls.py
-└── requirements
-    ├── base.txt
-    ├── development.txt
-    └── testing.txt
-
+└── pyproject.toml
 ```
 
 A lot of files generated right? Yes but those are actually quite simple but let's talk about what is happening there.
@@ -146,7 +142,7 @@ peoject locally, for example:
     * `task run` - Starts your project with the development settings.
     * `task test` - Runs your local tests with the testing settings.
     * `task clean` - Removes all the `*.pyc` from your project.
-    * `task requirements` - Installs the mininum requirements from the `requirements` folder.
+    * `task requirements` - Installs the minimum requirements from the `pyproject.toml`.
 
     !!! Info
         The tests are using [pytest](https://docs.pytest.org/) but you can change to whatever you want.
