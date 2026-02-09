@@ -1,6 +1,8 @@
 from typing import Any, Callable, Mapping, Optional, Type, Union
 
 from lilya import status
+from lilya.compat import is_async_callable
+from lilya.concurrency import run_in_threadpool
 from lilya.exceptions import HTTPException as LilyaException
 from lilya.middleware.exceptions import ExceptionMiddleware as LilyaExceptionMiddleware
 from lilya.responses import Response as LilyaResponse
@@ -87,11 +89,20 @@ class RavynAPIException:  # pragma: no cover
             await self.app(scope, receive, send)
         except Exception as ex:
             if scope["type"] == ScopeType.HTTP:
-                exception_handler = (
-                    self.get_exception_handler(self.exception_handlers, ex)
-                    or self.default_http_exception_handler
-                )
-                response = exception_handler(Request(scope, receive, send), ex)
+                exception_handler = self.get_exception_handler(self.exception_handlers, ex)
+                if (
+                    exception_handler is None
+                    and scope.get("_ravyn_route_boundary")
+                    and isinstance(ex, (HTTPException, LilyaException))
+                ):
+                    exception_handler = http_exception_handler  # type: ignore
+                if exception_handler is None:
+                    exception_handler = self.default_http_exception_handler  # type: ignore
+                request = Request(scope, receive, send)
+                if is_async_callable(exception_handler):
+                    response = await exception_handler(request, ex)
+                else:
+                    response = await run_in_threadpool(exception_handler, request, ex)
                 await response(scope, receive, send)
                 return
 
@@ -149,6 +160,13 @@ class RavynAPIException:  # pragma: no cover
         if not exception_handlers:
             return None
 
-        return self.exception_handlers.get(status_code) or self.exception_handlers.get(
-            exc.__class__
-        )
+        handler = self.exception_handlers.get(status_code)
+        if handler is not None:
+            return handler
+
+        for exc_cls in type(exc).__mro__:
+            handler = self.exception_handlers.get(exc_cls)
+            if handler is not None:
+                return handler
+
+        return None

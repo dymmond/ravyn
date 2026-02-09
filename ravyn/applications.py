@@ -1,6 +1,6 @@
 import warnings
 from collections.abc import Callable, Iterable, Sequence
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from datetime import timezone as dtimezone
 from inspect import isclass
 from typing import (
@@ -56,7 +56,6 @@ from ravyn.middleware.asyncexitstack import AsyncExitStackMiddleware
 from ravyn.middleware.cors import CORSMiddleware
 from ravyn.middleware.csrf import CSRFMiddleware
 from ravyn.middleware.exceptions import (
-    ExceptionMiddleware,
     RavynAPIException,
 )
 from ravyn.middleware.trustedhost import TrustedHostMiddleware
@@ -2752,11 +2751,6 @@ class Application(BaseLilya):
             + self.user_middleware
             + [
                 DefineMiddleware(
-                    ExceptionMiddleware,
-                    handlers=exception_handlers,
-                    debug=debug,
-                ),
-                DefineMiddleware(
                     AsyncExitStackMiddleware,
                     config=self.async_exit_config,
                     debug=debug,
@@ -2844,7 +2838,12 @@ class Application(BaseLilya):
         return monkay_for_settings.settings
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        with monkay_for_settings.with_settings(self.settings):
+        settings_context = (
+            monkay_for_settings.with_settings(self.settings)
+            if self.settings_module is not None
+            else nullcontext()
+        )
+        with settings_context:
             if scope["type"] == "lifespan":
                 await self.router.lifespan(scope, receive, send)
                 return
@@ -2852,7 +2851,7 @@ class Application(BaseLilya):
             if self.root_path:
                 scope["root_path"] = self.root_path
 
-            scope["state"] = {}
+            scope.setdefault("state", {})
             await super().__call__(scope, receive, send)
 
     def websocket_route(self, path: str, name: Optional[str] = None) -> Callable:
