@@ -133,6 +133,7 @@ class Application(BaseLilya):
         "deprecated",
         "description",
         "enable_openapi",
+        "benchmark_mode",
         "enable_scheduler",
         "exception_handlers",
         "include_in_schema",
@@ -1442,6 +1443,17 @@ class Application(BaseLilya):
                 """
             ),
         ] = None,
+        benchmark_mode: Annotated[
+            Optional[bool],
+            Doc(
+                """
+                Enables a minimal middleware pipeline optimized for benchmark runs.
+
+                This mode bypasses the app-level middleware wrappers and executes
+                directly through the router.
+                """
+            ),
+        ] = None,
         redirect_slashes: Annotated[
             Optional[bool],
             Doc(
@@ -1634,6 +1646,9 @@ class Application(BaseLilya):
         self.security = self.load_settings_value("security", security)
         self.enable_openapi = self.load_settings_value(
             "enable_openapi", enable_openapi, is_boolean=True
+        )
+        self.benchmark_mode = bool(
+            self.load_settings_value("benchmark_mode", benchmark_mode, is_boolean=True)
         )
         self.redirect_slashes = self.load_settings_value(
             "redirect_slashes", redirect_slashes, is_boolean=True
@@ -2682,6 +2697,9 @@ class Application(BaseLilya):
 
         It evaluates the middleware passed into the routes from bottom up
         """
+        if self.benchmark_mode:
+            return []
+
         user_middleware = []
 
         if self.allowed_hosts:
@@ -2726,6 +2744,9 @@ class Application(BaseLilya):
         For APIViews, since it's a "wrapper", the handler will update the current list to contain
         both.
         """
+        if self.benchmark_mode:
+            return self.router
+
         debug = self.debug
         error_handler = None
         exception_handlers = {}

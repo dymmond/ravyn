@@ -38,6 +38,7 @@ from lilya.routing import (
     Router as LilyaRouter,
     WebSocketPath as LilyaWebSocketPath,
     compile_path,
+    get_route_path,
 )
 from lilya.types import ASGIApp, Lifespan, Receive, Scope, Send
 from monkay import load
@@ -130,6 +131,8 @@ class BaseRouter(Dispatcher, LilyaRouter):
         "before_request",
         "after_request",
         "_interceptors",
+        "_exact_http_route_map",
+        "_exact_http_route_count",
     )
 
     def __init__(
@@ -676,6 +679,8 @@ class BaseRouter(Dispatcher, LilyaRouter):
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
         self._permissions_cache: dict[int, Any] | VoidType = Void
         self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
+        self._exact_http_route_map: dict[tuple[str, str], tuple[LilyaPath, Any]] = {}
+        self._exact_http_route_count = -1
 
         # Filter out the lilya unique permissions
         if self.__lilya_permissions__:
@@ -760,6 +765,78 @@ class BaseRouter(Dispatcher, LilyaRouter):
 
     def activate(self) -> None:
         self.routes = self.reorder_routes()
+        self._build_exact_http_route_map()
+
+    def _build_exact_http_route_map(self) -> None:
+        """
+        Builds a conservative exact HTTP dispatch map for static paths.
+        The map is only populated for routes that are guaranteed to be safe
+        to dispatch directly without changing route precedence semantics.
+        """
+        exact_route_map: dict[tuple[str, str], tuple[LilyaPath, Any]] = {}
+        encountered_complex_route = False
+
+        for route in self.routes or []:
+            if encountered_complex_route:
+                break
+
+            if isinstance(route, (Include, Host, Router)):
+                encountered_complex_route = True
+                continue
+
+            if not isinstance(route, LilyaPath):
+                encountered_complex_route = True
+                continue
+
+            route_path = getattr(route, "path", None)
+            methods = getattr(route, "methods", None)
+
+            if (
+                not isinstance(route_path, str)
+                or "{" in route_path
+                or "}" in route_path
+                or not methods
+            ):
+                encountered_complex_route = True
+                continue
+
+            dependencies = getattr(route, "dependencies", {})
+            for method in methods:
+                exact_route_map.setdefault((route_path, method.upper()), (route, dependencies))
+
+        self._exact_http_route_map = exact_route_map
+        self._exact_http_route_count = len(self.routes or [])
+
+    async def app(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http":
+            routes = self.routes or []
+            if self._exact_http_route_count != len(routes):
+                self._build_exact_http_route_map()
+
+            exact_route = self._exact_http_route_map.get((get_route_path(scope), scope["method"]))
+            if exact_route is not None:
+                route, dependencies = exact_route
+                base_scope = scope
+
+                path_params = base_scope.get("path_params")
+                child_scope = {
+                    "handler": route.handler,
+                    "path_params": dict(path_params) if path_params else {},
+                    "dependencies": [*base_scope.get("dependencies", []), dependencies],
+                }
+
+                base_scope["route"] = route
+                base_scope["route_path_template"] = getattr(route, "path", None)
+
+                if self.dependency_overrides:
+                    base_scope["dependency_overrides"] = self.dependency_overrides
+
+                new_scope = dict(base_scope)
+                new_scope.update(child_scope)
+                await route.handle_dispatch(new_scope, receive, send)  # type: ignore[arg-type]
+                return
+
+        await super().app(scope, receive, send)
 
     async def handle_interceptors(self, scope: "Scope", receive: "Receive", send: "Send") -> None:
         # Inherit interceptors from parent if any
@@ -2666,6 +2743,7 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         "before_request",
         "after_request",
         "_fn_is_async",
+        "_fast_no_kwargs_method",
     )
 
     def __init__(
@@ -2812,6 +2890,7 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         self._middleware: list[Middleware] = []
         self.__type__: Union[str, None] = None
         self._fn_is_async: bool | VoidType = Void
+        self._fast_no_kwargs_method: str | None = None
         self.before_request = list(before_request or [])
         self.after_request = list(after_request or [])
 
@@ -2912,6 +2991,41 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> Any:
         await self.handle_dispatch(scope=scope, receive=receive, send=send)
 
+    def create_signature_model(self, is_websocket: bool = False) -> None:
+        super().create_signature_model(is_websocket=is_websocket)
+        if not is_websocket:
+            self._refresh_fast_no_kwargs_method()
+
+    def _refresh_fast_no_kwargs_method(self) -> None:
+        self._fast_no_kwargs_method = None
+        if self.before_request or self.after_request:
+            return
+        if len(self.route_map) != 1:
+            return
+
+        method, (_, parameter_model) = next(iter(self.route_map.items()))
+        if not parameter_model.has_kwargs:
+            self._fast_no_kwargs_method = method
+
+    async def _call_route_without_kwargs(self, route: "HTTPHandler") -> Any:
+        fn = route.fn
+        if fn is None:
+            raise RuntimeError("Route function is not set.")
+
+        fn_is_async = route._fn_is_async
+        if fn_is_async is Void:
+            fn_is_async = is_async_callable(fn)
+            route._fn_is_async = fn_is_async
+
+        if isinstance(route.parent, BaseController):
+            if fn_is_async:
+                return await fn(route.parent)
+            return fn(route.parent)
+
+        if fn_is_async:
+            return await fn()
+        return fn()
+
     @property
     def http_methods(self) -> list[str]:
         """
@@ -2991,6 +3105,25 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         Returns:
             None
         """
+        method = scope["method"]
+        fast_method = self._fast_no_kwargs_method
+        if (
+            fast_method is not None
+            and method == fast_method
+            and self._interceptors is Void
+            and not self.interceptors
+            and self._permissions_cache is Void
+            and self._lilya_permissions_cache is Void
+            and not self.permissions
+            and not self.lilya_permissions
+            and not (self.parent and self.parent.permissions)
+        ):
+            route_handler, _ = self.route_map[fast_method]
+            response_data = await self._call_route_without_kwargs(route_handler)
+            response = await route_handler.to_response(app=scope["app"], data=response_data)
+            await response(scope, receive, send)
+            return
+
         if self.before_request:
             for before_request in self.before_request:
                 if inspect.isclass(before_request):
@@ -3004,7 +3137,6 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         if self._interceptors is not Void or self.interceptors:
             await self.handle_interceptors(scope, receive, send)
 
-        method = scope["method"]
         route_data = self.route_map.get(method)
         if route_data is None:
             raise MethodNotAllowed(detail=f"Method {method.upper()} not allowed.")
