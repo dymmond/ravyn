@@ -1,6 +1,6 @@
 import warnings
 from collections.abc import Callable, Iterable, Sequence
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from datetime import timezone as dtimezone
 from inspect import isclass
 from typing import (
@@ -56,7 +56,6 @@ from ravyn.middleware.asyncexitstack import AsyncExitStackMiddleware
 from ravyn.middleware.cors import CORSMiddleware
 from ravyn.middleware.csrf import CSRFMiddleware
 from ravyn.middleware.exceptions import (
-    ExceptionMiddleware,
     RavynAPIException,
 )
 from ravyn.middleware.trustedhost import TrustedHostMiddleware
@@ -134,6 +133,7 @@ class Application(BaseLilya):
         "deprecated",
         "description",
         "enable_openapi",
+        "benchmark_mode",
         "enable_scheduler",
         "exception_handlers",
         "include_in_schema",
@@ -1443,6 +1443,17 @@ class Application(BaseLilya):
                 """
             ),
         ] = None,
+        benchmark_mode: Annotated[
+            Optional[bool],
+            Doc(
+                """
+                Enables a minimal middleware pipeline optimized for benchmark runs.
+
+                This mode bypasses the app-level middleware wrappers and executes
+                directly through the router.
+                """
+            ),
+        ] = None,
         redirect_slashes: Annotated[
             Optional[bool],
             Doc(
@@ -1635,6 +1646,9 @@ class Application(BaseLilya):
         self.security = self.load_settings_value("security", security)
         self.enable_openapi = self.load_settings_value(
             "enable_openapi", enable_openapi, is_boolean=True
+        )
+        self.benchmark_mode = bool(
+            self.load_settings_value("benchmark_mode", benchmark_mode, is_boolean=True)
         )
         self.redirect_slashes = self.load_settings_value(
             "redirect_slashes", redirect_slashes, is_boolean=True
@@ -2683,6 +2697,9 @@ class Application(BaseLilya):
 
         It evaluates the middleware passed into the routes from bottom up
         """
+        if self.benchmark_mode:
+            return []
+
         user_middleware = []
 
         if self.allowed_hosts:
@@ -2727,6 +2744,9 @@ class Application(BaseLilya):
         For APIViews, since it's a "wrapper", the handler will update the current list to contain
         both.
         """
+        if self.benchmark_mode:
+            return self.router
+
         debug = self.debug
         error_handler = None
         exception_handlers = {}
@@ -2751,11 +2771,6 @@ class Application(BaseLilya):
             ]
             + self.user_middleware
             + [
-                DefineMiddleware(
-                    ExceptionMiddleware,
-                    handlers=exception_handlers,
-                    debug=debug,
-                ),
                 DefineMiddleware(
                     AsyncExitStackMiddleware,
                     config=self.async_exit_config,
@@ -2844,7 +2859,12 @@ class Application(BaseLilya):
         return monkay_for_settings.settings
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        with monkay_for_settings.with_settings(self.settings):
+        settings_context = (
+            monkay_for_settings.with_settings(self.settings)
+            if self.settings_module is not None
+            else nullcontext()
+        )
+        with settings_context:
             if scope["type"] == "lifespan":
                 await self.router.lifespan(scope, receive, send)
                 return
@@ -2852,7 +2872,7 @@ class Application(BaseLilya):
             if self.root_path:
                 scope["root_path"] = self.root_path
 
-            scope["state"] = {}
+            scope.setdefault("state", {})
             await super().__call__(scope, receive, send)
 
     def websocket_route(self, path: str, name: Optional[str] = None) -> Callable:

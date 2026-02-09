@@ -221,6 +221,18 @@ def test_405(client):
     assert response.json() == {"detail": "Custom message"}
 
 
+def test_benchmark_mode_uses_minimal_middleware_stack():
+    benchmark_app = Ravyn(
+        routes=[Gateway("/async", handler=async_homepage)],
+        benchmark_mode=True,
+        allowed_hosts=["testserver"],
+    )
+
+    assert benchmark_app.benchmark_mode is True
+    assert benchmark_app.user_middleware == []
+    assert benchmark_app.middleware_stack is benchmark_app.router
+
+
 def test_websocket_raise_websocket_exception(client):
     with client.websocket_connect("/ws-raise-websocket") as session:
         response = session.receive()
@@ -236,8 +248,8 @@ def test_websocket_raise_custom_exception(client):
         response = session.receive()
         assert response == {
             "type": "websocket.close",
-            "code": status.WS_1013_TRY_AGAIN_LATER,
-            "reason": "",
+            "code": 4500,
+            "reason": "CustomWSException()",
         }
 
 

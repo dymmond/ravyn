@@ -456,6 +456,17 @@ class RavynSettings(CacheBackendSettings):
             """
         ),
     ] = True
+    benchmark_mode: Annotated[
+        bool,
+        Doc(
+            """
+            Enables a minimal middleware pipeline optimized for benchmark runs.
+
+            When set to `True`, Ravyn bypasses app-level middleware wrappers and
+            runs directly through the router.
+            """
+        ),
+    ] = False
     redirect_slashes: Annotated[
         bool,
         Doc(

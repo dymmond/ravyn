@@ -38,6 +38,7 @@ from lilya.routing import (
     Router as LilyaRouter,
     WebSocketPath as LilyaWebSocketPath,
     compile_path,
+    get_route_path,
 )
 from lilya.types import ASGIApp, Lifespan, Receive, Scope, Send
 from monkay import load
@@ -130,6 +131,8 @@ class BaseRouter(Dispatcher, LilyaRouter):
         "before_request",
         "after_request",
         "_interceptors",
+        "_exact_http_route_map",
+        "_exact_http_route_count",
     )
 
     def __init__(
@@ -676,6 +679,8 @@ class BaseRouter(Dispatcher, LilyaRouter):
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
         self._permissions_cache: dict[int, Any] | VoidType = Void
         self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
+        self._exact_http_route_map: dict[tuple[str, str], tuple[LilyaPath, Any]] = {}
+        self._exact_http_route_count = -1
 
         # Filter out the lilya unique permissions
         if self.__lilya_permissions__:
@@ -728,20 +733,110 @@ class BaseRouter(Dispatcher, LilyaRouter):
         return isinstance(value, types.MemberDescriptorType)
 
     async def __call__(self, scope: "Scope", receive: "Receive", send: "Send") -> None:
-        await self.handle_interceptors(scope, receive, send)
-        await self.handle_permissions(scope, receive, send)
+        parent = self.parent
+
+        if (
+            self._interceptors is not Void
+            or self.interceptors
+            or (parent is not None and getattr(parent, "interceptors", None))
+        ):
+            await self.handle_interceptors(scope, receive, send)
+
+        if (
+            self._permissions_cache is not Void
+            or self._lilya_permissions_cache is not Void
+            or self.permissions
+            or self.lilya_permissions
+            or (parent is not None and getattr(parent, "permissions", None))
+        ):
+            await self.handle_permissions(scope, receive, send)
+
         await super().__call__(scope, receive, send)
 
     def reorder_routes(self) -> list[Sequence[Union[APIGateHandler, Include]]]:
         routes = sorted(
             self.routes,
-            key=lambda router: router.path != "" and router.path != "/",
-            reverse=True,
+            key=lambda route: not (
+                isinstance(route, (Gateway, WebhookGateway, WebSocketGateway))
+                and getattr(route, "path", None) in ("", "/")
+            ),
         )
         return routes
 
     def activate(self) -> None:
         self.routes = self.reorder_routes()
+        self._build_exact_http_route_map()
+
+    def _build_exact_http_route_map(self) -> None:
+        """
+        Builds a conservative exact HTTP dispatch map for static paths.
+        The map is only populated for routes that are guaranteed to be safe
+        to dispatch directly without changing route precedence semantics.
+        """
+        exact_route_map: dict[tuple[str, str], tuple[LilyaPath, Any]] = {}
+        encountered_complex_route = False
+
+        for route in self.routes or []:
+            if encountered_complex_route:
+                break
+
+            if isinstance(route, (Include, Host, Router)):
+                encountered_complex_route = True
+                continue
+
+            if not isinstance(route, LilyaPath):
+                encountered_complex_route = True
+                continue
+
+            route_path = getattr(route, "path", None)
+            methods = getattr(route, "methods", None)
+
+            if (
+                not isinstance(route_path, str)
+                or "{" in route_path
+                or "}" in route_path
+                or not methods
+            ):
+                encountered_complex_route = True
+                continue
+
+            dependencies = getattr(route, "dependencies", {})
+            for method in methods:
+                exact_route_map.setdefault((route_path, method.upper()), (route, dependencies))
+
+        self._exact_http_route_map = exact_route_map
+        self._exact_http_route_count = len(self.routes or [])
+
+    async def app(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http":
+            routes = self.routes or []
+            if self._exact_http_route_count != len(routes):
+                self._build_exact_http_route_map()
+
+            exact_route = self._exact_http_route_map.get((get_route_path(scope), scope["method"]))
+            if exact_route is not None:
+                route, dependencies = exact_route
+                base_scope = scope
+
+                path_params = base_scope.get("path_params")
+                child_scope = {
+                    "handler": route.handler,
+                    "path_params": dict(path_params) if path_params else {},
+                    "dependencies": [*base_scope.get("dependencies", []), dependencies],
+                }
+
+                base_scope["route"] = route
+                base_scope["route_path_template"] = getattr(route, "path", None)
+
+                if self.dependency_overrides:
+                    base_scope["dependency_overrides"] = self.dependency_overrides
+
+                new_scope = dict(base_scope)
+                new_scope.update(child_scope)
+                await route.handle_dispatch(new_scope, receive, send)
+                return
+
+        await super().app(scope, receive, send)
 
     async def handle_interceptors(self, scope: "Scope", receive: "Receive", send: "Send") -> None:
         # Inherit interceptors from parent if any
@@ -792,8 +887,8 @@ class BaseRouter(Dispatcher, LilyaRouter):
             effective_permissions = self.permissions
             effective_lilya_permissions = self.lilya_permissions
             # Cache the computed permissions
-            self._permissions_cache = effective_permissions or Void
-            self._lilya_permissions_cache = effective_lilya_permissions or Void
+            self._permissions_cache = effective_permissions
+            self._lilya_permissions_cache = effective_lilya_permissions
 
         if not effective_permissions and not effective_lilya_permissions:
             return
@@ -2647,6 +2742,8 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         "__type__",
         "before_request",
         "after_request",
+        "_fn_is_async",
+        "_fast_no_kwargs_method",
     )
 
     def __init__(
@@ -2792,6 +2889,8 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         self.path_regex, self.path_format, self.param_convertors, _ = compile_path(path)
         self._middleware: list[Middleware] = []
         self.__type__: Union[str, None] = None
+        self._fn_is_async: bool | VoidType = Void
+        self._fast_no_kwargs_method: str | None = None
         self.before_request = list(before_request or [])
         self.after_request = list(after_request or [])
 
@@ -2848,8 +2947,8 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
             effective_lilya_permissions = self.lilya_permissions if self.lilya_permissions else {}
 
             # Cache the computed permissions
-            self._permissions_cache = effective_permissions or Void
-            self._lilya_permissions_cache = effective_lilya_permissions or Void
+            self._permissions_cache = effective_permissions
+            self._lilya_permissions_cache = effective_lilya_permissions
 
         if not effective_permissions and not effective_lilya_permissions:
             return
@@ -2891,6 +2990,41 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> Any:
         await self.handle_dispatch(scope=scope, receive=receive, send=send)
+
+    def create_signature_model(self, is_websocket: bool = False) -> None:
+        super().create_signature_model(is_websocket=is_websocket)
+        if not is_websocket:
+            self._refresh_fast_no_kwargs_method()
+
+    def _refresh_fast_no_kwargs_method(self) -> None:
+        self._fast_no_kwargs_method = None
+        if self.before_request or self.after_request:
+            return
+        if len(self.route_map) != 1:
+            return
+
+        method, (_, parameter_model) = next(iter(self.route_map.items()))
+        if not parameter_model.has_kwargs:
+            self._fast_no_kwargs_method = method
+
+    async def _call_route_without_kwargs(self, route: "HTTPHandler") -> Any:
+        fn = route.fn
+        if fn is None:
+            raise RuntimeError("Route function is not set.")
+
+        fn_is_async = route._fn_is_async
+        if fn_is_async is Void:
+            fn_is_async = is_async_callable(fn)
+            route._fn_is_async = fn_is_async
+
+        if isinstance(route.parent, BaseController):
+            if fn_is_async:
+                return await fn(route.parent)
+            return fn(route.parent)
+
+        if fn_is_async:
+            return await fn()
+        return fn()
 
     @property
     def http_methods(self) -> list[str]:
@@ -2971,25 +3105,58 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         Returns:
             None
         """
-        for before_request in self.before_request:
-            if inspect.isclass(before_request):
-                before_request = before_request()
+        method = scope["method"]
+        fast_method = self._fast_no_kwargs_method
+        if (
+            fast_method is not None
+            and method == fast_method
+            and self._interceptors is Void
+            and not self.interceptors
+            and self._permissions_cache is Void
+            and self._lilya_permissions_cache is Void
+            and not self.permissions
+            and not self.lilya_permissions
+            and not (self.parent and self.parent.permissions)
+        ):
+            route_handler, _ = self.route_map[fast_method]
+            response_data = await self._call_route_without_kwargs(route_handler)
+            response = await route_handler.to_response(app=scope["app"], data=response_data)
+            await response(scope, receive, send)
+            return
 
-            if is_async_callable(before_request):
-                await before_request(scope, receive, send)
-            else:
-                await run_in_threadpool(before_request, scope, receive, send)
+        if self.before_request:
+            for before_request in self.before_request:
+                if inspect.isclass(before_request):
+                    before_request = before_request()
 
-        await self.handle_interceptors(scope, receive, send)
+                if is_async_callable(before_request):
+                    await before_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(before_request, scope, receive, send)
 
-        methods = [scope["method"]]
-        await self.allowed_methods(scope, receive, send, methods)
+        if self._interceptors is not Void or self.interceptors:
+            await self.handle_interceptors(scope, receive, send)
 
-        request = Request(scope=scope, receive=receive, send=send)
-        route_handler, parameter_model = self.route_map[scope["method"]]
+        route_data = self.route_map.get(method)
+        if route_data is None:
+            raise MethodNotAllowed(detail=f"Method {method.upper()} not allowed.")
+
+        route_handler, parameter_model = route_data
+        request = (
+            Request(scope=scope, receive=receive, send=send)
+            if parameter_model.has_kwargs
+            else None
+        )
 
         # Check the permissions for the application if they exist.
-        await self.handle_permissions(scope, receive, send)
+        if (
+            self._permissions_cache is not Void
+            or self._lilya_permissions_cache is not Void
+            or self.permissions
+            or self.lilya_permissions
+            or (self.parent is not None and getattr(self.parent, "permissions", None))
+        ):
+            await self.handle_permissions(scope, receive, send)
 
         response = await self.get_response_for_request(
             scope=scope,
@@ -2999,14 +3166,15 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         )
         await response(scope, receive, send)
 
-        for after_request in self.after_request:
-            if inspect.isclass(after_request):
-                after_request = after_request()
+        if self.after_request:
+            for after_request in self.after_request:
+                if inspect.isclass(after_request):
+                    after_request = after_request()
 
-            if is_async_callable(after_request):
-                await after_request(scope, receive, send)
-            else:
-                await run_in_threadpool(after_request, scope, receive, send)
+                if is_async_callable(after_request):
+                    await after_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(after_request, scope, receive, send)
 
     def check_handler_function(self) -> None:
         """Validates the route handler function once it's set by inspecting its
@@ -3295,8 +3463,8 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
             )
 
             # Cache the computed permissions
-            self._permissions_cache = effective_permissions or Void
-            self._lilya_permissions_cache = effective_lilya_permissions or Void
+            self._permissions_cache = effective_permissions
+            self._lilya_permissions_cache = effective_lilya_permissions
 
         if not effective_permissions and not effective_lilya_permissions:
             return
@@ -3371,22 +3539,31 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
             None
         """
 
-        for before_request in self.before_request:
-            if inspect.isclass(before_request):
-                before_request = before_request()
+        if self.before_request:
+            for before_request in self.before_request:
+                if inspect.isclass(before_request):
+                    before_request = before_request()
 
-            if is_async_callable(before_request):
-                await before_request(scope, receive, send)
-            else:
-                await run_in_threadpool(before_request, scope, receive, send)
+                if is_async_callable(before_request):
+                    await before_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(before_request, scope, receive, send)
 
         # Handle the interceptors for the WebSocket handler.
-        await self.handle_interceptors(scope, receive, send)
+        if self._interceptors is not Void or self.interceptors:
+            await self.handle_interceptors(scope, receive, send)
 
         websocket = WebSocket(scope=scope, receive=receive, send=send)
 
         # Manages the permissions for the WebSocket handler.
-        await self.handle_permissions(scope, receive, send)
+        if (
+            self._permissions_cache is not Void
+            or self._lilya_permissions_cache is not Void
+            or self.permissions
+            or self.lilya_permissions
+            or (self.parent is not None and getattr(self.parent, "permissions", None))
+        ):
+            await self.handle_permissions(scope, receive, send)
 
         kwargs = await self.get_kwargs(websocket=websocket)
 
@@ -3396,14 +3573,15 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         else:
             await fn(**kwargs)
 
-        for after_request in self.after_request:
-            if inspect.isclass(after_request):
-                after_request = after_request()
+        if self.after_request:
+            for after_request in self.after_request:
+                if inspect.isclass(after_request):
+                    after_request = after_request()
 
-            if is_async_callable(after_request):
-                await after_request(scope, receive, send)
-            else:
-                await run_in_threadpool(after_request, scope, receive, send)
+                if is_async_callable(after_request):
+                    await after_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(after_request, scope, receive, send)
 
     async def get_kwargs(self, websocket: WebSocket) -> Any:
         """Resolves the required kwargs from the request data.
@@ -4045,8 +4223,8 @@ class Include(Dispatcher, LilyaInclude):
                 self.lilya_permissions.copy() if self.lilya_permissions else {}
             )
             # Cache the computed permissions
-            self._permissions_cache = effective_permissions or Void
-            self._lilya_permissions_cache = effective_lilya_permissions or Void
+            self._permissions_cache = effective_permissions
+            self._lilya_permissions_cache = effective_lilya_permissions
 
         if not effective_permissions and not effective_lilya_permissions:
             return
@@ -4078,6 +4256,15 @@ class Include(Dispatcher, LilyaInclude):
         In the call we need to make sure we call the permissions and validations first to
         assure it won't even reach the lower app and run the validation against.
         """
-        await self.handle_interceptors(scope, receive, send)
-        await self.handle_permissions(scope, receive, send)
+        if self._interceptors is not Void or self.interceptors:
+            await self.handle_interceptors(scope, receive, send)
+
+        if (
+            self._permissions_cache is not Void
+            or self._lilya_permissions_cache is not Void
+            or self.permissions
+            or self.lilya_permissions
+        ):
+            await self.handle_permissions(scope, receive, send)
+
         await super().handle_dispatch(scope, receive, send)
