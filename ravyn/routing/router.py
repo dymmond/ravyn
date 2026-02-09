@@ -833,7 +833,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
 
                 new_scope = dict(base_scope)
                 new_scope.update(child_scope)
-                await route.handle_dispatch(new_scope, receive, send)  # type: ignore[arg-type]
+                await route.handle_dispatch(new_scope, receive, send)
                 return
 
         await super().app(scope, receive, send)
