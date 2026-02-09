@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{{ project_name }}"
+version = "0.1.0"
+description = "Project generated via Ravyn version: {{ ravyn_version }}"
+requires-python = ">=3.14"
+dependencies = [
+  "ravyn[standard]>={{ ravyn_version }}",
+  "gunicorn",
+  "uvicorn"
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.15.0",
+]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pytest-asyncio",
+  "anyio",
+  "coverage",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+asyncio_mode = "auto"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["{{ project_name }}*"]
+exclude = ["deployment", "tests"]
+namespaces = false

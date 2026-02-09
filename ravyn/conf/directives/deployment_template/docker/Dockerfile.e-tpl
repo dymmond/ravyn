@@ -7,8 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx supervisor curl \
     && rm -rf /var/lib/apt/lists/*
 
-# COPY requirements /var/www/requirements
-# RUN pip install --upgrade -r /var/www/requirements/requirements.txt
+COPY pyproject.toml /var/www/
+# RUN pip install --upgrade -e /var/www/
 
 COPY {{ project_name }} /var/www/{{ project_name }}
 COPY {{ deployment_folder }}/gunicorn/gunicorn_conf.py /var/www/

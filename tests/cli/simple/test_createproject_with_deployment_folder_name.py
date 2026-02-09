@@ -73,9 +73,7 @@ def _run_asserts():
     assert os.path.isfile("myproject/myproject/app.py") is True
     assert os.path.isfile("myproject/myproject/tests/__init__.py") is True
     assert os.path.isfile("myproject/myproject/tests/test_app.py") is True
-    assert os.path.isfile("myproject/requirements/base.txt") is True
-    assert os.path.isfile("myproject/requirements/testing.txt") is True
-    assert os.path.isfile("myproject/requirements/development.txt") is True
+    assert os.path.isfile("myproject/pyproject.toml") is True
 
 
 def test_create_project_files_with_env_var(create_folders):

@@ -73,10 +73,8 @@ def _run_asserts(names: list[str] | None = None):
         assert os.path.isfile("myproject/myproject/configs/testing/__init__.py") is True
         assert os.path.isfile("myproject/myproject/configs/testing/settings.py") is True
         assert os.path.isfile("myproject/myproject/apps/__init__.py") is True
-        assert os.path.isfile("myproject/requirements/base.txt") is True
-        assert os.path.isfile("myproject/requirements/testing.txt") is True
-        assert os.path.isfile("myproject/requirements/development.txt") is True
-    else:
+        assert os.path.isfile("myproject/pyproject.toml") is True
+
         for name in names:
             assert os.path.isfile(f"{name}/Taskfile.yaml") is True
             assert os.path.isfile(f"{name}/README.md") is True
@@ -94,9 +92,7 @@ def _run_asserts(names: list[str] | None = None):
             assert os.path.isfile(f"{name}/{name}/configs/testing/__init__.py") is True
             assert os.path.isfile(f"{name}/{name}/configs/testing/settings.py") is True
             assert os.path.isfile(f"{name}/{name}/apps/__init__.py") is True
-            assert os.path.isfile(f"{name}/requirements/base.txt") is True
-            assert os.path.isfile(f"{name}/requirements/testing.txt") is True
-            assert os.path.isfile(f"{name}/requirements/development.txt") is True
+            assert os.path.isfile(f"{name}/pyproject.toml") is True
 
 
 def test_create_project_files_with_env_var(create_folders):

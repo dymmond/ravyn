@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.3.7
+
+### Changed
+
+- Update to the latest fastest Lilya and fix broken internal interface.
+- Directive `createproject` now generates a `pyproject.toml` instead of a requirements folder.
+
 ## 0.3.6
 
 ### Added
