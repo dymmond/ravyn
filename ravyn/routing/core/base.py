@@ -1005,7 +1005,7 @@ class Dispatcher(BaseSignature, BaseDispatcher, OpenAPIDefinitionMixin):
             security_schemes.extend(layer.security or [])
         return security_schemes
 
-    def get_handler_tags(self) -> list[str]:
+    def get_handler_tags(self) -> list[str] | None:
         """
         Returns all the tags associated with the handler by checking the parents as well.
 
@@ -1035,4 +1035,4 @@ class Dispatcher(BaseSignature, BaseDispatcher, OpenAPIDefinitionMixin):
             if tag not in tags_clean:
                 tags_clean.append(tag)
 
-        return tags_clean
+        return tags_clean if tags_clean else None
