@@ -1,4 +1,4 @@
-from typing import Any, Callable, Mapping, Optional, Type, Union
+from typing import Any, Awaitable, Callable, Mapping, Optional, Type, Union, cast
 
 from lilya import status
 from lilya.compat import is_async_callable
@@ -100,7 +100,10 @@ class RavynAPIException:  # pragma: no cover
                     exception_handler = self.default_http_exception_handler  # type: ignore
                 request = Request(scope, receive, send)
                 if is_async_callable(exception_handler):
-                    response = await exception_handler(request, ex)
+                    async_handler = cast(
+                        Callable[[Request, Exception], Awaitable[LilyaResponse]], exception_handler
+                    )
+                    response = await async_handler(request, ex)
                 else:
                     response = await run_in_threadpool(exception_handler, request, ex)
                 await response(scope, receive, send)

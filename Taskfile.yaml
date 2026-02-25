@@ -30,8 +30,8 @@ tasks:
     cmds:
       - hatch run format
 
-  mypy:
-    desc: Runs the type checker only, no formatting
+  ty:
+    desc: Runs the ty type checker only, no formatting
     cmds:
       - hatch run test:check_types
 

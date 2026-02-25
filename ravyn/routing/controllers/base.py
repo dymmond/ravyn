@@ -451,7 +451,7 @@ class BaseController:
             if self.exception_handlers:
                 route_handler.exception_handlers = self.get_exception_handlers(route_handler)  # type: ignore
 
-            if self.tags or []:  # pragma: no cover
+            if self.tags:  # pragma: no cover
                 for tag in reversed(self.tags):
                     route_handler.tags.insert(0, tag)
 
@@ -474,6 +474,9 @@ class BaseController:
         Gets the list of extended middlewares for the handler starting from the last
         to the first by reversing the list
         """
+        if self.middleware is None:
+            return
+
         for middleware in reversed(self.middleware):
             handler.middleware.insert(0, middleware)
 

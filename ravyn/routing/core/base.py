@@ -274,9 +274,9 @@ class BaseResponseHandler:
             int: The default status code for the response.
         """
         default_response_status_code = status.HTTP_200_OK
-        if data.status_code != default_response_status_code:
+        if data.status_code is not None and data.status_code != default_response_status_code:
             return data.status_code
-        return cast(int, self.status_code)
+        return self.status_code or default_response_status_code
 
     def _get_response_container_handler(
         self,
@@ -1035,4 +1035,4 @@ class Dispatcher(BaseSignature, BaseDispatcher, OpenAPIDefinitionMixin):
             if tag not in tags_clean:
                 tags_clean.append(tag)
 
-        return tags_clean if tags_clean else None
+        return tags_clean

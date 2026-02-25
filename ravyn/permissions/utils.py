@@ -31,7 +31,7 @@ async def continue_or_raise_permission_exception(
                 message=getattr(permission, "message", None),
             )
     else:
-        is_permission = await has_permission(request, controller)
+        is_permission = await cast(Any, has_permission)(request, controller)
         if not is_permission:
             permission_denied(
                 request,
