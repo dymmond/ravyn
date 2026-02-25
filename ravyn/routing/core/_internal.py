@@ -7,11 +7,6 @@ from lilya.datastructures import DataUpload
 from pydantic import BaseModel, create_model
 from pydantic.fields import FieldInfo
 
-try:
-    from typing import _GenericAlias  # noqa
-except ImportError:
-    from types import GenericAlias as _GenericAlias
-
 from ravyn.core.datastructures import UploadFile
 from ravyn.encoders import LILYA_ENCODER_TYPES, is_body_encoder
 from ravyn.openapi.params import ResponseParam
@@ -159,7 +154,7 @@ def convert_annotation_to_pydantic_model(field_annotation: Any) -> Any:
 
         if is_structure or is_instance:
             # If the encoder is a generic alias (e.g., a parameterized encoder class)
-            if isinstance(field_annotation, _GenericAlias):
+            if get_origin(field_annotation) is not None:
                 # Recursively convert the generic arguments
                 annotations: tuple[Any, ...] = tuple(
                     convert_annotation_to_pydantic_model(arg) for arg in args

@@ -13,12 +13,6 @@ from typing import (
     get_origin,
 )
 
-try:
-    from typing import _GenericAlias  # noqa
-except ImportError:
-    from types import GenericAlias as _GenericAlias
-
-
 from lilya.exceptions import HTTPException as LilyaHTTPException
 from orjson import loads
 from pydantic import ValidationError, create_model
@@ -517,7 +511,7 @@ class SignatureFactory(ArbitraryExtraBaseModel):
         args = get_args(param)
 
         for arg in args:
-            if isinstance(arg, _GenericAlias):
+            if get_origin(arg) is not None:
                 arguments.extend(self.extract_arguments(param=arg, argument_list=arguments))
             else:
                 if arg not in arguments:

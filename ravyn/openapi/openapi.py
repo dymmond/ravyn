@@ -7,12 +7,8 @@ from typing import (
     Sequence,
     Set,
     cast,
+    get_origin,
 )
-
-try:
-    from typing import _GenericAlias  # noqa
-except ImportError:
-    from types import GenericAlias as _GenericAlias
 
 from lilya._internal._path import clean_path
 from lilya.contrib.security.base import (
@@ -120,7 +116,7 @@ def get_flat_params(route: router.HTTPHandler | Any, body_fields: list[str]) -> 
                 query_params.append(param.field_info)
 
         else:
-            if isinstance(param.field_info.annotation, _GenericAlias) and not is_base_requires(
+            if get_origin(param.field_info.annotation) is not None and not is_base_requires(
                 param.field_info.default
             ):
                 query_params.append(param.field_info)

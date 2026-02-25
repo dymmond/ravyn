@@ -4,7 +4,7 @@ from typing import Any, Optional, Tuple, Union
 from lilya._internal._path import clean_path
 from lilya.staticfiles import StaticFiles
 from lilya.types import ASGIApp
-from pydantic import BaseModel, DirectoryPath, constr, field_validator
+from pydantic import BaseModel, DirectoryPath, StringConstraints, field_validator
 from typing_extensions import Annotated, Doc
 
 DirectoryType = Union[DirectoryPath, str, Path, Any]
@@ -35,7 +35,8 @@ class StaticFilesConfig(BaseModel):
     """
 
     path: Annotated[  # type: ignore
-        constr(min_length=1),
+        str,
+        StringConstraints(min_length=1),
         Doc(
             """
             The path for the statics.

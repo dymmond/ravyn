@@ -65,10 +65,10 @@ jobs:
       - name: "Install dependencies"
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          pip install hatch
+          pip install hatch virtualenv==20.39.1
       - name: "Run linting checks"
         run: "hatch run lint"
-      - name: "Run mypy"
+      - name: "Run ty"
         run: "hatch run test:check_types"
       - name: "Run tests"
         env:

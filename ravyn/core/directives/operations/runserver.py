@@ -145,10 +145,12 @@ def runserver(
                 "[pink]The [bold]Ravyn[/bold] object is imported using the following code:[/pink]",
                 tag="code",
             )
-            toolkit.print(
-                f"[underline]from [bold]{env.module_info.module_import[0]}[/bold] import [bold]{env.module_info.module_import[1]}[/bold]",
-                tag=env.module_info.module_import[1],
-            )
+            module_import = env.module_info.module_import
+            if module_import:
+                toolkit.print(
+                    f"[underline]from [bold]{module_import[0]}[/bold] import [bold]{module_import[1]}[/bold]",
+                    tag=module_import[1],
+                )
 
         # For the text access
         url = f"http://{host}:{port}"

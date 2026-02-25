@@ -45,6 +45,8 @@ class TemplateDirective(BaseDirective):
             self.validate_name(name)
             top_dir = os.path.join(self.location, name)
         else:
+            if not self.deployment_folder_name:
+                raise DirectiveError("deployment_folder_name is required for project directives")
             top_dir = os.path.join(self.location, self.deployment_folder_name)
 
         try:

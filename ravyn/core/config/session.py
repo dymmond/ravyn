@@ -1,6 +1,6 @@
 from typing import Union
 
-from pydantic import BaseModel, ConfigDict, constr, field_validator
+from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator
 from typing_extensions import Annotated, Doc, Literal
 
 from ravyn.core.datastructures import Secret
@@ -58,7 +58,8 @@ class SessionConfig(BaseModel):
         ),
     ] = "/"
     session_cookie: Annotated[  # type: ignore
-        constr(min_length=1, max_length=256),
+        str,
+        StringConstraints(min_length=1, max_length=256),
         Doc(
             """
             The name for the session cookie.
