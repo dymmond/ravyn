@@ -258,15 +258,15 @@ from ravyn import Ravyn, get
 def test_simple_route():
     """Test basic route functionality."""
     app = Ravyn()
-    
+
     @get("/hello")
     def hello() -> dict:
         return {"message": "Hello, World!"}
-    
+
     app.add_route(hello)
-    
+
     from ravyn import RavynTestClient
-    
+
     with RavynTestClient(app) as client:
         response = client.get("/hello")
         assert response.status_code == 200
@@ -280,6 +280,9 @@ def test_simple_route():
 ### Building Documentation
 
 ```bash
+# Prepare generated docs sources
+hatch run docs:prepare
+
 # Build all documentation
 hatch run docs:build
 
@@ -290,25 +293,30 @@ hatch run docs:build_lang en
 ### Serving Documentation Locally
 
 ```bash
-# Serve docs with live reload
+# Serve default language (English)
 hatch run docs:serve
 
 # Serve on specific port
 hatch run docs:serve -p 8080
 
-# Serve specific language
-hatch run docs:serve_lang es
+# Serve one specific language
+hatch run docs:serve --lang en
+
+# Serve all languages (for language switcher/full preview)
+hatch run docs:serve --all
 ```
 
 The documentation will be available at `http://localhost:8000`.
 
 !!! tip
-    You can also manually run `mkdocs serve` in the `docs/en/` directory.
+    To preview an already built multi-language site, run `hatch run docs:dev`.
 
 ### Documentation Structure
 
-- Documentation uses [MkDocs](https://www.mkdocs.org/)
-- All docs are in Markdown format in `./docs/en/`
+- Documentation build uses [Zensical](https://github.com/zensical/zensical) with MkDocs-compatible configs in `./docs/<lang>/mkdocs.yaml`
+- Source docs are in Markdown format in `./docs/en/` and `./docs/<lang>/`
+- Generated build-ready docs are written to `./docs/<lang>/generated/`
+- Per-language build configs are at `./docs/<lang>/mkdocs.yaml`
 - Code examples are in `./docs_src/` directory
 - Code blocks are included/injected when generating the site
 
@@ -334,14 +342,14 @@ We follow PEP 8 with some modifications:
 # Good
 class UserController:
     """Handle user-related operations."""
-    
+
     async def get_user(self, user_id: int) -> dict:
         """
         Get user by ID.
-        
+
         Args:
             user_id: The user's ID
-            
+
         Returns:
             User data dictionary
         """
@@ -460,7 +468,7 @@ Then copy files from `docs/en/docs/` to `docs/es/docs/` and translate.
 hatch run docs:new_lang ht
 ```
 
-This creates `docs/ht/mkdocs.yml` and `docs/ht/index.md` to get started.
+This creates `docs/ht/mkdocs.yaml` and `docs/ht/docs/index.md` to get started.
 
 ---
 

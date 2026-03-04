@@ -364,6 +364,27 @@ Now that you have Ravyn running, explore these topics:
 - [Deployment](./deployment/intro.md) - Deploy your application
 - [OpenAPI Configuration](./configurations/openapi/config.md) - Customize API docs
 
+## Documentation Development
+
+```bash
+# Build all documentation languages
+hatch run docs:build
+
+# Build one language
+hatch run docs:build_lang en
+
+# Serve default language (English)
+hatch run docs:serve
+
+# Serve all languages
+hatch run docs:serve --all
+
+# Serve a specific language
+hatch run docs:serve --lang ru
+```
+
+For contributor docs workflow and translation steps, see [Contributing](./contributing.md).
+
 ---
 
 ## Requirements
@@ -407,9 +428,6 @@ Ravyn is an open source project and we love your contribution!
     </a>
     <a href="https://discord.gg/eMrM9sWWvu" target="_blank">
         <img src="https://img.shields.io/discord/1018998928332570634?logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord">
-    </a>
-    <a href="https://twitter.com/ravyn_framework" target="_blank">
-        <img src="https://img.shields.io/twitter/follow/ravyn_framework?style=social" alt="Twitter">
     </a>
 </p>
 

@@ -3,6 +3,7 @@ hide:
 
   - navigation
 ---
+# Ravyn
 
 <p align="center">
   <a href="https://ravyn.dev"><img src="https://res.cloudinary.com/dymmond/image/upload/v1759490296/ravyn/img/logo_pb3fis.png" alt='Ravyn'></a>
@@ -409,9 +410,6 @@ Ravyn is an open source project and we love your contribution!
     </a>
     <a href="https://discord.gg/eMrM9sWWvu" target="_blank">
         <img src="https://img.shields.io/discord/1018998928332570634?logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord">
-    </a>
-    <a href="https://twitter.com/ravyn_framework" target="_blank">
-        <img src="https://img.shields.io/twitter/follow/ravyn_framework?style=social" alt="Twitter">
     </a>
 </p>
 

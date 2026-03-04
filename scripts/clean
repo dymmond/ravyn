@@ -9,6 +9,17 @@ fi
 if [ -d 'site_lang' ] ; then
     rm -r site_lang
 fi
+if [ -d 'docs/generated' ] ; then
+    rm -r docs/generated
+fi
+if [ -d '.cache/docs-sites' ] ; then
+    rm -r .cache/docs-sites
+fi
+for path in docs/*/generated docs/*/site docs/*/.generated docs/*/.site ; do
+    if [ -d "$path" ] ; then
+        rm -r "$path"
+    fi
+done
 if [ -d 'htmlcov' ] ; then
     rm -r htmlcov
 fi
