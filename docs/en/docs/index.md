@@ -1,8 +1,3 @@
----
-hide:
-
-  - navigation
----
 # Ravyn
 
 <p align="center">
@@ -95,6 +90,27 @@ Ravyn automatically generates interactive API documentation:
 - **Stoplight Elements**: [http://127.0.0.1:8000/docs/elements](http://127.0.0.1:8000/docs/elements)
 
 **Congratulations!** 🎉 You've built your first Ravyn API.
+
+---
+
+## Documentation Paths
+
+Choose the path that matches your current goal:
+
+- **Learn progressively**: [Tutorials](./tutorials/index.md)
+- **Solve a concrete task**: [How-to Guides](./how-to/index.md)
+- **Understand internals**: [Concepts](./concepts/index.md)
+- **Look up signatures and options**: [API Reference](./references/index.md)
+- **Standardize team process**: [Developer Workflows](./workflows/index.md)
+
+```mermaid
+flowchart LR
+    A["Start Here"] --> B["Tutorials"]
+    A --> C["How-to Guides"]
+    A --> D["Concepts"]
+    D --> E["API Reference"]
+    B --> C
+```
 
 ---
 

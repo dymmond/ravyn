@@ -86,7 +86,34 @@ markdown_extensions:
     alternate_style: true
 - md_in_html
 nav:
-- Ravyn: index.md
+- Start Here:
+  - Overview: index.md
+  - Learning and Examples: guides/index.md
+  - Beginner Quick Start: guides/beginner/index.md
+  - Troubleshooting: troubleshooting.md
+- Tutorials:
+  - tutorials/index.md
+  - Build a Production API:
+    - tutorials/build-a-production-api/index.md
+    - Bootstrap Project: tutorials/build-a-production-api/01-bootstrap.md
+    - Routing and Models: tutorials/build-a-production-api/02-routing-and-models.md
+    - Auth and Permissions: tutorials/build-a-production-api/03-auth-and-permissions.md
+    - Testing and Deployment: tutorials/build-a-production-api/04-testing-and-deploy.md
+- How-to Guides:
+  - how-to/index.md
+  - Add JWT Authentication: how-to/add-jwt-authentication.md
+  - Structure a Large Project: how-to/structure-a-large-ravyn-project.md
+  - Add Observability and Logging: how-to/add-observability-and-logging.md
+- Concepts:
+  - concepts/index.md
+  - System Architecture: concepts/system-architecture.md
+  - Request Lifecycle: concepts/request-lifecycle.md
+  - Component Interactions: concepts/component-interactions.md
+  - Data Flow: concepts/data-flow.md
+- Workflows:
+  - workflows/index.md
+  - Local Development Loop: workflows/local-dev-loop.md
+  - Testing, Debugging, and Release: workflows/testing-debugging-release.md
 - Learning and Examples:
   - Getting Started:
     - Quick Start: guides/beginner/index.md
@@ -97,10 +124,13 @@ nav:
     - Middlewares: guides/beginner/06-middlewares.md
     - Background Tasks: guides/beginner/07-background-tasks.md
     - Dependencies: guides/beginner/08-dependencies.md
+    - Requests and Responses: guides/beginner/09-requests-and-responses.md
+    - A bit more about Routing: guides/beginner/10-routing.md
     - Troubleshooting: troubleshooting.md
   - Advanced Guides:
     - guides/more-advanced/index.md
     - Security Patterns: guides/more-advanced/01-security.md
+    - Deployment Basics: guides/more-advanced/03-deployment.md
     - Architecture: guides/more-advanced/05-architecture-patterns.md
     - Dependency Injection: guides/more-advanced/06-dependency-injection.md
     - Advanced Concepts: guides/more-advanced/07-advanced-concepts.md
@@ -127,6 +157,7 @@ nav:
     - Router: routing/router.md
     - Webhooks: routing/webhooks.md
   - Requests & Responses:
+    - extras/index.md
     - Requests: requests.md
     - Responses: responses.md
     - Path Parameters: extras/path-params.md
@@ -161,6 +192,7 @@ nav:
     - Available Security: security/available-security.md
     - Password Hashers: password-hashers.md
 - Features:
+  - features/index.md
   - Introspection: introspection.md
   - Middleware:
     - middleware/index.md
@@ -184,6 +216,7 @@ nav:
   - Protocols: protocols.md
   - Extensions: extensions.md
   - Relay: relay.md
+  - Experimental Features: experimental/index.md
   - gRPC: experimental/grpc.md
   - Testing & Deployment:
     - Testing:
@@ -230,15 +263,58 @@ nav:
       - Responses: contrib/shortcuts/responses.md
 - API Reference:
   - references/index.md
-  - Ravyn: references/ravyn.md
-  - Application: references/application/settings.md
-  - Configurations: references/configurations/index.md
-  - Routing: references/routing/router.md
-  - Middleware: references/middleware/middlewares.md
-  - Responses: references/responses/response.md
-  - Exceptions: references/exceptions.md
-  - Request: references/request.md
-  - Test Client: references/test-client.md
+  - Core:
+    - Ravyn: references/ravyn.md
+    - Application: references/application/settings.md
+    - Request: references/request.md
+    - Context: references/context.md
+    - Test Client: references/test-client.md
+  - Routing:
+    - Router: references/routing/router.md
+    - Gateway: references/routing/gateway.md
+    - Handlers: references/routing/handlers.md
+    - Include: references/routing/include.md
+    - View: references/routing/view.md
+    - Webhook Gateway: references/routing/webhookgateway.md
+    - WebSocket Gateway: references/routing/websocketgateway.md
+  - Configurations:
+    - Index: references/configurations/index.md
+    - CORS: references/configurations/cors.md
+    - CSRF: references/configurations/csrf.md
+    - JWT: references/configurations/jwt.md
+    - OpenAPI: references/configurations/openapi.md
+    - Session: references/configurations/session.md
+    - Static Files: references/configurations/static_files.md
+    - Template: references/configurations/template.md
+  - Middleware:
+    - Base: references/middleware/middlewares.md
+    - Authentication: references/middleware/authentication.md
+    - BaseAuth: references/middleware/baseauth.md
+  - Responses:
+    - Base Response: references/responses/response.md
+    - JSON: references/responses/json.md
+    - JSONResponse: references/responses/json-response.md
+    - ORJSON: references/responses/orjson.md
+    - ORJSONResponse: references/responses/orjson-response.md
+    - UJSON: references/responses/ujson.md
+    - UJSONResponse: references/responses/ujson-response.md
+    - Template: references/responses/template.md
+    - TemplateResponse: references/responses/template-response.md
+    - OpenAPIResponse: references/responses/openapi-response.md
+    - Redirect: references/responses/redirect.md
+    - Stream: references/responses/stream.md
+    - File: references/responses/file.md
+  - Utilities:
+    - Exceptions: references/exceptions.md
+    - UploadFile: references/uploadfile.md
+    - Background: references/background.md
+    - Extensions: references/extensions.md
+    - Injector: references/injector.md
+    - Interceptors: references/interceptors.md
+    - Permissions: references/permissions.md
+    - Pluggables: references/pluggables.md
+    - Status Codes: references/status-codes.md
+    - WebSockets: references/websockets.md
 - About:
   - About Ravyn: about.md
   - Sponsorship: sponsorship.md

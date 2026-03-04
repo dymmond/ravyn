@@ -38,3 +38,4 @@ This section is for developers already comfortable with Ravyn basics and ready t
 ## Next step
 
 Continue with [Security](./01-security.md).
+For architecture-first reading, see [Concepts](../../concepts/index.md).

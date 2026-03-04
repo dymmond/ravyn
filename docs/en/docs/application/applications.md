@@ -37,6 +37,21 @@ Ravyn instance
 
 This is the core execution model you will see repeated across the framework.
 
+### Architecture at a glance
+
+```mermaid
+flowchart LR
+    Server["ASGI Server"] --> App["Ravyn"]
+    App --> RouteTree["Gateway / Include / Router"]
+    App --> Pipeline["Middleware / Interceptors / Permissions"]
+    RouteTree --> Handler["Handler / Controller Method"]
+    Handler --> Services["Service / DAO Layer"]
+    Services --> Storage["DB / Cache / External API"]
+    Handler --> Response["Response Serialization"]
+```
+
+For a detailed architectural walkthrough, see [System Architecture](../concepts/system-architecture.md).
+
 ---
 
 ## Creating an Application
