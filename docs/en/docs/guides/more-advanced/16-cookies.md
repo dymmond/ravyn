@@ -93,7 +93,7 @@ app = Ravyn(routes=[Gateway(handler=create_user)])
   ```
 - For response cookies:
   ```python
-  from ravyn.datastructures import Cookie
+  from ravyn.core.datastructures import Cookie
   ```
 
 ## Combining Cookie Parameters with Other Request Data

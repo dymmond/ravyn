@@ -82,9 +82,9 @@ import redis.asyncio as redis
 async def lifespan(app: Ravyn):
     # Startup: Connect to Redis
     app.state.redis = await redis.from_url("redis://localhost")
-    
+
     yield
-    
+
     # Shutdown: Close connection
     await app.state.redis.close()
 
@@ -115,7 +115,7 @@ Create reusable extensions:
 
 ```python
 from ravyn import Ravyn
-from ravyn.extensions import Extension
+from ravyn import Extension
 
 class MyServiceExtension(Extension):
     def extend(self, app: Ravyn, **kwargs):
@@ -169,11 +169,11 @@ async def lifespan(app: Ravyn):
     # Create engine
     engine = create_async_engine("postgresql+asyncpg://localhost/mydb")
     SessionLocal = sessionmaker(engine, class_=AsyncSession)
-    
+
     app.state.db_session = SessionLocal
-    
+
     yield
-    
+
     await engine.dispose()
 
 app = Ravyn(lifespan=lifespan)
@@ -363,9 +363,9 @@ async def lifespan(app: Ravyn):
     # Setup
     app.state.redis = await redis.from_url("redis://localhost")
     app.state.db = await database.connect()
-    
+
     yield
-    
+
     # Cleanup
     await app.state.redis.close()
     await app.state.db.disconnect()

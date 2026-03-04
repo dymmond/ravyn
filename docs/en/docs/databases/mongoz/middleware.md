@@ -15,7 +15,7 @@ JWT (JSON Web Tokens) work the same way. They're digital wristbands that prove a
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import JWTConfig
+from ravyn.core.config.jwt import JWTConfig
 from ravyn.contrib.auth.mongoz.middleware import JWTAuthMiddleware
 from accounts.documents import User
 
@@ -212,7 +212,7 @@ JWTAuthMiddleware(config=config, user=User)
 
 ```python
 import os
-from ravyn.config import JWTConfig
+from ravyn.core.config.jwt import JWTConfig
 
 config = JWTConfig(
     secret=os.getenv("JWT_SECRET"),

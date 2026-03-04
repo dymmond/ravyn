@@ -26,7 +26,7 @@ registry = Registry(client)
 class User(Document):
     name = fields.String(max_length=100)
     email = fields.Email()
-    
+
     class Meta:
         registry = registry
         database = "myapp"
@@ -99,7 +99,7 @@ class User(Document):
     name = fields.String(max_length=100)
     email = fields.Email()
     age = fields.Integer(minimum=0)
-    
+
     class Meta:
         registry = registry
         database = "myapp"
@@ -213,7 +213,7 @@ Ravyn provides built-in support for Mongoz:
 Pre-built authentication documents:
 
 ```python
-from ravyn.contrib.auth.mongoz.documents import User
+from ravyn.contrib.auth.mongoz.base_user import User
 
 # Ready-to-use User document with:
 # - Password hashing
@@ -268,7 +268,7 @@ class AppSettings(RavynSettings):
     @property
     def mongo_client(self):
         return Client(self.mongodb_url)
-    
+
     @property
     def mongo_registry(self):
         return Registry(self.mongo_client)
@@ -279,7 +279,7 @@ class AppSettings(RavynSettings):
 ```python
 class User(Document):
     email = fields.Email()
-    
+
     class Meta:
         registry = registry
         database = "myapp"

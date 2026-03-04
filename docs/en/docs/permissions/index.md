@@ -1,70 +1,133 @@
 # Permissions
 
-Control who can access what in your Ravyn application. Permissions let you restrict endpoints based on user roles, authentication status, or custom logic. Perfect for building secure APIs with fine-grained access control.
+Control who can access what in your Ravyn application.
+
+Permissions are authorization rules evaluated before the handler runs. They are ideal for role checks, access policies, and endpoint-level protection.
 
 ## What You'll Learn
 
-- What permissions are and when to use them
-- Authentication vs Authorization
-- Using Ravyn's native permission system
-- Using Lilya's permission protocol
-- Applying permissions at different levels
-- Creating custom permission classes
+- Ravyn native permission classes.
+- Where to apply permissions (app, include, gateway, handler).
+- How to create custom permissions.
+- How to combine permissions with logical operators.
 
 ## Quick Start
 
 ```python
-from ravyn import Ravyn, get
+from ravyn import Ravyn, Gateway, get
 from ravyn.permissions import IsAuthenticated
 
-@get("/profile", permissions=[IsAuthenticated])
-def get_profile(request) -> dict:
-    return {"user": request.user.username}
+@get()
+async def profile() -> dict:
+    return {"ok": True}
 
 app = Ravyn(
-    routes=[...],
-    permissions=[IsAuthenticated]  # Apply globally
+    routes=[Gateway("/profile", handler=profile)],
+    permissions=[IsAuthenticated],
 )
 ```
 
----
+## Built-in Ravyn permissions
 
-## Authentication vs Authorization
+Ravyn provides these built-ins:
 
-## Ravyn Native System
+- `AllowAny`
+- `DenyAll`
+- `IsAuthenticated`
+- `IsAdminUser`
+- `IsAuthenticatedOrReadOnly`
 
-The Ravyn native system allows you to define permissions directly within your application. Here is an example:
-
-```python
-from ravyn.permissions import Permission
-
-class ViewDashboardPermission(Permission):
-    def has_permission(self, request, view):  # or async has_permission
-        return request.user.is_authenticated and request.user.has_role('admin')
-```
-
-## Lilya Permissions
-
-Lilya is the core of Ravyn that can be integrated to manage permissions. Here is an example of how to use Lilya with Ravyn:
+Import from:
 
 ```python
-from typing import Any
-
-from lilya.protocols.permissions import PermissionProtocol
-from lilya.types import ASGIApp
-
-from ravyn.exceptions import NotAuthorized
-
-class EditProfilePermission(PermissionProtocol):
-    def __init__(self, app: ASGIapp, *args: Any, **kwargs: Any):
-        super().__init__(app, *args, **kwargs)
-        self.app = app
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        raise NotAuthorized()
+from ravyn.permissions import (
+    AllowAny,
+    DenyAll,
+    IsAuthenticated,
+    IsAdminUser,
+    IsAuthenticatedOrReadOnly,
+)
 ```
 
-Both systems offer flexibility and can be used based on your project's requirements and both **cannot be combined**. You
-should either use one or the other but not both.
+## Creating a custom permission
 
-Its entirely up to you.
+Subclass `BasePermission` and implement `has_permission(request, controller)`.
+
+```python
+from ravyn.permissions import BasePermission
+from ravyn.requests import Request
+
+
+class HasAPIKey(BasePermission):
+    async def has_permission(self, request: Request, controller) -> bool:
+        return request.headers.get("x-api-key") == "secret"
+```
+
+You can also implement `has_permission` as a sync method.
+
+## Applying permissions
+
+Permissions can be declared at multiple levels.
+
+- Application level: applies globally.
+- Include level: applies to grouped routes.
+- Gateway/handler level: applies to a specific endpoint.
+
+```python
+from ravyn import Ravyn, Include, Gateway, get
+from ravyn.permissions import IsAuthenticated
+
+@get()
+async def me() -> dict:
+    return {"user": "ok"}
+
+app = Ravyn(
+    routes=[
+        Include(
+            "/api",
+            routes=[Gateway("/me", handler=me)],
+            permissions=[IsAuthenticated],
+        )
+    ]
+)
+```
+
+## Permission composition (AND, OR, NOT, XOR, NOR)
+
+Ravyn supports composing permissions using operators in `BasePermission`.
+
+- `A & B` -> both must pass
+- `A | B` -> either one passes
+- `~A` -> inverse of `A`
+- `A ^ B` -> exactly one passes
+- `A - B` -> NOR (`not (A or B)`)
+
+```python
+from ravyn.permissions import BasePermission, IsAuthenticated
+
+
+class HasVerifiedEmail(BasePermission):
+    async def has_permission(self, request, controller) -> bool:
+        user = getattr(request, "user", None)
+        return bool(user and getattr(user, "is_verified", False))
+
+
+Combined = IsAuthenticated & HasVerifiedEmail
+```
+
+Then use `Combined` anywhere permissions are accepted.
+
+## Ravyn vs Lilya permissions
+
+Ravyn supports both Ravyn-native and Lilya-style permissions.
+
+Important: do not mix both styles on the same Gateway definition.
+
+If you use Ravyn-native permissions, stay consistent in that route tree.
+
+## Best practices
+
+- Keep permissions focused on authorization only.
+- Reuse permission classes instead of inline checks in handlers.
+- Compose small permission classes for complex access rules.
+- Prefer explicit denial messages in your exception handlers when needed.

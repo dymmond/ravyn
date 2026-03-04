@@ -96,10 +96,10 @@ app2 = Ravyn(routes=[Gateway("/users", handler=list_users)])  # Explicit
 For WebSocket connections, use `WebSocketGateway`. WebSocket handlers must be `async`.
 
 ```python
-from ravyn import Ravyn, WebSocketGateway, websocket, Websocket
+from ravyn import Ravyn, WebSocket, WebSocketGateway, websocket
 
 @websocket()
-async def chat_socket(socket: Websocket) -> None:
+async def chat_socket(socket: WebSocket) -> None:
     await socket.accept()
     message = await socket.receive_json()
     await socket.send_json({"echo": message})
@@ -240,7 +240,7 @@ from myapp.middleware import LoggingMiddleware, AuthMiddleware
 
 app = Ravyn(
     routes=[
-        Include("/api", 
+        Include("/api",
             middleware=[DefineMiddleware(LoggingMiddleware)],
             routes=[
                 Include("/v1",
@@ -312,10 +312,10 @@ from lilya.routing.converters import Converter, register_converter
 
 class DateTimeConverter(Converter):
     regex = r"\d{4}-\d{2}-\d{2}"
-    
+
     def convert(self, value: str) -> datetime.datetime:
         return datetime.datetime.strptime(value, "%Y-%m-%d")
-    
+
     def to_string(self, value: datetime.datetime) -> str:
         return value.strftime("%Y-%m-%d")
 
@@ -394,7 +394,7 @@ app = Ravyn(
         Include("/api",
             middleware=[DefineMiddleware(LoggingMiddleware)],
             routes=[
-                Gateway("/test", 
+                Gateway("/test",
                     handler=handler,
                     middleware=[DefineMiddleware(AuthMiddleware)]
                 )
@@ -423,7 +423,7 @@ def protected() -> dict:
 
 app = Ravyn(
     routes=[
-        Gateway("/protected", 
+        Gateway("/protected",
             handler=protected,
             exception_handlers={NotAuthorized: handle_not_authorized}
         )
@@ -447,7 +447,7 @@ def users(db: dict = Injects()) -> dict:
 
 app = Ravyn(
     routes=[
-        Gateway("/users", 
+        Gateway("/users",
             handler=users,
             dependencies={"db": Inject(get_database)}
         )
@@ -560,7 +560,7 @@ app = Ravyn(routes=[
 ```python
 # Wrong
 @websocket()
-def chat(socket: Websocket):  # Missing 'async'
+def chat(socket: WebSocket):  # Missing 'async'
     await socket.accept()  # SyntaxError!
 ```
 
@@ -569,7 +569,7 @@ def chat(socket: Websocket):  # Missing 'async'
 ```python
 # Correct
 @websocket()
-async def chat(socket: Websocket):  # Added 'async'
+async def chat(socket: WebSocket):  # Added 'async'
     await socket.accept()
 ```
 

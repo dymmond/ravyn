@@ -15,7 +15,7 @@ Ravyn provides pre-built User documents so you can focus on building features, n
 ## Quick Start
 
 ```python
-from ravyn.contrib.auth.mongoz.documents import User
+from ravyn.contrib.auth.mongoz.base_user import User
 from ravyn import RavynSettings
 
 # Create a user
@@ -235,7 +235,7 @@ user = await User.query.create_user(
 class CustomUser(AbstractUser):
     email = fields.Email()
     username = fields.String(max_length=150)
-    
+
     class Meta:
         registry = registry
         database = "myapp"
@@ -268,7 +268,7 @@ from pydantic import BaseModel, EmailStr
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
-    
+
     @validator('password')
     def password_strength(cls, v):
         if len(v) < 8:

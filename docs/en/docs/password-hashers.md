@@ -118,14 +118,14 @@ from ravyn.exceptions import NotAuthorized
 async def login(email: str, password: str) -> dict:
     # Get user from database
     user = await User.get_or_none(email=email)
-    
+
     if not user:
         raise NotAuthorized("Invalid credentials")
-    
+
     # Verify password
     if not check_password(password, user.password):
         raise NotAuthorized("Invalid credentials")
-    
+
     # Generate token or session
     return {"token": "abc123", "user_id": user.id}
 ```
@@ -140,14 +140,14 @@ from ravyn.contrib.auth.hashers import make_password
 async def register(email: str, password: str, name: str) -> dict:
     # Hash password
     hashed_password = make_password(password)
-    
+
     # Create user
     user = await User.create(
         email=email,
         password=hashed_password,
         name=name
     )
-    
+
     return {"user_id": user.id, "email": user.email}
 ```
 
@@ -194,19 +194,19 @@ import hashlib
 
 class CustomHasher(BasePasswordHasher):
     algorithm = "custom"
-    
+
     def encode(self, password: str, salt: str) -> str:
         # Your hashing logic
         hash_value = hashlib.sha256(
             f"{salt}{password}".encode()
         ).hexdigest()
         return f"${self.algorithm}${salt}${hash_value}"
-    
+
     def verify(self, password: str, encoded: str) -> bool:
         # Your verification logic
         algorithm, salt, hash_value = encoded.split("$")[1:]
         return self.encode(password, salt) == encoded
-    
+
     def safe_summary(self, encoded: str) -> dict:
         algorithm, salt, hash_value = encoded.split("$")[1:]
         return {
@@ -281,10 +281,10 @@ if check_password(user_input_password, user.password):
 @post("/login")
 async def login(email: str, password: str) -> dict:
     user = await User.get_or_none(email=email)
-    
+
     if not user:
         raise NotAuthorized("Email not found")  # Reveals email doesn't exist
-    
+
     if not check_password(password, user.password):
         raise NotAuthorized("Wrong password")  # Reveals email exists
 ```
@@ -296,10 +296,10 @@ async def login(email: str, password: str) -> dict:
 @post("/login")
 async def login(email: str, password: str) -> dict:
     user = await User.get_or_none(email=email)
-    
+
     if not user or not check_password(password, user.password):
         raise NotAuthorized("Invalid credentials")  # Same message
-    
+
     return {"token": "..."}
 ```
 
@@ -332,10 +332,10 @@ from ravyn.exceptions import ValidationError
 async def register(email: str, password: str) -> dict:
     if len(password) < 8:
         raise ValidationError("Password must be at least 8 characters")
-    
+
     if not any(c.isupper() for c in password):
         raise ValidationError("Password must contain uppercase letter")
-    
+
     hashed = make_password(password)
     user = await User.create(email=email, password=hashed)
     return {"user_id": user.id}
@@ -345,25 +345,24 @@ async def register(email: str, password: str) -> dict:
 
 ```python
 # Good - prevent brute force
-from ravyn import post
-from ravyn.exceptions import TooManyRequests
+from ravyn import post, HTTPException
 
 login_attempts = {}
 
 @post("/login")
 async def login(email: str, password: str, request: Request) -> dict:
     client_ip = request.client.host
-    
+
     # Check attempts
     if login_attempts.get(client_ip, 0) >= 5:
-        raise TooManyRequests("Too many login attempts")
-    
+        raise HTTPException(status_code=429, detail="Too many login attempts")
+
     user = await User.get_or_none(email=email)
-    
+
     if not user or not check_password(password, user.password):
         login_attempts[client_ip] = login_attempts.get(client_ip, 0) + 1
         raise NotAuthorized("Invalid credentials")
-    
+
     # Reset on success
     login_attempts.pop(client_ip, None)
     return {"token": "..."}
@@ -395,13 +394,13 @@ class User(Model):
     email = fields.EmailField(max_length=100, unique=True)
     password = fields.CharField(max_length=255)
     name = fields.CharField(max_length=100)
-    
+
     class Meta:
         registry = registry
-    
+
     def set_password(self, raw_password: str):
         self.password = make_password(raw_password)
-    
+
     def check_password(self, raw_password: str) -> bool:
         return check_password(raw_password, self.password)
 

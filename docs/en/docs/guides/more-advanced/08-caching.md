@@ -53,7 +53,7 @@ pip install redis
 Then configure Ravyn to use Redis:
 
 ```python
-from ravyn.conf import RavynSettings
+from ravyn import RavynSettings
 from ravyn.core.caches.redis import RedisCache
 from ravyn.core.protocols.cache import CacheBackend
 

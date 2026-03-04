@@ -71,7 +71,7 @@ app = Ravyn()
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import StandardLoggingConfig
+from ravyn.logging import StandardLoggingConfig
 
 app = Ravyn(
     logging_config=StandardLoggingConfig(
@@ -88,7 +88,7 @@ app = Ravyn(
 ### Custom LoggingConfig
 
 ```python
-from ravyn.config import LoggingConfig
+from ravyn import LoggingConfig
 import logging
 
 class CustomLoggingConfig(LoggingConfig):
@@ -102,7 +102,7 @@ class CustomLoggingConfig(LoggingConfig):
                 logging.FileHandler('app.log')
             ]
         )
-    
+
     def get_logger(self):
         """Return the logger instance."""
         return logging.getLogger("ravyn")
@@ -114,7 +114,7 @@ app = Ravyn(logging_config=CustomLoggingConfig())
 ### Using Loguru
 
 ```python
-from ravyn.config import LoggingConfig
+from ravyn import LoggingConfig
 from loguru import logger as loguru_logger
 
 class LoguruConfig(LoggingConfig):
@@ -126,7 +126,7 @@ class LoguruConfig(LoggingConfig):
             retention="10 days",
             level="INFO"
         )
-    
+
     def get_logger(self):
         """Return Loguru logger."""
         return loguru_logger
@@ -140,7 +140,7 @@ app = Ravyn(logging_config=LoguruConfig())
 
 ```python
 from ravyn import RavynSettings
-from ravyn.config import StandardLoggingConfig
+from ravyn.logging import StandardLoggingConfig
 
 class AppSettings(RavynSettings):
     logging_config: StandardLoggingConfig = StandardLoggingConfig(

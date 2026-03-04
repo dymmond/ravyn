@@ -14,7 +14,7 @@ MsgSpec is a fast serialization and validation library that integrates seamlessl
 
 ```python
 from ravyn import Ravyn, get, post
-from ravyn.datastructures.msgspec import Struct
+from ravyn.core.datastructures.msgspec import Struct
 
 class User(Struct):
     name: str
@@ -85,7 +85,7 @@ app.add_route(create_user)
 ### Basic Struct
 
 ```python
-from ravyn.datastructures.msgspec import Struct
+from ravyn.core.datastructures.msgspec import Struct
 
 class Product(Struct):
     name: str
@@ -96,7 +96,7 @@ class Product(Struct):
 ### With Validation
 
 ```python
-from ravyn.datastructures.msgspec import Struct
+from ravyn.core.datastructures.msgspec import Struct
 from ravyn import post
 from ravyn.exceptions import ValidationError
 
@@ -104,7 +104,7 @@ class CreateUser(Struct):
     username: str
     email: str
     age: int
-    
+
     def __post_init__(self):
         if self.age < 18:
             raise ValidationError("Must be 18 or older")
@@ -119,7 +119,7 @@ def create_user(data: CreateUser) -> dict:
 ### Nested Structs
 
 ```python
-from ravyn.datastructures.msgspec import Struct
+from ravyn.core.datastructures.msgspec import Struct
 
 class Address(Struct):
     street: str
@@ -151,7 +151,7 @@ user = User(
 
 ```python
 # Correct - Full Ravyn integration
-from ravyn.datastructures.msgspec import Struct
+from ravyn.core.datastructures.msgspec import Struct
 
 # Wrong - Missing OpenAPI support
 from msgspec import Struct
@@ -164,7 +164,7 @@ from msgspec import Struct
 
 ```python
 from ravyn import post
-from ravyn.datastructures.msgspec import Struct
+from ravyn.core.datastructures.msgspec import Struct
 
 class LoginRequest(Struct):
     username: str
@@ -180,7 +180,7 @@ def login(credentials: LoginRequest) -> dict:
 
 ```python
 from ravyn import get
-from ravyn.datastructures.msgspec import Struct
+from ravyn.core.datastructures.msgspec import Struct
 
 class UserResponse(Struct):
     id: int
@@ -206,7 +206,7 @@ MsgSpec Structs work seamlessly with OpenAPI:
 
 ```python
 from ravyn import get
-from ravyn.datastructures.msgspec import Struct
+from ravyn.core.datastructures.msgspec import Struct
 from ravyn.openapi.datastructures import OpenAPIResponse
 
 class User(Struct):
@@ -246,7 +246,7 @@ def list_users() -> list[User]:
 You can use MsgSpec Structs inside Pydantic models (but not vice versa):
 
 ```python
-from ravyn.datastructures.msgspec import Struct
+from ravyn.core.datastructures.msgspec import Struct
 from pydantic import BaseModel
 
 class Address(Struct):
@@ -289,7 +289,7 @@ class User(Struct):
 
 ```python
 # Correct
-from ravyn.datastructures.msgspec import Struct
+from ravyn.core.datastructures.msgspec import Struct
 
 class User(Struct):
     name: str
@@ -302,7 +302,7 @@ class User(Struct):
 ```python
 # Won't work
 from pydantic import BaseModel
-from ravyn.datastructures.msgspec import Struct
+from ravyn.core.datastructures.msgspec import Struct
 
 class Address(BaseModel):
     street: str
@@ -348,7 +348,7 @@ class User(Struct):
 # With validation
 class User(Struct):
     age: int
-    
+
     def __post_init__(self):
         if self.age < 0:
             raise ValueError("Age must be positive")
@@ -422,7 +422,7 @@ def get_data() -> DataStruct:
 # Good - simple validation
 class User(Struct):
     age: int
-    
+
     def __post_init__(self):
         if not 0 <= self.age <= 150:
             raise ValueError("Invalid age")

@@ -265,7 +265,7 @@ def test_simple_route():
 
     app.add_route(hello)
 
-    from ravyn import RavynTestClient
+    from ravyn.testclient import RavynTestClient
 
     with RavynTestClient(app) as client:
         response = client.get("/hello")

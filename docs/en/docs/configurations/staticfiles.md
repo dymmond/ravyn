@@ -13,7 +13,7 @@ Configure static file serving for CSS, JavaScript, images, and other assets in y
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import StaticFilesConfig
+from ravyn import StaticFilesConfig
 
 app = Ravyn(
     static_files_config=StaticFilesConfig(
@@ -34,7 +34,7 @@ app = Ravyn(
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import StaticFilesConfig
+from ravyn import StaticFilesConfig
 
 app = Ravyn(
     static_files_config=StaticFilesConfig(
@@ -76,7 +76,7 @@ app = Ravyn(
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import StaticFilesConfig
+from ravyn import StaticFilesConfig
 
 app = Ravyn(
     static_files_config=[
@@ -167,7 +167,7 @@ app = Ravyn(
 
 ```python
 from ravyn import RavynSettings
-from ravyn.config import StaticFilesConfig
+from ravyn import StaticFilesConfig
 
 class AppSettings(RavynSettings):
     static_files_config: StaticFilesConfig = StaticFilesConfig(

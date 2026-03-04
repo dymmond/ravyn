@@ -8,7 +8,7 @@ application and leverage the system.
 ## How to import
 
 ```python
-from ravyn import JWTConfig
+from ravyn.core.config.jwt import JWTConfig
 ```
 
 ::: ravyn.core.config.jwt.JWTConfig

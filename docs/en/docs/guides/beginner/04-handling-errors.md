@@ -59,7 +59,8 @@ Example: Sending an invalid body to a route expecting a `Pydantic` model returns
 You can define a custom exception handler for your own exception classes:
 
 ```python
-from ravyn import Ravyn, Request, HTTPException, ExceptionHandler
+from ravyn import Ravyn, Request, HTTPException, get
+from ravyn.types import ExceptionHandler
 
 class MyCustomError(Exception):
     pass

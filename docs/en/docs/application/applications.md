@@ -13,7 +13,7 @@ The `Ravyn` class is the core of your application. It handles routing, middlewar
 ## Quick Start
 
 ```python
-from ravyn import Ravyn, get
+from ravyn import Gateway, Ravyn, get
 
 @get("/")
 def homepage() -> dict:
@@ -39,7 +39,7 @@ app = Ravyn()
 
 !!! warning "Route Requirement"
     While the code above assumes a valid application, a `Ravyn` application **requires at least one route** to be useful. Without routes, it will return 404 for every request.
-    
+
     Also, ensure your route handlers have **explicit return types** (e.g., `def handler() -> dict:`). This is crucial for data serialization and automatic documentation.
 
 ### With Routes
@@ -118,7 +118,7 @@ app = Ravyn(
 
 ```python
 from ravyn import Ravyn, Gateway, Include, get
-from ravyn.config import CORSConfig
+from ravyn import CORSConfig
 
 @get("/health")
 def health_check() -> dict:
@@ -133,7 +133,7 @@ app = Ravyn(
     version="1.0.0",
     description="A powerful API built with Ravyn",
     debug=True,
-    
+
     # Routes
     routes=[
         Gateway(handler=health_check),
@@ -141,13 +141,13 @@ app = Ravyn(
             Gateway(handler=list_users)
         ])
     ],
-    
+
     # CORS
     cors_config=CORSConfig(
         allow_origins=["*"],
         allow_methods=["*"]
     ),
-    
+
     # Security
     allowed_hosts=["localhost", "api.example.com"]
 )
@@ -170,9 +170,9 @@ async def lifespan(app: Ravyn):
     # Startup
     app.state.db = await connect_database()
     app.state.cache = RedisCache()
-    
+
     yield
-    
+
     # Shutdown
     await app.state.db.disconnect()
     await app.state.cache.close()
@@ -261,9 +261,9 @@ async def lifespan(app: Ravyn):
     # Startup
     print("Starting up...")
     app.state.db = await connect_database()
-    
+
     yield  # Application runs
-    
+
     # Shutdown
     print("Shutting down...")
     await app.state.db.disconnect()

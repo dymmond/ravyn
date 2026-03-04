@@ -311,8 +311,8 @@ For background task scheduling.
 ### Interactive Shell
 
 ```shell
-pip install ravyn[ipython]  # IPython shell
-pip install ravyn[ptpython]  # ptpython shell
+pip install ipython  # IPython shell
+pip install ptpython  # ptpython shell
 ```
 
 Learn more about the [shell](./directives/shell.md).

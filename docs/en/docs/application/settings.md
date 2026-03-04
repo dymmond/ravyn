@@ -373,7 +373,7 @@ def app_info() -> dict:
 
 ```python
 from ravyn import get
-from ravyn.conf.global_settings import settings
+from ravyn.conf import settings
 
 @get("/info")
 def app_info() -> dict:

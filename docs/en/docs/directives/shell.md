@@ -35,7 +35,7 @@ $ pip install ipython
 or
 
 ```shell
-$ pip install ravyn[ipython]
+$ pip install ravyn[all]
 ```
 
 **PTPython**
@@ -47,7 +47,7 @@ $ pip install ptpython
 or
 
 ```shell
-$ pip install ravyn[ptpyton]
+$ pip install ravyn[all]
 ```
 
 ### How to call it
@@ -77,7 +77,7 @@ $ ravyn --app myproject.main:app shell
 **Environment variables**
 
 ```shell
-$ export RAVYN_DEFAULT_APP=--app myproject.main:app
+$ export RAVYN_DEFAULT_APP=myproject.main:app
 $ ravyn shell --kernel ptpython
 ```
 
@@ -90,7 +90,7 @@ Sometimes you want to use your application settings as well while loading the sh
 
     ```shell
     $ export RAVYN_SETTINGS_MODULE=MyCustomSettings
-    $ export RAVYN_DEFAULT_APP=--app myproject.main:app
+    $ export RAVYN_DEFAULT_APP=myproject.main:app
     $ ravyn shell # default
     $ ravyn shell --kernel ptpython # start with ptpython
     ```
@@ -99,7 +99,7 @@ Sometimes you want to use your application settings as well while loading the sh
 
     ```shell
     $ $env:RAVYN_SETTINGS_MODULE=="MyCustomSettings"
-    $ $env:RAVYN_DEFAULT_APP=--app myproject.main:app
+    $ $env:RAVYN_DEFAULT_APP=myproject.main:app
     $ ravyn shell # default
     $ ravyn shell --kernel ptpython # start with ptpython
     ```

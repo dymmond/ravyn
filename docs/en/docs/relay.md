@@ -402,7 +402,7 @@ app = Ravyn(
 )
 
 # Test with RavynTestClient
-from ravyn import RavynTestClient
+from ravyn.testclient import RavynTestClient
 
 with RavynTestClient(app) as client:
     response = client.get("/proxy/test")

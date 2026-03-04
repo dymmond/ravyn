@@ -15,7 +15,7 @@ Ravyn provides pre-built User models so you don't have to reinvent the wheel for
 ## Quick Start
 
 ```python
-from ravyn.contrib.auth.edgy.models import User
+from ravyn.contrib.auth.edgy.base_user import User
 from ravyn import RavynSettings
 
 # Create a user
@@ -241,7 +241,7 @@ user = await User.query.create_user(
 class CustomUser(AbstractUser):
     email = fields.EmailField(unique=True)
     username = fields.CharField(max_length=150, unique=True)
-    
+
     class Meta:
         registry = registry
 ```
@@ -269,7 +269,7 @@ from pydantic import BaseModel, EmailStr
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
-    
+
     @validator('password')
     def password_strength(cls, v):
         if len(v) < 8:

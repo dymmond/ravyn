@@ -207,7 +207,8 @@ Ideal for POST-redirect-GET patterns, login flows, or temporary route changes.
 #### Example
 
 ```python
-from ravyn.responses import RedirectResponse, get
+from ravyn import get
+from ravyn.responses import RedirectResponse
 from ravyn.contrib.responses.shortcuts import redirect
 
 @get()

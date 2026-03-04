@@ -17,7 +17,7 @@ Protect your Ravyn application from CSRF attacks with built-in middleware.
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import CSRFConfig
+from ravyn import CSRFConfig
 
 app = Ravyn(
     csrf_config=CSRFConfig(
@@ -51,7 +51,7 @@ Ravyn's CSRF middleware generates unique tokens that must be included in state-c
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import CSRFConfig
+from ravyn import CSRFConfig
 
 app = Ravyn(
     csrf_config=CSRFConfig(
@@ -130,7 +130,7 @@ fetch('/api/data', {
     {{ csrf_input }}
     <!-- or -->
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    
+
     <input type="text" name="data">
     <button>Submit</button>
 </form>
@@ -142,7 +142,7 @@ fetch('/api/data', {
 
 ```python
 from ravyn import RavynSettings
-from ravyn.config import CSRFConfig
+from ravyn import CSRFConfig
 
 class AppSettings(RavynSettings):
     csrf_config: CSRFConfig = CSRFConfig(

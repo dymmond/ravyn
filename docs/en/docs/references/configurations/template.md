@@ -8,7 +8,7 @@ application and leverage the system.
 ## How to import
 
 ```python
-from ravyn import TemplateConfig
+from ravyn.core.config.template import TemplateConfig
 ```
 
 ::: ravyn.core.config.template.TemplateConfig

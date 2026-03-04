@@ -139,7 +139,7 @@ Render HTML templates with Jinja2:
 
 ```python
 from ravyn import get
-from ravyn.responses import Template
+from ravyn import Template
 
 @get("/profile")
 def profile(name: str) -> Template:
@@ -155,7 +155,7 @@ Configure in settings:
 
 ```python
 from ravyn import RavynSettings
-from ravyn.configurations import TemplateConfig
+from ravyn.core.config.template import TemplateConfig
 
 class Settings(RavynSettings):
     @property
@@ -174,7 +174,7 @@ Redirect users to different URLs:
 
 ```python
 from ravyn import get, post
-from ravyn.responses import Redirect
+from ravyn import Redirect
 
 @post("/login")
 def login(username: str, password: str) -> Redirect:
@@ -194,7 +194,7 @@ Send files for download:
 
 ```python
 from ravyn import get
-from ravyn.responses import File
+from ravyn.core.datastructures import File
 
 @get("/download")
 def download_report() -> File:
@@ -219,7 +219,7 @@ Stream large responses:
 
 ```python
 from ravyn import get
-from ravyn.responses import Stream
+from ravyn import Stream
 
 async def generate_data():
     for i in range(1000):
@@ -372,7 +372,7 @@ def page() -> Template:
 
 ```python
 from ravyn import RavynSettings
-from ravyn.configurations import TemplateConfig
+from ravyn.core.config.template import TemplateConfig
 
 class Settings(RavynSettings):
     @property

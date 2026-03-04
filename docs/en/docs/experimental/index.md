@@ -17,7 +17,7 @@ Try gRPC integration:
 
 ```python
 from ravyn import Ravyn
-from ravyn.contrib.grpc import GrpcGateway
+from ravyn.contrib.grpc.gateway import GrpcGateway
 
 # Create gRPC gateway
 grpc_gateway = GrpcGateway(

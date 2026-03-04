@@ -13,7 +13,7 @@ Configure OpenAPI documentation settings for your Ravyn application's auto-gener
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import OpenAPIConfig
+from ravyn import OpenAPIConfig
 
 app = Ravyn(
     openapi_config=OpenAPIConfig(
@@ -65,7 +65,7 @@ app = Ravyn(
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import OpenAPIConfig
+from ravyn import OpenAPIConfig
 
 app = Ravyn(
     openapi_config=OpenAPIConfig(
@@ -105,7 +105,7 @@ app = Ravyn(
 ### Change Base Path
 
 ```python
-from ravyn.config import OpenAPIConfig
+from ravyn import OpenAPIConfig
 
 app = Ravyn(
     openapi_config=OpenAPIConfig(
@@ -139,7 +139,7 @@ app = Ravyn(
 
 ```python
 from ravyn import Ravyn, get
-from ravyn.config import OpenAPIConfig
+from ravyn import OpenAPIConfig
 
 @get("/users")
 def list_users() -> list:
@@ -151,18 +151,18 @@ app = Ravyn(
         title="User Management API",
         version="2.0.0",
         description="API for managing users and permissions",
-        
+
         contact={
             "name": "API Team",
             "email": "api@example.com",
             "url": "https://example.com/support"
         },
-        
+
         license={
             "name": "Apache 2.0",
             "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        
+
         servers=[
             {
                 "url": "https://api.example.com",
@@ -174,7 +174,7 @@ app = Ravyn(
             }
         ]
     ),
-    
+
     routes=[Gateway(handler=list_users)]
 )
 ```
@@ -185,7 +185,7 @@ app = Ravyn(
 
 ```python
 from ravyn import RavynSettings
-from ravyn.config import OpenAPIConfig
+from ravyn import OpenAPIConfig
 
 class AppSettings(RavynSettings):
     openapi_config: OpenAPIConfig = OpenAPIConfig(

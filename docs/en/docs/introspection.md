@@ -217,7 +217,7 @@ WebSocket paths are represented as **ROUTE** nodes and can be looked up by exact
 ### Export for tooling & CI
 
 ```python
-from ravyn.serializers import serializer
+import json
 
 # Dict export
 data = app.graph.to_dict()
@@ -225,12 +225,12 @@ assert "nodes" in data and "edges" in data
 
 # JSON export
 json_data = app.graph.to_json()
-loaded = serializer.loads(json_data)
+loaded = json.loads(json_data)
 
 assert loaded == app.graph.to_dict()
 ```
 
-`to_dict()` returns a tooling-friendly shape (no `ref`), and `to_json()` round-trips cleanly with Ravyn's serializer. '
+`to_dict()` returns a tooling-friendly shape (no `ref`), and `to_json()` round-trips cleanly with the standard JSON loader.
 
 ---
 

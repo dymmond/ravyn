@@ -13,7 +13,7 @@ Configure task scheduling in your Ravyn application for running background jobs 
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import SchedulerConfig
+from ravyn.contrib.schedulers import SchedulerConfig
 
 app = Ravyn(
     scheduler_config=SchedulerConfig(
@@ -49,7 +49,7 @@ app = Ravyn(
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import SchedulerConfig
+from ravyn.contrib.schedulers import SchedulerConfig
 
 app = Ravyn(
     scheduler_config=SchedulerConfig(
@@ -90,7 +90,7 @@ app = Ravyn(
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import SchedulerConfig
+from ravyn.contrib.schedulers import SchedulerConfig
 from ravyn.contrib.schedulers.asyncz.decorator import scheduler
 
 app = Ravyn(
@@ -192,10 +192,10 @@ async def end_campaign():
 async def cleanup_old_sessions():
     """Delete old sessions every day at 2 AM."""
     from datetime import datetime, timedelta
-    
+
     cutoff = datetime.utcnow() - timedelta(days=30)
     await Session.filter(created_at__lt=cutoff).delete()
-    
+
     print(f"Cleaned up sessions older than {cutoff}")
 ```
 
@@ -206,11 +206,11 @@ async def cleanup_old_sessions():
 async def sync_users_from_api():
     """Sync users every 15 minutes."""
     import httpx
-    
+
     async with httpx.AsyncClient() as client:
         response = await client.get("https://api.example.com/users")
         users = response.json()
-        
+
         for user_data in users:
             await User.update_or_create(
                 id=user_data["id"],
@@ -226,7 +226,7 @@ async def send_daily_report():
     """Send daily report at 8 AM."""
     # Generate report
     stats = await calculate_daily_stats()
-    
+
     # Send email
     await send_email(
         to="admin@example.com",
@@ -241,7 +241,7 @@ async def send_daily_report():
 
 ```python
 from ravyn import RavynSettings
-from ravyn.config import SchedulerConfig
+from ravyn.contrib.schedulers import SchedulerConfig
 
 class AppSettings(RavynSettings):
     scheduler_config: SchedulerConfig = SchedulerConfig(

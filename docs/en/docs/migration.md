@@ -199,19 +199,19 @@ ravyn show_routes
 
 You can use your editor's find and replace feature:
 
-**Find:** `esmerald`  
+**Find:** `esmerald`
 **Replace:** `ravyn`
 
-**Find:** `Esmerald`  
+**Find:** `Esmerald`
 **Replace:** `Ravyn`
 
-**Find:** `EsmeraldSettings`  
+**Find:** `EsmeraldSettings`
 **Replace:** `RavynSettings`
 
-**Find:** `EsmeraldException`  
+**Find:** `EsmeraldException`
 **Replace:** `RavynException`
 
-**Find:** `EsmeraldAPIException`  
+**Find:** `EsmeraldAPIException`
 **Replace:** `RavynAPIException`
 
 ### Using sed (Linux/Mac)
@@ -397,7 +397,7 @@ ravyn run
 
 ```python
 # Wrong
-from ravyn.exceptions import EsmeraldAPIException
+from ravyn.exceptions import RavynAPIException
 ```
 
 **Solution:** Use new exception names:
