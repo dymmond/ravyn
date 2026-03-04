@@ -1,2 +1,0 @@
-INHERIT: ../en/mkdocs.yml
-site_dir: '../../site_lang/ru'

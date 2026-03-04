@@ -1,0 +1,266 @@
+site_name: Ravyn
+site_url: https://ravyn.dev/ru
+site_description: 🚀 Performance, type safety, and elegance. A next-generation async Python framework for APIs, microservices, and web applications. 🚀
+docs_dir: generated
+site_dir: site
+theme:
+  name: material
+  custom_dir: ../en/overrides
+  language: ru
+  palette:
+  - scheme: default
+    primary: pink
+    accent: red
+    media: '(prefers-color-scheme: light)'
+    toggle:
+      icon: material/lightbulb
+      name: Switch to dark mode
+  - scheme: slate
+    media: '(prefers-color-scheme: dark)'
+    primary: pink
+    accent: red
+    toggle:
+      icon: material/lightbulb-outline
+      name: Switch to light mode
+  favicon: statics/images/favicon.ico
+  logo: statics/images/ravyn-white.png
+  features:
+  - search.suggest
+  - search.highlight
+  - content.tabs.link
+  - content.code.copy
+  - content.code.annotate
+  - content.tooltips
+  - content.code.select
+  - navigation.indexes
+  - navigation.path
+  - navigation.tabs
+repo_name: dymmond/ravyn
+repo_url: https://github.com/dymmond/ravyn
+edit_uri: ''
+plugins:
+- search
+- meta-descriptions:
+    export_csv: false
+    quiet: false
+    enable_checks: false
+    min_length: 50
+    max_length: 160
+    trim: false
+- mkdocstrings:
+    handlers:
+      python:
+        options:
+          extensions:
+          - griffe_typingdoc
+          show_root_heading: true
+          show_if_no_docstring: true
+          preload_modules:
+          - httpx
+          - lilya
+          - a2wsgi
+          inherited_members: true
+          members_order: source
+          separate_signature: true
+          unwrap_annotated: true
+          filters:
+          - '!^_'
+          merge_init_into_class: true
+          docstring_section_style: spacy
+          signature_crossrefs: true
+          show_symbol_type_heading: true
+          show_symbol_type_toc: true
+markdown_extensions:
+- attr_list
+- toc:
+    permalink: true
+- admonition
+- abbr
+- def_list
+- footnotes
+- pymdownx.superfences:
+    custom_fences:
+    - name: mermaid
+      class: mermaid
+- pymdownx.tabbed:
+    alternate_style: true
+- md_in_html
+nav:
+- Ravyn: index.md
+- Learning and Examples:
+  - Getting Started:
+    - Quick Start: guides/beginner/index.md
+    - First API: guides/beginner/02-building-your-first-api.md
+    - Request & Response: guides/beginner/03-request-and-response-models.md
+    - Error Handling: guides/beginner/04-handling-errors.md
+    - Routing Basics: guides/beginner/05-routing.md
+    - Middlewares: guides/beginner/06-middlewares.md
+    - Background Tasks: guides/beginner/07-background-tasks.md
+    - Dependencies: guides/beginner/08-dependencies.md
+    - Troubleshooting: troubleshooting.md
+  - Advanced Guides:
+    - guides/more-advanced/index.md
+    - Security Patterns: guides/more-advanced/01-security.md
+    - Architecture: guides/more-advanced/05-architecture-patterns.md
+    - Dependency Injection: guides/more-advanced/06-dependency-injection.md
+    - Advanced Concepts: guides/more-advanced/07-advanced-concepts.md
+    - Caching Strategies: guides/more-advanced/08-caching.md
+    - Path Parameters: guides/more-advanced/09-path-params.md
+    - Query Parameters: guides/more-advanced/10-query-params.md
+    - Request Data: guides/more-advanced/11-request-data.md
+    - Upload Files: guides/more-advanced/12-upload-files.md
+    - Forms: guides/more-advanced/13-forms.md
+    - Body: guides/more-advanced/14-body.md
+    - Headers: guides/more-advanced/15-headers.md
+    - Cookies: guides/more-advanced/16-cookies.md
+- Core Concepts:
+  - Application:
+    - application/index.md
+    - Ravyn: application/applications.md
+    - Settings: application/settings.md
+    - Levels: application/levels.md
+  - Routing:
+    - routing/index.md
+    - Routes: routing/routes.md
+    - Handlers: routing/handlers.md
+    - Controllers: routing/controllers.md
+    - Router: routing/router.md
+    - Webhooks: routing/webhooks.md
+  - Requests & Responses:
+    - Requests: requests.md
+    - Responses: responses.md
+    - Path Parameters: extras/path-params.md
+    - Query Parameters: extras/query-params.md
+    - Request Data: extras/request-data.md
+    - File Uploads: extras/upload-files.md
+    - Forms: extras/forms.md
+    - Body Fields: extras/body-fields.md
+    - Header Fields: extras/header-fields.md
+    - Cookie Fields: extras/cookie-fields.md
+    - Dependencies: dependencies.md
+    - Context: context.md
+  - Configuration:
+    - configurations/index.md
+    - CORS: configurations/cors.md
+    - CSRF: configurations/csrf.md
+    - Sessions: configurations/session.md
+    - Static Files: configurations/staticfiles.md
+    - Templates: configurations/template.md
+    - Logging: configurations/logging.md
+    - JWT: configurations/jwt.md
+    - Scheduler: configurations/scheduler.md
+    - OpenAPI: configurations/openapi/config.md
+  - Security:
+    - security/index.md
+    - Introduction: security/introduction.md
+    - Interaction: security/interaction.md
+    - OAuth2 + JWT: security/oauth-jwt.md
+    - Simple OAuth2: security/simple-oauth2.md
+    - Basic Auth: security/advanced/basic-auth.md
+    - OAuth2 Scopes: security/advanced/oauth2-scopes.md
+    - Available Security: security/available-security.md
+    - Password Hashers: password-hashers.md
+- Features:
+  - Introspection: introspection.md
+  - Middleware:
+    - middleware/index.md
+    - Authentication: middleware/authentication.md
+  - Permissions:
+    - permissions/index.md
+    - Ravyn: permissions/ravyn.md
+    - Lilya: permissions/lilya.md
+  - Interceptors: interceptors.md
+  - Observables: observables.md
+  - Background Tasks: background-tasks.md
+  - Caching: caching.md
+  - Lifespan Events: lifespan-events.md
+  - Scheduler:
+    - scheduler/index.md
+    - Configuration: scheduler/scheduler.md
+    - Task Handlers: scheduler/handler.md
+  - Decorators: decorators.md
+  - Encoders: encoders.md
+  - Msgspec: msgspec.md
+  - Protocols: protocols.md
+  - Extensions: extensions.md
+  - Relay: relay.md
+  - gRPC: experimental/grpc.md
+  - Testing & Deployment:
+    - Testing:
+      - Test Client: testclient.md
+      - Testing Guide: guides/more-advanced/02-testing.md
+    - Deployment:
+      - deployment/index.md
+      - Introduction: deployment/intro.md
+      - Docker: deployment/docker.md
+      - Scaling: guides/more-advanced/04-scaling.md
+- Database Integrations:
+  - databases/index.md
+  - Edgy (SQL):
+    - Motivation: databases/edgy/motivation.md
+    - Models: databases/edgy/models.md
+    - Middleware: databases/edgy/middleware.md
+    - Example: databases/edgy/example.md
+  - Mongoz (MongoDB):
+    - Motivation: databases/mongoz/motivation.md
+    - Documents: databases/mongoz/documents.md
+    - Middleware: databases/mongoz/middleware.md
+    - Example: databases/mongoz/example.md
+- OpenAPI:
+  - openapi.md
+- CLI & Directives:
+  - directives/index.md
+  - Discovery: directives/discovery.md
+  - Built-in Directives: directives/directives.md
+  - Custom Directives: directives/custom-directives.md
+  - Directive Decorator: directives/directive-decorator.md
+  - Shell: directives/shell.md
+- Utilities:
+  - Exceptions: exceptions.md
+  - Exception Handlers: exception-handlers.md
+  - WSGI Integration: wsgi.md
+  - External: external.md
+  - Contrib:
+    - Mail: contrib/mail.md
+    - Send File: contrib/files/send-file.md
+    - Jsonify: contrib/files/jsonify.md
+    - contrib/cqrs.md
+    - Shortcuts:
+      - Abort: contrib/shortcuts/abort.md
+      - Responses: contrib/shortcuts/responses.md
+- API Reference:
+  - references/index.md
+  - Ravyn: references/ravyn.md
+  - Application: references/application/settings.md
+  - Configurations: references/configurations/index.md
+  - Routing: references/routing/router.md
+  - Middleware: references/middleware/middlewares.md
+  - Responses: references/responses/response.md
+  - Exceptions: references/exceptions.md
+  - Request: references/request.md
+  - Test Client: references/test-client.md
+- About:
+  - About Ravyn: about.md
+  - Sponsorship: sponsorship.md
+  - Contributors: ravyn-people.md
+  - Contributing: contributing.md
+- Migration: migration.md
+- Release Notes: release-notes.md
+extra_css:
+- statics/css/extra.css
+extra:
+  analytics:
+    provider: google
+    property: G-CNBVBB90NT
+  alternate:
+  - link: /
+    name: en - English
+    lang: en
+  - link: /ru/
+    name: ru - русский язык
+    lang: ru
+  social:
+  - icon: fontawesome/brands/github-alt
+    link: https://github.com/dymmond/lilya
+  - icon: fontawesome/brands/discord
+    link: https://discord.gg/XVeWXSrJ

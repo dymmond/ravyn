@@ -37,6 +37,16 @@ tasks:
 
   #---------------------------- DOCS -------------------------------
 
+  docs_prepare:
+    desc: Prepares documentation sources for Zensical
+    cmds:
+      - hatch run docs:prepare
+
+  docs_clean:
+    desc: Cleans generated docs artifacts
+    cmds:
+      - hatch run docs:clean
+
   update_languages:
     desc: Updates the local docs with a new language
     cmds:

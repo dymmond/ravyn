@@ -18,6 +18,12 @@ results/
 site/
 site_build/
 site_lang/
+docs/generated/
+.cache/docs-sites/
+docs/*/generated/
+docs/*/site/
+docs/*/.generated/
+docs/*/.site/
 target/
 tests/cli/myproject
 tests/cli/simple/myproject

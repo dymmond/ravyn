@@ -14,6 +14,8 @@ hide:
 ### Changed
 
 - Bump Lilya to 0.25.0.
+- Documentation build pipeline migrated from MkDocs CLI orchestration to Zensical-based builds.
+- Multi-language docs output remains `site/` with English at `/` and translated pages under `/<lang>/`.
 
 ## 0.3.8
 

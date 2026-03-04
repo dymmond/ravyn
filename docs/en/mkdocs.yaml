@@ -1,6 +1,8 @@
 site_name: Ravyn
 site_url: https://ravyn.dev
 site_description: 🚀 Performance, type safety, and elegance. A next-generation async Python framework for APIs, microservices, and web applications. 🚀
+docs_dir: generated
+site_dir: site
 theme:
   name: material
   custom_dir: ../en/overrides
@@ -72,15 +74,14 @@ markdown_extensions:
 - attr_list
 - toc:
     permalink: true
-- mdx_include:
-    base_path: docs
 - admonition
-- extra
+- abbr
+- def_list
+- footnotes
 - pymdownx.superfences:
     custom_fences:
     - name: mermaid
       class: mermaid
-      format: !!python/name:pymdownx.superfences.fence_code_format ''
 - pymdownx.tabbed:
     alternate_style: true
 - md_in_html
@@ -246,7 +247,7 @@ nav:
 - Migration: migration.md
 - Release Notes: release-notes.md
 extra_css:
-- statics/css/custom.css
+- statics/css/extra.css
 extra:
   analytics:
     provider: google
@@ -254,7 +255,12 @@ extra:
   alternate:
   - link: /
     name: en - English
+    lang: en
   - link: /ru/
     name: ru - русский язык
-hooks:
-- ../../scripts/hooks.py
+    lang: ru
+  social:
+  - icon: fontawesome/brands/github-alt
+    link: https://github.com/dymmond/lilya
+  - icon: fontawesome/brands/discord
+    link: https://discord.gg/XVeWXSrJ
