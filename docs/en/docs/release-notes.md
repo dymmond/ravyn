@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.3.9
+
+### Added
+
+- Support for [Palfrey](https://palfrey.dymmond.com) as a new ASGI server option for `ravyn runserver` as alternative to Palfrey and Hypercorn. Palfrey offers a modern, async-first server implementation with features like HTTP/2, WebSocket support, and optimized performance for Python 3.10+.
+
+### Changed
+
+- Bump Lilya to 0.25.0.
+
 ## 0.3.8
 
 !!! Note
@@ -1219,7 +1229,7 @@ for those specific types
 
 ```python
 #!/usr/bin/env python
-import uvicorn
+import palfrey
 
 from esmerald import Esmerald, Gateway, JSONResponse, Request, get
 
@@ -1244,7 +1254,7 @@ def user_in_request(request: Request) -> JSONResponse:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, port=8000)
+    palfrey.run(app, port=8000)
 ```
 
 The same is also applied to the `Router` object.

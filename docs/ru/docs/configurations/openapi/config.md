@@ -69,9 +69,9 @@
 === "MacOS & Linux"
 
     ```shell
-    RAVYN_SETTINGS_MODULE=AppSettings uvicorn src:app --reload
+    RAVYN_SETTINGS_MODULE=AppSettings palfrey src:app --reload
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    INFO:     Palfrey running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
     INFO:     Started server process [28722]
     INFO:     Waiting for application startup.
@@ -81,9 +81,9 @@
 === "Windows"
 
     ```shell
-    $env:RAVYN_SETTINGS_MODULE="AppSettings"; uvicorn src:app --reload
+    $env:RAVYN_SETTINGS_MODULE="AppSettings"; palfrey src:app --reload
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    INFO:     Palfrey running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
     INFO:     Started server process [28722]
     INFO:     Waiting for application startup.

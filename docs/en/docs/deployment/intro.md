@@ -82,7 +82,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["palfrey", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 **Advantages:**
@@ -102,13 +102,13 @@ services:
     name: myapp
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: palfrey app.main:app --host 0.0.0.0 --port $PORT
 ```
 
 **Heroku**
 ```
 # Procfile
-web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+web: palfrey app.main:app --host 0.0.0.0 --port $PORT
 ```
 
 **AWS, Azure, GCP**
@@ -133,7 +133,7 @@ After=network.target
 [Service]
 User=www-data
 WorkingDirectory=/var/www/myapp
-ExecStart=/usr/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+ExecStart=/usr/bin/palfrey app.main:app --host 127.0.0.1 --port 8000
 Restart=always
 
 [Install]
@@ -172,7 +172,7 @@ class ProductionSettings(RavynSettings):
     secret_key: str = Field(..., env='SECRET_KEY')
     database_url: str = Field(..., env='DATABASE_URL')
     allowed_hosts: list[str] = Field(default_factory=list)
-    
+
     class Config:
         @classmethod
         def parse_env_var(cls, field_name: str, raw_val: str):
@@ -202,7 +202,7 @@ from pydantic import Field
 
 class AppSettings(RavynSettings):
     allowed_hosts: List[str] = Field(..., env='ALLOWED_HOSTS')
-    
+
     class Config:
         @classmethod
         def parse_env_var(cls, field_name: str, raw_val: str) -> Any:
@@ -229,7 +229,7 @@ See [Pydantic's environment variable parsing](https://github.com/pydantic/pydant
 
 ### Performance ✅
 
-- [ ] Use production ASGI server (Uvicorn/Hypercorn)
+- [ ] Use production ASGI server (Palfrey/Hypercorn)
 - [ ] Configure multiple workers
 - [ ] Set up caching
 - [ ] Optimize database queries
@@ -285,8 +285,9 @@ class Settings(RavynSettings):
 **Problem:** Poor performance under load.
 
 **Solution:** Use multiple workers:
+
 ```shell
-uvicorn app.main:app --workers 4
+palfrey app.main:app --workers 4
 ```
 
 ---
@@ -300,7 +301,7 @@ Ensures consistency across all environments:
 ```dockerfile
 FROM python:3.11-slim
 # ... setup ...
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--workers", "4"]
+CMD ["palfrey", "app.main:app", "--host", "0.0.0.0", "--workers", "4"]
 ```
 
 ### 2. Separate Settings by Environment
@@ -309,7 +310,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--workers", "4"]
 # settings/development.py
 class DevelopmentSettings(RavynSettings):
     debug: bool = True
-    
+
 # settings/production.py
 class ProductionSettings(RavynSettings):
     debug: bool = False
@@ -324,7 +325,7 @@ Nginx or Caddy in front of your ASGI server:
 server {
     listen 80;
     server_name example.com;
-    
+
     location / {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
@@ -348,7 +349,7 @@ logging.basicConfig(
 ## Learn More
 
 - [Docker Deployment](./docker.md) - Complete containerization guide
-- [Uvicorn Documentation](https://www.uvicorn.org/) - ASGI server
+- [Palfrey Documentation](https://palfrey.dymmond.com) - ASGI server
 - [Pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) - Environment configuration
 
 ---

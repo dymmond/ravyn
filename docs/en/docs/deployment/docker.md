@@ -27,7 +27,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["palfrey", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 ### Build and Run
@@ -88,7 +88,7 @@ COPY . .
 EXPOSE 8000
 
 # Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["palfrey", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 ### With Multiple Workers
@@ -106,7 +106,7 @@ COPY . .
 EXPOSE 8000
 
 # Run with 4 workers for better performance
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["palfrey", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
 ```
 
 ---
@@ -133,7 +133,7 @@ For production, use Nginx as a reverse proxy and Supervisor to manage processes.
 
 ```txt
 ravyn
-uvicorn
+palfrey
 nginx
 supervisor
 ```
@@ -155,7 +155,7 @@ Nginx acts as a reverse proxy, handling SSL, static files, and load balancing:
 
 **What this does:**
 - Listens on port 80
-- Proxies requests to Uvicorn (port 8000)
+- Proxies requests to palfrey (port 8000)
 - Adds security headers
 - Handles timeouts
 
@@ -170,7 +170,7 @@ Supervisor manages and monitors your processes:
 **What this does:**
 1. Configures Supervisor daemon
 2. Manages Nginx process
-3. Manages Uvicorn process
+3. Manages palfrey process
 4. Auto-restarts on failure
 
 ### Production Dockerfile
@@ -203,7 +203,7 @@ COPY deployment/supervisor.conf /etc/supervisor/conf.d/
 # Expose port
 EXPOSE 80
 
-# Start Supervisor (which starts Nginx and Uvicorn)
+# Start Supervisor (which starts Nginx and palfrey)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
 ```
 
@@ -237,7 +237,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
     depends_on:
       - db
-  
+
   db:
     image: postgres:15
     environment:
@@ -347,7 +347,7 @@ WORKDIR /app
 COPY --from=builder /root/.local /root/.local
 COPY . .
 ENV PATH=/root/.local/bin:$PATH
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0"]
+CMD ["palfrey", "app.main:app", "--host", "0.0.0.0"]
 ```
 
 ### Pitfall 2: Not Using .dockerignore
@@ -391,7 +391,7 @@ COPY . .
 # Switch to non-root user
 USER appuser
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0"]
+CMD ["palfrey", "app.main:app", "--host", "0.0.0.0"]
 ```
 
 ---
@@ -467,7 +467,7 @@ docker push 123456789.dkr.ecr.us-east-1.amazonaws.com/myapp:latest
 
 - [Docker Documentation](https://docs.docker.com/) - Official Docker docs
 - [Docker Compose](https://docs.docker.com/compose/) - Multi-container apps
-- [Uvicorn](https://www.uvicorn.org/) - ASGI server
+- [Palfrey](https://palfrey.dymmond.com) - ASGI server
 - [Nginx](https://nginx.org/en/docs/) - Web server
 
 ---

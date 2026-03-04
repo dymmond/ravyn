@@ -90,9 +90,9 @@
 === "Without RAVYN_SETTINGS_MODULE"
 
     ```shell
-    uvicorn src:app --reload
+    palfrey src:app --reload
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    INFO:     Palfrey running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
     INFO:     Started server process [28722]
     INFO:     Waiting for application startup.
@@ -102,9 +102,9 @@
 === "With RAVYN_SETTINGS_MODULE MacOS & Linux"
 
     ```shell
-    RAVYN_SETTINGS_MODULE=src.configs.production.ProductionSettings uvicorn src:app
+    RAVYN_SETTINGS_MODULE=src.configs.production.ProductionSettings palfrey src:app
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    INFO:     Palfrey running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
     INFO:     Started server process [28722]
     INFO:     Waiting for application startup.
@@ -114,9 +114,9 @@
 === "With RAVYN_SETTINGS_MODULE Windows"
 
     ```shell
-    $env:RAVYN_SETTINGS_MODULE="src.configs.production.ProductionSettings"; uvicorn src:app
+    $env:RAVYN_SETTINGS_MODULE="src.configs.production.ProductionSettings"; palfrey src:app
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    INFO:     Palfrey running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
     INFO:     Started server process [28722]
     INFO:     Waiting for application startup.
@@ -228,9 +228,9 @@ Ravyn упрощает управление настройками на кажд
 === "MacOS & Linux"
 
     ```shell
-    RAVYN_SETTINGS_MODULE=src.configs.main_settings.AppSettings uvicorn src:app --reload
+    RAVYN_SETTINGS_MODULE=src.configs.main_settings.AppSettings palfrey src:app --reload
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    INFO:     Palfrey running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
     INFO:     Started server process [28722]
     INFO:     Waiting for application startup.
@@ -240,9 +240,9 @@ Ravyn упрощает управление настройками на кажд
 === "Windows"
 
     ```shell
-    $env:RAVYN_SETTINGS_MODULE="src.configs.main_settings.AppSettings"; uvicorn src:app --reload
+    $env:RAVYN_SETTINGS_MODULE="src.configs.main_settings.AppSettings"; palfrey src:app --reload
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    INFO:     Palfrey running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
     INFO:     Started server process [28722]
     INFO:     Waiting for application startup.

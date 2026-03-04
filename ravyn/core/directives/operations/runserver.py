@@ -112,10 +112,10 @@ def runserver(
             os.environ.setdefault("RAVYN_SETTINGS_MODULE", settings)
 
         try:
-            import uvicorn
+            import palfrey
         except ImportError:
             raise DirectiveError(
-                detail="Uvicorn needs to be installed to run Ravyn `runserver`."
+                detail="Palfrey needs to be installed to run Ravyn `runserver`."
             ) from None
 
         server_environment: str = ""
@@ -209,7 +209,7 @@ def runserver(
             # Use import path string for reload/workers compatibility
             app_to_run = app_target  # type: ignore[assignment]
 
-        uvicorn.run(
+        palfrey.run(
             # in case of no reload and workers, we might end up initializing twice when
             # using a function, so use app instead
             app=app_to_run,

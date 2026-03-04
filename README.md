@@ -50,7 +50,7 @@ pip install ravyn[standard]
 This installs Ravyn with recommended extras. You'll also need an ASGI server:
 
 ```shell
-pip install uvicorn
+pip install palfrey
 ```
 
 ### Your First API
@@ -74,7 +74,7 @@ def greet(name: str) -> JSONResponse:
 ### Run It
 
 ```shell
-uvicorn app:app --reload
+palfrey app:app --reload
 ```
 
 Visit [http://127.0.0.1:8000/hello/World](http://127.0.0.1:8000/hello/World) and you'll see:
@@ -199,10 +199,10 @@ Load your settings via environment variable:
 
 ```shell
 # MacOS/Linux
-RAVYN_SETTINGS_MODULE='myapp.settings.DevelopmentSettings' uvicorn app:app --reload
+RAVYN_SETTINGS_MODULE='myapp.settings.DevelopmentSettings' palfrey app:app --reload
 
 # Windows
-$env:RAVYN_SETTINGS_MODULE="myapp.settings.DevelopmentSettings"; uvicorn app:app --reload
+$env:RAVYN_SETTINGS_MODULE="myapp.settings.DevelopmentSettings"; palfrey app:app --reload
 ```
 
 If no `RAVYN_SETTINGS_MODULE` is set, Ravyn uses sensible defaults.

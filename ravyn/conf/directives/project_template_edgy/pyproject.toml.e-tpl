@@ -11,7 +11,7 @@ dependencies = [
   "ravyn[standard]>={{ ravyn_version }}",
   "edgy[postgres]",
   "gunicorn",
-  "uvicorn"
+  "palfrey"
 ]
 
 [project.optional-dependencies]

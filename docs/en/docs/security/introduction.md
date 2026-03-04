@@ -26,10 +26,10 @@ You can copy the following code into an `app.py` or any file at your choice.
 
 ## Run it
 
-You can now run the file using, for example, `uvicorn` and it can be like this:
+You can now run the file using, for example, `palfrey` and it can be like this:
 
 ```shell
-$ uvicorn app:app
+$ palfrey app:app
 ```
 
 ## Verify it

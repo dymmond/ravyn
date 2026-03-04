@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["palfrey", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 ```shell
@@ -93,7 +93,7 @@ Before deploying to production:
 
 ### Performance
 
-- Use a production ASGI server (Uvicorn, Hypercorn)
+- Use a production ASGI server (palfrey, Hypercorn)
 - Configure worker processes
 - Set up caching
 - Optimize database queries
@@ -130,7 +130,7 @@ class ProductionSettings(RavynSettings):
     secret_key: str = os.getenv("SECRET_KEY")
     database_url: str = os.getenv("DATABASE_URL")
     allowed_hosts: list[str] = ["example.com", "www.example.com"]
-    
+
     # Disable docs in production
     enable_openapi: bool = False
 ```
@@ -149,8 +149,8 @@ export RAVYN_SETTINGS_MODULE="myapp.settings.ProductionSettings"
 ### 1. Use a Process Manager
 
 ```shell
-# Uvicorn with multiple workers
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+# Palfrey with multiple workers
+palfrey app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
 ### 2. Set Up a Reverse Proxy
@@ -161,7 +161,7 @@ Use Nginx or Caddy in front of your ASGI server:
 server {
     listen 80;
     server_name example.com;
-    
+
     location / {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
@@ -186,7 +186,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Run with multiple workers
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["palfrey", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
 ```
 
 ### 4. Monitor Your Application
@@ -247,7 +247,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 ```shell
 # Good - multiple workers
-uvicorn app.main:app --workers 4
+palfrey app.main:app --workers 4
 ```
 
 ---
@@ -256,7 +256,7 @@ uvicorn app.main:app --workers 4
 
 - [Docker Deployment](./docker.md) - Complete Docker guide
 - [Introduction](./intro.md) - Deployment concepts
-- [Uvicorn Documentation](https://www.uvicorn.org/) - ASGI server
+- [Palfrey Documentation](https://palfrey.dymmond.com) - ASGI server
 - [Docker Documentation](https://docs.docker.com/) - Container platform
 
 ---

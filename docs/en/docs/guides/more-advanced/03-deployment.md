@@ -2,25 +2,25 @@
 
 This section covers how to deploy your Ravyn application in a production-ready environment.
 
-Ravyn apps are ASGI applications, which means they can be served using any ASGI-compatible server like `uvicorn`,
+Ravyn apps are ASGI applications, which means they can be served using any ASGI-compatible server like `palfrey`,
 `hypercorn`, or `daphne`.
 
 ---
 
-## Using Uvicorn
+## Using Palfrey
 
-One way to run Ravyn in production is with `uvicorn`, an ASGI server:
+One way to run Ravyn in production is with `palfrey`, an ASGI server:
 
 ### Install:
 
 ```bash
-pip install uvicorn
+pip install palfrey
 ```
 
 ### Run your app:
 
 ```bash
-uvicorn myapp:app --host 0.0.0.0 --port 8000 --workers 4 --lifespan on
+palfrey myapp:app --host 0.0.0.0 --port 8000 --workers 4 --lifespan on
 ```
 
 Options:
@@ -31,17 +31,17 @@ Options:
 
 ---
 
-## Using Gunicorn + Uvicorn Workers
+## Using Gunicorn + Palfrey Workers
 
-For more robust setups (especially when using Docker), run Uvicorn inside Gunicorn:
+For more robust setups (especially when using Docker), run Palfrey inside Gunicorn:
 
 ```bash
-pip install gunicorn uvicorn
+pip install gunicorn palfrey
 ```
 
 ```bash
 gunicorn myapp:app \
-  -k uvicorn.workers.UvicornWorker \
+  -k palfrey.workers.PalfreyWorker \
   -b 0.0.0.0:8000 \
   --workers 4
 ```
@@ -62,7 +62,7 @@ COPY . .
 
 RUN pip install -r requirements.txt
 
-CMD ["uvicorn", "myapp:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["palfrey", "myapp:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 Then build and run:
