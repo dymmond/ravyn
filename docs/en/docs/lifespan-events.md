@@ -5,7 +5,7 @@ Lifespan events let you run code once when your application starts and once when
 ## What You'll Learn
 
 - Running code on application startup
-- Running code on application shutdown  
+- Running code on application shutdown
 - Using `on_startup` and `on_shutdown` events
 - Using the modern `lifespan` context manager
 - Request lifecycle hooks (before/after requests)
@@ -154,9 +154,9 @@ async def lifespan(app: Ravyn):
     # Code before yield runs on startup
     print("Application starting")
     database = await connect_database()
-    
+
     yield  # Application runs here
-    
+
     # Code after yield runs on shutdown
     await database.disconnect()
     print("Application stopped")
@@ -178,9 +178,9 @@ async def lifespan(app: Ravyn):
     await db.connect()
     app.state.db = db  # Store in app state
     print("Database connected")
-    
+
     yield
-    
+
     # Shutdown
     await app.state.db.disconnect()
     print("Database disconnected")
@@ -225,9 +225,9 @@ async def lifespan(app: Ravyn):
     app.state.db = await connect_database()
     app.state.redis = await connect_redis()
     app.state.ml_model = load_ml_model()
-    
+
     yield
-    
+
     # Cleanup
     await app.state.db.disconnect()
     await app.state.redis.close()
@@ -304,6 +304,25 @@ Ravyn before_request
   → Include after_request
 → Ravyn after_request
 ```
+
+### Request lifecycle sequence
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as Ravyn
+    participant BR as before_request hooks
+    participant H as Handler
+    participant AR as after_request hooks
+
+    C->>A: Request
+    A->>BR: Run before_request chain
+    BR->>H: Execute handler
+    H->>AR: Run after_request chain
+    AR-->>C: Response
+```
+
+For deeper lifecycle semantics (middleware, interceptors, dependency resolution), see [Request Lifecycle](./concepts/request-lifecycle.md).
 
 ---
 
@@ -425,21 +444,21 @@ import redis.asyncio as redis
 async def lifespan(app: Ravyn):
     # Startup: Initialize all resources
     print("Starting application...")
-    
+
     # Database
     app.state.db = databases.Database("postgresql://localhost/mydb")
     await app.state.db.connect()
-    
+
     # Redis
     app.state.redis = await redis.from_url("redis://localhost")
-    
+
     # ML Model
     app.state.model = load_ml_model()
-    
+
     print("All resources initialized")
-    
+
     yield  # Application runs
-    
+
     # Shutdown: Cleanup all resources
     print("Shutting down...")
     await app.state.db.disconnect()

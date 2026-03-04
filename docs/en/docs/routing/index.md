@@ -13,6 +13,19 @@ Decorator or Gateway
 
 Use this section when you need to move from a few endpoints to a maintainable route tree.
 
+```mermaid
+flowchart TD
+    App["Ravyn"] --> Include["Include"]
+    App --> Router["Router"]
+    Include --> Router
+    Router --> Gateway["Gateway"]
+    Router --> Controller["Controller"]
+    Gateway --> Handler["Handler"]
+    Controller --> Handler
+```
+
+For a deeper composition view, see [Component Interactions](../concepts/component-interactions.md).
+
 ## In This Section
 
 - [Routes](./routes.md) - Gateway, Include, and route organization

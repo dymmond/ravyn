@@ -46,3 +46,4 @@ first routes
 Start with [Building Your First API](./02-building-your-first-api.md).
 
 After this track, continue with [Getting Deeper into Ravyn](../more-advanced/index.md).
+If you prefer one end-to-end project path, follow [Build a Production API](../../tutorials/build-a-production-api/index.md).

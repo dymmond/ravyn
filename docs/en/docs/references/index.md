@@ -2,6 +2,9 @@
 
 Complete API reference and documentation index.
 
+Use this section for exact signatures, parameters, and object members.
+For design rationale and learning flow, use [Concepts](../concepts/index.md) and [Tutorials](../tutorials/index.md).
+
 ## Core
 
 - **[Ravyn](./ravyn.md)** - The main application class.

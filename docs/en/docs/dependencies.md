@@ -44,6 +44,14 @@ When someone visits `/users`, Ravyn automatically:
 
 ## How Dependencies Work
 
+```mermaid
+flowchart LR
+    Request["Request"] --> Resolve["Resolve dependency graph"]
+    Resolve --> Injected["Inject values into handler params"]
+    Injected --> Handler["Handler execution"]
+    Handler --> Response["Response"]
+```
+
 ### The Two-Part System
 
 Ravyn's dependency injection uses two objects:
@@ -63,6 +71,8 @@ dependencies = {
 def handler(db = Injects()):  # Where to inject
     return {"db": db}
 ```
+
+See also [Data Flow](./concepts/data-flow.md) for how dependency resolution fits the full request pipeline.
 
 ### Application Levels
 
@@ -105,7 +115,7 @@ from ravyn import Ravyn, Gateway, Inject, Injects, Factory, get
 class UserDAO:
     def __init__(self):
         self.db = "connected"
-    
+
     def get_users(self):
         return ["Alice", "Bob"]
 

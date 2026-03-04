@@ -1,8 +1,3 @@
----
-hide:
-  - navigation
----
-
 # Release Notes
 
 ## 0.3.9
