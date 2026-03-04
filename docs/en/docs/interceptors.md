@@ -104,13 +104,13 @@ from ravyn.exceptions import NotAuthorized
 class APIKeyInterceptor(RavynInterceptor):
     async def intercept(self, request):
         api_key = request.headers.get("X-API-Key")
-        
+
         if not api_key:
             raise NotAuthorized("API key required")
-        
+
         if not self.validate_api_key(api_key):
             raise NotAuthorized("Invalid API key")
-    
+
     def validate_api_key(self, key: str) -> bool:
         # Your validation logic
         return key in ["valid-key-1", "valid-key-2"]
@@ -284,10 +284,10 @@ Run with settings:
 
 ```shell
 # MacOS/Linux
-RAVYN_SETTINGS_MODULE='settings.AppSettings' uvicorn app:app
+RAVYN_SETTINGS_MODULE='settings.AppSettings' palfrey app:app
 
 # Windows
-$env:RAVYN_SETTINGS_MODULE="settings.AppSettings"; uvicorn app:app
+$env:RAVYN_SETTINGS_MODULE="settings.AppSettings"; palfrey app:app
 ```
 
 ---

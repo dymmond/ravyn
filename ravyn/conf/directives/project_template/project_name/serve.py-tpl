@@ -6,7 +6,7 @@ Ravyn's command-line utility for development purposes.
 """
 import os
 
-import uvicorn
+import palfrey
 
 from ravyn.conf import settings
 
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     Uses the`RAVYN_SETTINGS_MODULE` settings configuration and loads accordingly.
     """
     port = getattr(settings, "port", 8000)
-    uvicorn.run(
+    palfrey.run(
         "main:app",
         port=os.getenv("PORT", port),
         host=os.getenv("HOST", "localhost"),

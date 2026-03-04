@@ -24,7 +24,7 @@ This guide outlines strategies for both vertical and horizontal scaling, load ba
 Use Gunicorn with multiple workers, or Docker containers behind a load balancer:
 
 ```bash
-gunicorn myapp:app -k uvicorn.workers.UvicornWorker --workers 4
+gunicorn myapp:app -k palfrey.workers.PalfreyWorker --workers 4
 ```
 
 With Docker Compose:
@@ -157,7 +157,7 @@ Use logging, monitoring, and tracing tools:
 
 ## Summary
 
-- Use Gunicorn or Uvicorn for workers
+- Use Gunicorn or Palfrey for workers
 - Use Docker/Kubernetes for horizontal scaling
 - Apply caching and health checks
 - Monitor and trace in production

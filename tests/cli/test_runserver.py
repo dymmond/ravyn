@@ -52,7 +52,7 @@ def create_folders():
 async def test_runserver_uses_cli_path(monkeypatch):
     """
     Ensures that runserver uses the CLI `path` argument when provided
-    and calls uvicorn.run() with correct parameters.
+    and calls palfrey.run() with correct parameters.
     """
     (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createproject myproject")
     assert ss == 0
@@ -66,7 +66,7 @@ async def test_runserver_uses_cli_path(monkeypatch):
     monkeypatch.setenv("RAVYN_DEFAULT_APP", "")
 
     fake_uvicorn = types.SimpleNamespace(run=fake_run)
-    sys.modules["uvicorn"] = fake_uvicorn
+    sys.modules["palfrey"] = fake_uvicorn
 
     os.environ.pop("RAVYN_DEFAULT_APP", None)
 
@@ -133,7 +133,7 @@ def test_runserver_sets_custom_settings(monkeypatch):
         called.update(kwargs)
         return None
 
-    sys.modules["uvicorn"] = types.SimpleNamespace(run=fake_run)
+    sys.modules["palfrey"] = types.SimpleNamespace(run=fake_run)
     monkeypatch.delenv("RAVYN_SETTINGS_MODULE", raising=False)
 
     env = runserver_module.DirectiveEnv()
@@ -167,7 +167,7 @@ def test_runserver_uses_default_settings(monkeypatch):
     def fake_run(**_):
         return None
 
-    sys.modules["uvicorn"] = types.SimpleNamespace(run=fake_run)
+    sys.modules["palfrey"] = types.SimpleNamespace(run=fake_run)
 
     class FakeSettings:
         __class__ = type("Settings", (), {"__module__": "ravyn.conf.default"})
@@ -200,7 +200,7 @@ def test_runserver_raises_directive_error_if_uvicorn_missing(monkeypatch):
     original_import = builtins.__import__
 
     def fake_import(name, *a, **kw):
-        if name == "uvicorn":
+        if name == "palfrey":
             raise ImportError()
         return original_import(name, *a, **kw)
 
@@ -236,7 +236,7 @@ def test_runserver_uses_env_path(monkeypatch):
         called.update(kwargs)
         return None
 
-    sys.modules["uvicorn"] = types.SimpleNamespace(run=fake_run)
+    sys.modules["palfrey"] = types.SimpleNamespace(run=fake_run)
 
     env = runserver_module.DirectiveEnv()
     env.app = app
@@ -288,7 +288,7 @@ def test_runserver_exits_if_no_path(monkeypatch):
 
 def test_runserver_with_reload_or_workers(monkeypatch):
     called = {}
-    sys.modules["uvicorn"] = types.SimpleNamespace(run=lambda **kw: called.update(kw))
+    sys.modules["palfrey"] = types.SimpleNamespace(run=lambda **kw: called.update(kw))
 
     env = runserver_module.DirectiveEnv()
     env.app = app

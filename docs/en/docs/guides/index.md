@@ -68,7 +68,7 @@ app = Ravyn(routes=[home])
 
 To run the app:
 ```bash
-uvicorn main:app --reload
+palfrey main:app --reload
 ```
 
 Visit `http://127.0.0.1:8000` and you'll see:

@@ -21,7 +21,7 @@ from lilya.middleware import DefineMiddleware
 class LoggingMiddleware:
     def __init__(self, app):
         self.app = app
-    
+
     async def __call__(self, scope, receive, send):
         print(f"Request: {scope['method']} {scope['path']}")
         await self.app(scope, receive, send)
@@ -212,9 +212,9 @@ to use to start an Ravyn application.
 === "MacOS & Linux"
 
     ```shell
-    RAVYN_SETTINGS_MODULE=configs.live.AppSettings uvicorn src:app
+    RAVYN_SETTINGS_MODULE=configs.live.AppSettings palfrey src:app
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    INFO:     Palfrey running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
     INFO:     Started server process [28722]
     INFO:     Waiting for application startup.
@@ -224,9 +224,9 @@ to use to start an Ravyn application.
 === "Windows"
 
     ```shell
-    $env:RAVYN_SETTINGS_MODULE="configs.live.AppSettings"; uvicorn src:app
+    $env:RAVYN_SETTINGS_MODULE="configs.live.AppSettings"; palfrey src:app
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    INFO:     Palfrey running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
     INFO:     Started server process [28722]
     INFO:     Waiting for application startup.

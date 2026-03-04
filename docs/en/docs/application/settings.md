@@ -40,10 +40,10 @@ Load it with an environment variable:
 
 ```shell
 # MacOS/Linux
-RAVYN_SETTINGS_MODULE='myapp.settings.DevelopmentSettings' uvicorn app:app
+RAVYN_SETTINGS_MODULE='myapp.settings.DevelopmentSettings' palfrey app:app
 
 # Windows
-$env:RAVYN_SETTINGS_MODULE="myapp.settings.DevelopmentSettings"; uvicorn app:app
+$env:RAVYN_SETTINGS_MODULE="myapp.settings.DevelopmentSettings"; palfrey app:app
 ```
 
 !!! tip
@@ -132,7 +132,7 @@ from .base import AppSettings
 class DevelopmentSettings(AppSettings):
     debug: bool = True
     environment: str = EnvironmentType.DEVELOPMENT
-    
+
     @property
     def database_url(self) -> str:
         return "postgresql://localhost/myapp_dev"
@@ -148,7 +148,7 @@ from .base import AppSettings
 class TestingSettings(AppSettings):
     debug: bool = True
     environment: str = EnvironmentType.TESTING
-    
+
     @property
     def database_url(self) -> str:
         return "postgresql://localhost/myapp_test"
@@ -164,7 +164,7 @@ from .base import AppSettings
 class ProductionSettings(AppSettings):
     debug: bool = False
     environment: str = EnvironmentType.PRODUCTION
-    
+
     @property
     def database_url(self) -> str:
         return "postgresql://prod-server/myapp"
@@ -180,20 +180,20 @@ Set the environment variable to load your custom settings:
 
 ```shell
 # MacOS/Linux
-RAVYN_SETTINGS_MODULE='myapp.settings.development.DevelopmentSettings' uvicorn app:app --reload
+RAVYN_SETTINGS_MODULE='myapp.settings.development.DevelopmentSettings' palfrey app:app --reload
 
 # Windows
-$env:RAVYN_SETTINGS_MODULE="myapp.settings.development.DevelopmentSettings"; uvicorn app:app --reload
+$env:RAVYN_SETTINGS_MODULE="myapp.settings.development.DevelopmentSettings"; palfrey app:app --reload
 ```
 
 ### Production
 
 ```shell
 # MacOS/Linux
-RAVYN_SETTINGS_MODULE='myapp.settings.production.ProductionSettings' uvicorn app:app
+RAVYN_SETTINGS_MODULE='myapp.settings.production.ProductionSettings' palfrey app:app
 
 # Windows
-$env:RAVYN_SETTINGS_MODULE="myapp.settings.production.ProductionSettings"; uvicorn app:app
+$env:RAVYN_SETTINGS_MODULE="myapp.settings.production.ProductionSettings"; palfrey app:app
 ```
 
 ### Without Environment Variable
@@ -201,7 +201,7 @@ $env:RAVYN_SETTINGS_MODULE="myapp.settings.production.ProductionSettings"; uvico
 If you don't set `RAVYN_SETTINGS_MODULE`, Ravyn uses defaults:
 
 ```shell
-uvicorn app:app  # Uses RavynSettings defaults
+palfrey app:app  # Uses RavynSettings defaults
 ```
 
 ---
@@ -326,10 +326,10 @@ app = Ravyn(settings_module=InstanceSettings)
 
 ```shell
 # MacOS/Linux
-RAVYN_SETTINGS_MODULE='src.configs.main_settings.AppSettings' uvicorn src:app --reload
+RAVYN_SETTINGS_MODULE='src.configs.main_settings.AppSettings' palfrey src:app --reload
 
 # Windows
-$env:RAVYN_SETTINGS_MODULE="src.configs.main_settings.AppSettings"; uvicorn src:app --reload
+$env:RAVYN_SETTINGS_MODULE="src.configs.main_settings.AppSettings"; palfrey src:app --reload
 ```
 
 **Result:** `InstanceSettings` values override `AppSettings` values.
@@ -425,14 +425,14 @@ Settings can include configuration objects for specific features:
 
 ```python
 # Wrong - environment variable not set
-uvicorn app:app  # Uses defaults, not your custom settings
+palfrey app:app  # Uses defaults, not your custom settings
 ```
 
 **Solution:** Set `RAVYN_SETTINGS_MODULE` before running:
 
 ```shell
 # Correct
-RAVYN_SETTINGS_MODULE='myapp.settings.DevelopmentSettings' uvicorn app:app
+RAVYN_SETTINGS_MODULE='myapp.settings.DevelopmentSettings' palfrey app:app
 ```
 
 ### Pitfall 2: Settings Class Not Inheriting from RavynSettings
@@ -483,14 +483,14 @@ def info(request: Request) -> dict:
 
 ```shell
 # Wrong - typo in path
-RAVYN_SETTINGS_MODULE='myapp.setting.DevelopmentSettings' uvicorn app:app
+RAVYN_SETTINGS_MODULE='myapp.setting.DevelopmentSettings' palfrey app:app
 ```
 
 **Solution:** Double-check the full module path:
 
 ```shell
 # Correct
-RAVYN_SETTINGS_MODULE='myapp.settings.DevelopmentSettings' uvicorn app:app
+RAVYN_SETTINGS_MODULE='myapp.settings.DevelopmentSettings' palfrey app:app
 ```
 
 ### Pitfall 5: Mixing Settings and Parameters Unexpectedly
@@ -531,10 +531,10 @@ Use different settings per environment:
 
 ```shell
 # Development
-RAVYN_SETTINGS_MODULE='myapp.settings.development.DevelopmentSettings' uvicorn app:app --reload
+RAVYN_SETTINGS_MODULE='myapp.settings.development.DevelopmentSettings' palfrey app:app --reload
 
 # Production
-RAVYN_SETTINGS_MODULE='myapp.settings.production.ProductionSettings' uvicorn app:app
+RAVYN_SETTINGS_MODULE='myapp.settings.production.ProductionSettings' palfrey app:app
 ```
 
 ### Pattern 2: .env Files with Pydantic
@@ -545,7 +545,7 @@ from pydantic_settings import SettingsConfigDict
 
 class Settings(RavynSettings):
     model_config = SettingsConfigDict(env_file=".env")
-    
+
     database_url: str
     secret_key: str
     debug: bool = False
@@ -559,7 +559,7 @@ from ravyn import RavynSettings
 class Settings(RavynSettings):
     feature_new_ui: bool = False
     feature_beta_api: bool = False
-    
+
 @app.get("/features")
 def features(request: Request) -> dict:
     return {

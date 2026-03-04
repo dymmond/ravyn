@@ -38,7 +38,7 @@ app = Ravyn(routes=[
 
 ```shell
 # Set it in the same command
-RAVYN_SETTINGS_MODULE='myapp.settings.Development' uvicorn app:app
+RAVYN_SETTINGS_MODULE='myapp.settings.Development' palfrey app:app
 ```
 
 ## Dependency Injection

@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
+from palfrey.logging_config import DefaultFormatter
 from rich_toolkit import RichToolkit, RichToolkitTheme
 from rich_toolkit.styles import TaggedStyle
-from uvicorn.logging import DefaultFormatter
 
 from ravyn.conf import settings
 
@@ -45,9 +45,9 @@ def get_log_config() -> dict[str, Any]:
             },
         },
         "loggers": {
-            "uvicorn": {"handlers": ["default"], "level": "INFO"},
-            "uvicorn.error": {"level": "INFO"},
-            "uvicorn.access": {
+            "palfrey": {"handlers": ["default"], "level": "INFO"},
+            "palfrey.error": {"level": "INFO"},
+            "palfrey.access": {
                 "handlers": ["access"],
                 "level": "INFO",
                 "propagate": False,
