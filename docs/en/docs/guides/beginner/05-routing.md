@@ -194,8 +194,9 @@ different components, allowing for better code organization.
 ### Example: Complex Application Using All Features
 
 ```python
-from ravyn import Ravyn, Gateway, JSONResponse, Router, Controller, post, get, Controller
-from ravyn.datastructures import Webhook
+from ravyn import Controller, Gateway, Include, JSONResponse, Ravyn, Router, get, post
+
+user_router = Router()
 
 @user_router.get("/status")
 async def status() -> JSONResponse:
@@ -218,8 +219,8 @@ class UserController(Controller):
 # Create app with all components
 app = Ravyn(
     routes=[
-        Include('/internal', routes=[Gateway(handler=include_status)]),  # Include include_status
-        Gateway(handler=UserController),  # Include API View
+        Include("/internal", routes=[Gateway(handler=include_status)]),
+        Gateway(handler=UserController),
     ]
 )
 app.add_router(user_router)

@@ -107,7 +107,7 @@ Use built-in or external caching to reduce database load and speed up requests:
 Configure via `RavynSettings`:
 
 ```python
-from ravyn.conf import RavynSettings
+from ravyn import RavynSettings
 from ravyn.core.caches.redis import RedisCache
 
 class Settings(RavynSettings):
@@ -117,7 +117,8 @@ class Settings(RavynSettings):
 Use the `@cache` decorator:
 
 ```python
-from ravyn import get, cache
+from ravyn import get
+from ravyn.utils.decorators import cache
 
 @get("/slow")
 @cache(ttl=60)

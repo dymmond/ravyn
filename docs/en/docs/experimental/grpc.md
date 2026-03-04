@@ -6,7 +6,7 @@ Ravyn's gRPC integration lets you build high-performance microservices that spea
 
 !!! Warning
     **Experimental Feature**
-    
+
     The gRPC integration in Ravyn is currently experimental and subject to change.
     While it is stable enough for real use-cases, APIs may evolve based on community feedback.
 
@@ -22,7 +22,7 @@ Ravyn's gRPC integration lets you build high-performance microservices that spea
 
 ```python
 from ravyn import Ravyn
-from ravyn.contrib.grpc import GrpcGateway
+from ravyn.contrib.grpc.gateway import GrpcGateway
 from ravyn.contrib.grpc.register import register_grpc_http_routes
 
 # Create gRPC gateway
@@ -147,10 +147,10 @@ class GreeterService(GreeterServicer):
             context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
             context.set_details("Invalid request")
             return HelloReply()
-        
+
         # Return response
         return HelloReply(message=f"Hello, {request.name}!")
-    
+
     @classmethod
     def __add_to_server__(cls, instance, server):
         """Required method for Ravyn integration"""
@@ -160,7 +160,7 @@ class GreeterService(GreeterServicer):
 ### Step 4: Create the Gateway
 
 ```python
-from ravyn.contrib.grpc import GrpcGateway
+from ravyn.contrib.grpc.gateway import GrpcGateway
 
 grpc_gateway = GrpcGateway(
     path="/grpc",

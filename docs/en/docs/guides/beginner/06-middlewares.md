@@ -1,122 +1,96 @@
 # Middlewares
 
-In this section, you'll learn how to use middleware in Ravyn to modify requests and responses globally.
+In this section, you'll learn how middleware works in Ravyn and how to add your own.
 
----
+## What is middleware?
 
-## What is Middleware?
+Middleware is ASGI code that runs around request handling.
 
-Middleware is a function that runs before or after your route handlers. It can:
+Common uses:
 
-- Modify requests and responses
-- Handle cross-cutting concerns like logging, authentication, CORS
-- Add global behaviors
+- Logging.
+- Authentication.
+- Compression.
+- Security headers.
+- Cross-cutting validation.
 
----
+## Adding middleware
 
-## Adding Middleware
-
-To add middleware to your Ravyn application, use the `middleware` argument:
+Use `DefineMiddleware` and pass middleware classes in `Ravyn(..., middleware=[...])`.
 
 ```python
-from ravyn import Ravyn, Request
-from ravyn.core.protocols.middleware import MiddlewareProtocol
-from lilya.types import ASGIApp, Scope, Receive, Send
 from lilya.middleware import DefineMiddleware
+from lilya.types import ASGIApp, Receive, Scope, Send
+from ravyn import Gateway, Ravyn, get
 
-class LogMiddleware(MiddlewareProtocol):
 
-    def __init__(self, app: ASGIApp) -> None:
+class LogMiddleware:
+    def __init__(self, app: ASGIApp):
         self.app = app
 
-        async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-            print(f"Incoming request: {request.method} {request.url}")
-            await self.app(scope, receive, send)
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http":
+            print(f"{scope['method']} {scope['path']}")
+        await self.app(scope, receive, send)
+
+
+@get("/")
+async def home() -> dict:
+    return {"hello": "world"}
+
 
 app = Ravyn(
-    routes=[],
-    middleware=[DefineMiddleware(LogMiddleware)]
+    routes=[Gateway(handler=home)],
+    middleware=[DefineMiddleware(LogMiddleware)],
 )
 ```
 
----
+## Built-in middleware examples
 
-## Built-in Middleware Examples
-
-### CORS Middleware
+### CORS
 
 ```python
-from ravyn.middleware.cors import CORSMiddleware
-from lilya.middleware import DefineMiddleware
+from ravyn import CORSConfig, Ravyn
 
 app = Ravyn(
     routes=[],
-    middleware=[
-        DefineMiddleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_methods=["*"],
-            allow_headers=["*"]
-        )
-    ]
+    cors_config=CORSConfig(
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    ),
 )
 ```
 
-### Trusted Hosts
-
-```python
-from ravyn.middleware.trustedhost import TrustedHostMiddleware
-
-app = Ravyn(
-    routes=[],
-    middleware=[
-        DefineMiddleware(TrustedHostMiddleware, allowed_hosts=["example.com", "localhost"])
-    ]
-)
-```
-
----
-
-## Custom Middleware with Classes
-
-You can also use classes instead of functions:
+### Trusted host
 
 ```python
 from lilya.middleware import DefineMiddleware
-
-class MyMiddleware:
-    async def __call__(self, request: Request, call_next):
-        print("Middleware in action!")
-        return await call_next(request)
+from ravyn import Ravyn
+from ravyn.middleware import TrustedHostMiddleware
 
 app = Ravyn(
     routes=[],
-    middleware=[DefineMiddleware(MyMiddleware)]
+    middleware=[DefineMiddleware(TrustedHostMiddleware, allowed_hosts=["example.com", "localhost"])],
 )
 ```
 
----
+## Middleware order
 
-## Middleware Order
-
-Middlewares are executed in the order they are added.
+Middleware executes in declaration order from outermost to innermost.
 
 ```python
 middleware=[DefineMiddleware(A), DefineMiddleware(B)]
 ```
 
-Order:
+Execution order:
 
-1. `A` before request
-2. `B` before request
-3. Route handler
-4. `B` after response
-5. `A` after response
+1. `A` before request.
+2. `B` before request.
+3. Handler.
+4. `B` after handler.
+5. `A` after handler.
 
----
+## Next step
 
-## What's Next?
-
-Now that you know how to work with middleware, it's time to explore background tasks.
-
-👉 Continue to [background tasks](07-background-tasks.md) to run async jobs after sending responses.
+Continue to [background tasks](07-background-tasks.md).

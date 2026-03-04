@@ -17,14 +17,14 @@ Authenticate users on every request using Ravyn's authentication middleware. Bui
 from ravyn import Ravyn, get
 from lilya.middleware import DefineMiddleware
 from ravyn.middleware.authentication import AuthenticationMiddleware, AuthenticationBackend
-from ravyn.types import AuthCredentials, UserInterface
+from lilya.authentication import AuthCredentials, UserInterface
 
 class JWTBackend(AuthenticationBackend):
     async def authenticate(self, request):
         token = request.headers.get("Authorization")
         if not token:
             return None
-        
+
         # Verify JWT and get user
         user = verify_jwt(token)
         return AuthCredentials(["authenticated"]), user

@@ -43,12 +43,12 @@ from ravyn import directive
 ```
 
 !!! Danger
-    The `@decorator` **must always be on top of the `@command` **but not the other way around.
+    The `@directive` **must always be on top of the `@command` **but not the other way around.
 
     **Ok**
 
     ```python
-    from ravyn import decorator
+    from ravyn import directive
     from sayer import command
 
     @directive
@@ -59,7 +59,7 @@ from ravyn import directive
     **Not ok**
 
     ```python
-    from ravyn import decorator
+    from ravyn import directive
     from sayer import command
 
     @command

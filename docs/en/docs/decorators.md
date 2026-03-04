@@ -13,18 +13,18 @@ The `@controller` decorator transforms a regular Python class into a Ravyn contr
 
 ```python
 from ravyn import Ravyn, get, post
-from ravyn.decorators import controller
+from ravyn.utils.decorators import controller
 
 @controller(path="/users")
 class UserController:
     @get("/")
     def list_users(self) -> dict:
         return {"users": ["Alice", "Bob"]}
-    
+
     @get("/{user_id}")
     def get_user(self, user_id: int) -> dict:
         return {"user_id": user_id}
-    
+
     @post("/")
     def create_user(self, name: str) -> dict:
         return {"created": name}
@@ -55,11 +55,11 @@ The `@controller` decorator converts a class into a Controller automatically, gi
 ### Without Decorator (Traditional)
 
 ```python
-from ravyn.routing import Controller
+from ravyn import Controller
 
 class UserController(Controller):
     path = "/users"
-    
+
     @get("/")
     def list_users(self) -> dict:
         return {"users": []}
@@ -68,7 +68,7 @@ class UserController(Controller):
 ### With Decorator (Modern)
 
 ```python
-from ravyn.decorators import controller
+from ravyn.utils.decorators import controller
 
 @controller(path="/users")
 class UserController:
@@ -114,7 +114,7 @@ class UserController:
 ### Example 1: Basic CRUD Controller
 
 ```python
-from ravyn.decorators import controller
+from ravyn.utils.decorators import controller
 from ravyn import get, post, put, delete
 
 @controller(path="/products")
@@ -122,19 +122,19 @@ class ProductController:
     @get("/")
     def list_products(self) -> dict:
         return {"products": ["Laptop", "Phone"]}
-    
+
     @get("/{product_id}")
     def get_product(self, product_id: int) -> dict:
         return {"id": product_id, "name": "Product"}
-    
+
     @post("/")
     def create_product(self, name: str, price: float) -> dict:
         return {"created": name, "price": price}
-    
+
     @put("/{product_id}")
     def update_product(self, product_id: int, name: str) -> dict:
         return {"updated": product_id, "name": name}
-    
+
     @delete("/{product_id}")
     def delete_product(self, product_id: int) -> dict:
         return {"deleted": product_id}
@@ -143,7 +143,7 @@ class ProductController:
 ### Example 2: Controller with Dependencies
 
 ```python
-from ravyn.decorators import controller
+from ravyn.utils.decorators import controller
 from ravyn import get, Inject
 
 def get_database():
@@ -162,7 +162,7 @@ class UserController:
 ### Example 3: Controller with Custom Headers
 
 ```python
-from ravyn.decorators import controller
+from ravyn.utils.decorators import controller
 from ravyn import get
 
 @controller(
@@ -179,7 +179,7 @@ class APIController:
 ### Example 4: Controller with Tags (OpenAPI)
 
 ```python
-from ravyn.decorators import controller
+from ravyn.utils.decorators import controller
 from ravyn import get, post
 
 @controller(
@@ -190,7 +190,7 @@ class AuthController:
     @post("/login")
     def login(self, username: str, password: str) -> dict:
         return {"token": "abc123"}
-    
+
     @post("/logout")
     def logout(self) -> dict:
         return {"logged_out": True}
@@ -212,12 +212,12 @@ Both approaches work identically:
 ### Subclassing Approach
 
 ```python
-from ravyn.routing import Controller
+from ravyn import Controller
 
 class UserController(Controller):
     path = "/users"
     tags = ["users"]
-    
+
     @get("/")
     def list_users(self) -> dict:
         return {"users": []}
@@ -226,7 +226,7 @@ class UserController(Controller):
 ### Decorator Approach
 
 ```python
-from ravyn.decorators import controller
+from ravyn.utils.decorators import controller
 
 @controller(path="/users", tags=["users"])
 class UserController:
@@ -256,7 +256,7 @@ class UserController:
 
 ```python
 # Correct
-from ravyn.decorators import controller
+from ravyn.utils.decorators import controller
 
 @controller(path="/users")
 class UserController:
@@ -293,7 +293,7 @@ class UserController:
 
 ```python
 # Confusing - don't mix both
-from ravyn.routing import Controller
+from ravyn import Controller
 
 @controller(path="/users")
 class UserController(Controller):  # Redundant
@@ -346,7 +346,7 @@ No need to remember to inherit from Controller.
 
 ```python
 from ravyn import Ravyn, get, post, delete
-from ravyn.decorators import controller
+from ravyn.utils.decorators import controller
 from ravyn.exceptions import NotFound
 
 @controller(
@@ -363,13 +363,13 @@ class PostController:
                 {"id": 2, "title": "Second Post"}
             ][:limit]
         }
-    
+
     @get("/{post_id}")
     def get_post(self, post_id: int) -> dict:
         if post_id > 100:
             raise NotFound(f"Post {post_id} not found")
         return {"id": post_id, "title": f"Post {post_id}"}
-    
+
     @post("/")
     def create_post(self, title: str, content: str) -> dict:
         return {
@@ -378,7 +378,7 @@ class PostController:
             "content": content,
             "created": True
         }
-    
+
     @delete("/{post_id}")
     def delete_post(self, post_id: int) -> dict:
         return {"deleted": post_id}

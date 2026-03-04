@@ -26,7 +26,7 @@ registry = Registry(database=database)
 class User(Model):
     name = fields.CharField(max_length=100)
     email = fields.EmailField()
-    
+
     class Meta:
         registry = registry
 
@@ -77,7 +77,7 @@ class User(Model):
     name = fields.CharField(max_length=100)
     email = fields.EmailField()
     age = fields.IntegerField(minimum=0)
-    
+
     class Meta:
         registry = registry
 
@@ -110,7 +110,7 @@ Define relationships with ease:
 class Post(Model):
     title = fields.CharField(max_length=200)
     author = fields.ForeignKey("User", on_delete=fields.CASCADE)
-    
+
     class Meta:
         registry = registry
 
@@ -199,7 +199,7 @@ Ravyn provides built-in support for Edgy:
 Pre-built authentication models:
 
 ```python
-from ravyn.contrib.auth.edgy.models import User
+from ravyn.contrib.auth.edgy.base_user import User
 
 # Ready-to-use User model with:
 # - Password hashing
@@ -254,7 +254,7 @@ class AppSettings(RavynSettings):
     @property
     def database(self):
         return Database(self.database_url)
-    
+
     @property
     def registry(self):
         return Registry(database=self.database)

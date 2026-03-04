@@ -13,7 +13,7 @@ Mount WSGI applications (Flask, Django, etc.) inside your Ravyn app. Perfect for
 ## Quick Start
 
 ```python
-from ravyn import Ravyn
+from ravyn import Include, Ravyn
 from flask import Flask
 
 # Your existing Flask app
@@ -28,7 +28,7 @@ from ravyn.middleware.wsgi import WSGIMiddleware
 
 app = Ravyn(
     routes=[
-        Mount("/legacy", app=WSGIMiddleware(flask_app))
+        Include("/legacy", app=WSGIMiddleware(flask_app))
     ]
 )
 
@@ -79,7 +79,7 @@ app = Ravyn(
 ### Basic Mount
 
 ```python
-from ravyn import Ravyn, Mount
+from ravyn import Include, Ravyn
 from ravyn.middleware.wsgi import WSGIMiddleware
 from flask import Flask
 
@@ -93,7 +93,7 @@ def users():
 # Mount in Ravyn
 app = Ravyn(
     routes=[
-        Mount("/flask", app=WSGIMiddleware(flask_app))
+        Include("/flask", app=WSGIMiddleware(flask_app))
     ]
 )
 
@@ -103,7 +103,7 @@ app = Ravyn(
 ### Multiple WSGI Apps
 
 ```python
-from ravyn import Ravyn, Mount
+from ravyn import Include, Ravyn
 from ravyn.middleware.wsgi import WSGIMiddleware
 from flask import Flask
 from django.core.wsgi import get_wsgi_application
@@ -117,8 +117,8 @@ django_app = get_wsgi_application()
 # Mount both
 app = Ravyn(
     routes=[
-        Mount("/flask", app=WSGIMiddleware(flask_app)),
-        Mount("/django", app=WSGIMiddleware(django_app))
+        Include("/flask", app=WSGIMiddleware(flask_app)),
+        Include("/django", app=WSGIMiddleware(django_app))
     ]
 )
 ```
@@ -130,7 +130,7 @@ app = Ravyn(
 ### Complete Example
 
 ```python
-from ravyn import Ravyn, Mount, get
+from ravyn import Include, Ravyn, get
 from ravyn.middleware.wsgi import WSGIMiddleware
 from flask import Flask, jsonify
 
@@ -153,7 +153,7 @@ def health() -> dict:
 # Combine them
 app = Ravyn(
     routes=[
-        Mount("/", app=WSGIMiddleware(flask_app)),  # Flask handles /legacy/*
+        Include("/", app=WSGIMiddleware(flask_app)),  # Flask handles /legacy/*
         Gateway(handler=health)  # Ravyn handles /api/health
     ]
 )
@@ -166,7 +166,7 @@ app = Ravyn(
 ### Basic Setup
 
 ```python
-from ravyn import Ravyn, Mount
+from ravyn import Include, Ravyn
 from ravyn.middleware.wsgi import WSGIMiddleware
 import os
 import django
@@ -182,7 +182,7 @@ django_app = get_wsgi_application()
 # Mount in Ravyn
 app = Ravyn(
     routes=[
-        Mount("/admin", app=WSGIMiddleware(django_app))
+        Include("/admin", app=WSGIMiddleware(django_app))
     ]
 )
 
@@ -196,7 +196,7 @@ app = Ravyn(
 ### Strategy 1: Gradual Route Migration
 
 ```python
-from ravyn import Ravyn, Mount, get
+from ravyn import Include, Ravyn, get
 from ravyn.middleware.wsgi import WSGIMiddleware
 from flask import Flask
 
@@ -214,7 +214,7 @@ def new_users() -> dict:
 
 app = Ravyn(
     routes=[
-        Mount("/old", app=WSGIMiddleware(flask_app)),  # Legacy
+        Include("/old", app=WSGIMiddleware(flask_app)),  # Legacy
         Gateway(handler=new_users)  # New
     ]
 )
@@ -224,7 +224,7 @@ app = Ravyn(
 
 ```python
 import os
-from ravyn import Ravyn, Mount, get
+from ravyn import Include, Ravyn, get
 from ravyn.middleware.wsgi import WSGIMiddleware
 
 USE_LEGACY = os.getenv("USE_LEGACY_API", "false") == "true"
@@ -232,7 +232,7 @@ USE_LEGACY = os.getenv("USE_LEGACY_API", "false") == "true"
 if USE_LEGACY:
     # Mount legacy app
     app = Ravyn(
-        routes=[Mount("/", app=WSGIMiddleware(legacy_app))]
+        routes=[Include("/", app=WSGIMiddleware(legacy_app))]
     )
 else:
     # Use new Ravyn app
@@ -255,7 +255,7 @@ wsgi_middleware = WSGIMiddleware(
 )
 
 app = Ravyn(
-    routes=[Mount("/legacy", app=wsgi_middleware)]
+    routes=[Include("/legacy", app=wsgi_middleware)]
 )
 ```
 
@@ -284,7 +284,7 @@ flask_app.route("/api/users")
 
 ```python
 # Correct
-Mount("/legacy", app=WSGIMiddleware(flask_app))  # /legacy/api/users
+Include("/legacy", app=WSGIMiddleware(flask_app))  # /legacy/api/users
 @get("/api/users")  # /api/users
 ```
 
@@ -342,7 +342,7 @@ async def slow() -> dict:
 # Good - clear separation
 app = Ravyn(
     routes=[
-        Mount("/legacy", app=WSGIMiddleware(old_app)),  # Legacy
+        Include("/legacy", app=WSGIMiddleware(old_app)),  # Legacy
         Include("/api", routes=new_routes)  # New
     ]
 )
@@ -355,8 +355,8 @@ app = Ravyn(
 app = Ravyn(
     routes=[
         # TODO: Migrate to /api/v2/users by Q2 2026
-        Mount("/legacy", app=WSGIMiddleware(flask_app)),
-        
+        Include("/legacy", app=WSGIMiddleware(flask_app)),
+
         # New endpoints
         Include("/api/v2", routes=new_routes)
     ]
@@ -383,9 +383,9 @@ async def log_wsgi_mount():
 ## Testing WSGI Mounts
 
 ```python
-from ravyn import Ravyn, Mount
+from ravyn import Include, Ravyn
 from ravyn.middleware.wsgi import WSGIMiddleware
-from ravyn import RavynTestClient
+from ravyn.testclient import RavynTestClient
 from flask import Flask
 
 # Flask app
@@ -397,7 +397,7 @@ def hello():
 
 # Ravyn app
 app = Ravyn(
-    routes=[Mount("/flask", app=WSGIMiddleware(flask_app))]
+    routes=[Include("/flask", app=WSGIMiddleware(flask_app))]
 )
 
 # Test

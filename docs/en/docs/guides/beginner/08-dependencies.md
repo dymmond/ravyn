@@ -2,80 +2,93 @@
 
 In this section, you'll learn how to use dependency injection with Ravyn.
 
-Dependencies are reusable logic that can be injected into routes, services, and anywhere else in your application.
+Dependencies let you share reusable logic across handlers without duplicating setup code.
 
----
+## Basic dependency injection
 
-## Basic Dependency Injection
-
-Use `Inject` to register a dependency and `Injects` to consume it:
+Use `Inject` to register a dependency and `Injects` to receive it.
 
 ```python
-from ravyn import get, Inject, Injects
+from ravyn import Gateway, Inject, Injects, Ravyn, get
 
-def get_token():
+
+def get_token() -> str:
     return "super-secret-token"
 
-@get("/secure", dependencies={"token": Inject(get_token)})
+
+@get()
 def secure(token: str = Injects()) -> dict:
     return {"token": token}
+
+
+app = Ravyn(
+    routes=[Gateway("/secure", handler=secure)],
+    dependencies={"token": Inject(get_token)},
+)
 ```
 
----
+## Class-based dependencies
 
-## Class-Based Dependencies
-
-Dependencies can be classes too:
+For class construction, prefer `Factory`.
 
 ```python
+from ravyn import Factory, Inject, Injects, get
+
+
 class AuthService:
-    def get_user(self):
+    def get_user(self) -> dict:
         return {"name": "John Doe"}
 
-@get("/user", dependencies={"auth": Inject(AuthService)})
-def user(auth: AuthService = Injects()) -> Any:
+
+@get("/user", dependencies={"auth": Inject(Factory(AuthService))})
+def user(auth: AuthService = Injects()) -> dict:
     return auth.get_user()
 ```
 
----
+## Caching behavior (`use_cache`)
 
-## Dependency Lifetimes
+`Inject(..., use_cache=False)` is the default.
 
-Dependencies in Ravyn are singletons by default.
-If you want a **new instance per request**, you can pass `use_cache=False`:
-
-```python
-@get("/random", dependencies={"service": Inject(SomeService, use_cache=False)})
-def random(service: SomeService = Injects()) -> Any:
-    return service.new_value()
-```
-
----
-
-## Nested Dependencies
-
-Dependencies can depend on other dependencies:
+- `use_cache=False`: resolve dependency each time it is needed.
+- `use_cache=True`: reuse the resolved value during the dependency lifecycle.
 
 ```python
-class Logger:
-    def log(self, msg: str):
-        print(f"Log: {msg}")
+from ravyn import Inject
 
-class Processor:
-    def __init__(self, logger: Logger):
-        self.logger = logger
+# No cache (default)
+no_cache = Inject(get_token)
 
-    def run(self):
-        self.logger.log("Running...")
-        return "done"
-
-@get("/run", dependencies={"logger": Inject(Logger), "proc": Inject(Processor)})
-def run(proc: Processor = Injects()) -> None:
-    return proc.run()
+# Cached
+cached = Inject(get_token, use_cache=True)
 ```
 
-## What's Next?
+## Nested dependencies
 
-Now that you’ve mastered dependencies, let’s explore how to use request and response models to validate and document your APIs.
+A dependency can depend on another dependency.
 
-👉 Continue to [requests and responses](./09-requests-and-responses.md).
+```python
+from ravyn import Inject, Injects, get
+
+
+def get_settings() -> dict:
+    return {"env": "production"}
+
+
+def get_config(settings: dict = Injects()) -> str:
+    return f"Running in {settings['env']}"
+
+
+@get(
+    "/config",
+    dependencies={
+        "settings": Inject(get_settings),
+        "config": Inject(get_config),
+    },
+)
+def read_config(config: str = Injects()) -> dict:
+    return {"config": config}
+```
+
+## Next step
+
+Continue to [requests and responses](./09-requests-and-responses.md).

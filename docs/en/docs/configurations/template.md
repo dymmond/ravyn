@@ -13,8 +13,8 @@ Configure template rendering for server-side HTML generation in your Ravyn appli
 
 ```python
 from ravyn import Ravyn, get
-from ravyn.config import TemplateConfig
-from ravyn.responses import Template
+from ravyn.core.config.template import TemplateConfig
+from ravyn import Template
 
 app = Ravyn(
     template_config=TemplateConfig(
@@ -35,7 +35,7 @@ def homepage() -> Template:
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import TemplateConfig
+from ravyn.core.config.template import TemplateConfig
 
 app = Ravyn(
     template_config=TemplateConfig(
@@ -76,7 +76,7 @@ app = Ravyn(
 
 ```python
 from ravyn import get
-from ravyn.responses import Template
+from ravyn import Template
 
 @get("/")
 def homepage() -> Template:
@@ -102,7 +102,7 @@ def homepage() -> Template:
 @get("/users/{user_id}")
 async def user_profile(user_id: int) -> Template:
     user = await User.get(id=user_id)
-    
+
     return Template(
         "profile.html",
         context={
@@ -150,7 +150,7 @@ app = Ravyn(
 async def products() -> Template:
     # Pass QuerySet directly
     products = Product.query.all()  # Async QuerySet
-    
+
     return Template(
         "products.html",
         context={"products": products}
@@ -214,7 +214,7 @@ Generate URLs for routes:
 
 ```python
 from ravyn import RavynSettings
-from ravyn.config import TemplateConfig
+from ravyn.core.config.template import TemplateConfig
 
 class AppSettings(RavynSettings):
     template_config: TemplateConfig = TemplateConfig(
@@ -257,7 +257,7 @@ def contact_form() -> Template:
 @post("/contact")
 async def submit_contact(name: str, email: str, message: str) -> Template:
     await send_email(name, email, message)
-    
+
     return Template(
         "contact.html",
         context={"success": True}
@@ -268,7 +268,7 @@ async def submit_contact(name: str, email: str, message: str) -> Template:
 
 ```python
 from ravyn import Ravyn
-from ravyn.responses import Template
+from ravyn import Template
 
 app = Ravyn(
     template_config=TemplateConfig(directory="templates")

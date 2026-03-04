@@ -1,83 +1,102 @@
 # Configurations
 
-Configure Ravyn's built-in features with these configuration classes.
+Ravyn uses configuration objects to enable built-in features with explicit, typed settings.
 
-## Available Configurations
+## Available configurations
 
-### Security
+### Core configs (top-level imports)
 
-- [CORSConfig](./cors.md) - Cross-Origin Resource Sharing
-- [CSRFConfig](./csrf.md) - Cross-Site Request Forgery protection
-- [JWTConfig](./jwt.md) - JSON Web Token authentication
-- [SessionConfig](./session.md) - Session management
-
-### Application Features
-
-- [StaticFilesConfig](./staticfiles.md) - Static file serving
-- [TemplateConfig](./template.md) - Template engine configuration
-- [OpenAPIConfig](./openapi/config.md) - API documentation
-- [SchedulerConfig](./scheduler.md) - Task scheduling
-- [LoggingConfig](./logging.md) - Logging configuration
-
-## Quick Examples
-
-### CORS Configuration
+- `CORSConfig`
+- `CSRFConfig`
+- `SessionConfig`
+- `StaticFilesConfig`
+- `OpenAPIConfig`
+- `LoggingConfig`
 
 ```python
-from ravyn import Ravyn
-from ravyn.config import CORSConfig
+from ravyn import (
+    CORSConfig,
+    CSRFConfig,
+    LoggingConfig,
+    OpenAPIConfig,
+    SessionConfig,
+    StaticFilesConfig,
+)
+```
+
+### Additional configs
+
+- `JWTConfig` from `ravyn.core.config.jwt`
+- `TemplateConfig` from `ravyn.core.config.template`
+- `SchedulerConfig` from `ravyn.contrib.schedulers`
+
+```python
+from ravyn.core.config.jwt import JWTConfig
+from ravyn.core.config.template import TemplateConfig
+from ravyn.contrib.schedulers import SchedulerConfig
+```
+
+## Quick examples
+
+### CORS
+
+```python
+from ravyn import CORSConfig, Ravyn
 
 app = Ravyn(
+    routes=[],
     cors_config=CORSConfig(
         allow_origins=["https://example.com"],
-        allow_methods=["GET", "POST"]
-    )
+        allow_methods=["GET", "POST"],
+    ),
 )
 ```
 
-### CSRF Protection
+### CSRF
 
 ```python
-from ravyn.config import CSRFConfig
+from ravyn import CSRFConfig, Ravyn
 
 app = Ravyn(
-    csrf_config=CSRFConfig(secret="your-secret-key")
+    routes=[],
+    csrf_config=CSRFConfig(secret="your-secret-key"),
 )
 ```
 
-### Static Files
+### Static files
 
 ```python
-from ravyn.config import StaticFilesConfig
+from ravyn import Ravyn, StaticFilesConfig
 
 app = Ravyn(
-    static_files_config=StaticFilesConfig(
-        path="/static",
-        directory="static"
-    )
+    routes=[],
+    static_files_config=StaticFilesConfig(path="/static", directory="static"),
 )
 ```
 
-## Configuration via Settings
-
-All configurations can be set via the settings module:
+## Configuration via settings
 
 ```python
-from ravyn import RavynSettings
-from ravyn.config import CORSConfig, CSRFConfig
+from ravyn import CORSConfig, Ravyn, RavynSettings
+
 
 class AppSettings(RavynSettings):
-    cors_config: CORSConfig = CORSConfig(allow_origins=["*"])
-    csrf_config: CSRFConfig = CSRFConfig(secret="secret-key")
+    @property
+    def cors_config(self) -> CORSConfig:
+        return CORSConfig(allow_origins=["*"])
 
-app = Ravyn(settings_module=AppSettings)
+
+app = Ravyn(routes=[], settings_module=AppSettings)
 ```
 
-## Next Steps
+## Next steps
 
-Choose a configuration to learn more:
-
-- [CORS](./cors.md) - Enable cross-origin requests
-- [CSRF](./csrf.md) - Protect against CSRF attacks
-- [JWT](./jwt.md) - Implement JWT authentication
-- [Templates](./template.md) - Set up template rendering
+- [CORS](./cors.md)
+- [CSRF](./csrf.md)
+- [JWT](./jwt.md)
+- [Sessions](./session.md)
+- [Templates](./template.md)
+- [Static files](./staticfiles.md)
+- [OpenAPI config](./openapi/config.md)
+- [Scheduler config](./scheduler.md)
+- [Logging config](./logging.md)

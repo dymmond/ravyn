@@ -17,7 +17,7 @@ Enable cross-origin requests in your Ravyn application with CORS configuration.
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import CORSConfig
+from ravyn import CORSConfig
 
 app = Ravyn(
     cors_config=CORSConfig(
@@ -52,7 +52,7 @@ app = Ravyn(
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import CORSConfig
+from ravyn import CORSConfig
 
 app = Ravyn(
     cors_config=CORSConfig(
@@ -158,7 +158,7 @@ app = Ravyn(cors_config=cors_config)
 
 ```python
 from ravyn import RavynSettings
-from ravyn.config import CORSConfig
+from ravyn import CORSConfig
 
 class AppSettings(RavynSettings):
     cors_config: CORSConfig = CORSConfig(

@@ -32,7 +32,7 @@ async def get_expensive_data() -> dict:
     # Slow operation (database query, API call, etc.)
     import time
     time.sleep(2)
-    
+
     return {"data": "This took 2 seconds to compute"}
 
 app = Ravyn()
@@ -166,9 +166,9 @@ async def get_data() -> dict:
 ```python
 from ravyn import get
 from ravyn.utils.decorators import cache
-from ravyn.core.caching.backends import RedisCacheBackend
+from ravyn.core.caches.redis import RedisCache
 
-redis_backend = RedisCacheBackend(url="redis://localhost:6379")
+redis_backend = RedisCache("redis://localhost:6379")
 
 @get("/data")
 @cache(ttl=60, backend=redis_backend)
@@ -190,12 +190,12 @@ Set a global cache backend in settings:
 
 ```python
 from ravyn import RavynSettings
-from ravyn.core.caching.backends import RedisCacheBackend
+from ravyn.core.caches.redis import RedisCache
 
 class Settings(RavynSettings):
     @property
     def cache_backend(self):
-        return RedisCacheBackend(url="redis://localhost:6379")
+        return RedisCache("redis://localhost:6379")
 ```
 
 Now all `@cache` decorators use Redis by default:
@@ -248,22 +248,22 @@ class FileCacheBackend(CacheBackend):
     def __init__(self, cache_dir: str = "/tmp/cache"):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(exist_ok=True)
-    
+
     async def get(self, key: str):
         file_path = self.cache_dir / f"{key}.json"
         if file_path.exists():
             return json.loads(file_path.read_text())
         return None
-    
+
     async def set(self, key: str, value, ttl: int = None):
         file_path = self.cache_dir / f"{key}.json"
         file_path.write_text(json.dumps(value))
-    
+
     async def delete(self, key: str):
         file_path = self.cache_dir / f"{key}.json"
         if file_path.exists():
             file_path.unlink()
-    
+
     async def clear(self):
         for file in self.cache_dir.glob("*.json"):
             file.unlink()
@@ -341,7 +341,7 @@ async def get_products() -> dict:
 
 ```python
 # Error if redis not installed
-from ravyn.core.caching.backends import RedisCacheBackend
+from ravyn.core.caches.redis import RedisCache
 ```
 
 **Solution:** Install Redis support:
@@ -365,9 +365,9 @@ async def get_data() -> dict:
 
 ```python
 # Correct for production
-from ravyn.core.caching.backends import RedisCacheBackend
+from ravyn.core.caches.redis import RedisCache
 
-redis = RedisCacheBackend(url="redis://localhost:6379")
+redis = RedisCache("redis://localhost:6379")
 
 @cache(ttl=3600, backend=redis)
 async def get_data() -> dict:
@@ -385,8 +385,8 @@ from ravyn import post, get
 from ravyn.utils.decorators import cache
 
 # Cache backend instance
-from ravyn.core.caching.backends import RedisCacheBackend
-redis = RedisCacheBackend(url="redis://localhost:6379")
+from ravyn.core.caches.redis import RedisCache
+redis = RedisCache("redis://localhost:6379")
 
 @get("/products")
 @cache(ttl=300, backend=redis)
@@ -397,10 +397,10 @@ async def get_products() -> dict:
 async def create_product(product: dict) -> dict:
     # Create product
     save_product(product)
-    
+
     # Invalidate cache
     await redis.delete("products")
-    
+
     return {"created": True}
 ```
 

@@ -20,19 +20,19 @@ class UserDAO(AsyncDAOProtocol):
     async def get(self, user_id: int):
         # Get user from database
         return {"id": user_id, "name": "Alice"}
-    
+
     async def get_all(self):
         # Get all users
         return [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
-    
+
     async def create(self, data: dict):
         # Create user
         return {"id": 3, **data}
-    
+
     async def update(self, user_id: int, data: dict):
         # Update user
         return {"id": user_id, **data}
-    
+
     async def delete(self, user_id: int):
         # Delete user
         return {"deleted": True}
@@ -81,16 +81,16 @@ async def create_user(name: str, email: str) -> dict:
     existing = await db.fetch_one("SELECT * FROM users WHERE email = ?", email)
     if existing:
         raise ValidationError("User exists")
-    
+
     # Create user
     user_id = await db.execute("INSERT INTO users (name, email) VALUES (?, ?)", name, email)
-    
+
     # Send welcome email
     await send_email(email, "Welcome!")
-    
+
     # Log creation
     await log_event("user_created", user_id)
-    
+
     return {"user_id": user_id}
 ```
 
@@ -109,16 +109,16 @@ class UserDAO(AsyncDAOProtocol):
         # Check if exists
         if await self._user_exists(data["email"]):
             raise ValidationError("User exists")
-        
+
         # Create user
         user_id = await db.execute("INSERT INTO users ...")
-        
+
         # Send email
         await send_email(data["email"], "Welcome!")
-        
+
         # Log event
         await log_event("user_created", user_id)
-        
+
         return {"user_id": user_id, **data}
 ```
 
@@ -139,11 +139,11 @@ class ProductDAO(AsyncDAOProtocol):
     async def get(self, product_id: int):
         """Get single product"""
         return await db.fetch_one("SELECT * FROM products WHERE id = ?", product_id)
-    
+
     async def get_all(self):
         """Get all products"""
         return await db.fetch_all("SELECT * FROM products")
-    
+
     async def create(self, data: dict):
         """Create product"""
         product_id = await db.execute(
@@ -151,7 +151,7 @@ class ProductDAO(AsyncDAOProtocol):
             data["name"], data["price"]
         )
         return {"id": product_id, **data}
-    
+
     async def update(self, product_id: int, data: dict):
         """Update product"""
         await db.execute(
@@ -159,35 +159,35 @@ class ProductDAO(AsyncDAOProtocol):
             data["name"], data["price"], product_id
         )
         return {"id": product_id, **data}
-    
+
     async def delete(self, product_id: int):
         """Delete product"""
         await db.execute("DELETE FROM products WHERE id = ?", product_id)
         return {"deleted": True}
 ```
 
-### DAOProtocol
+### DaoProtocol
 
 For sync operations:
 
 ```python
-from ravyn import DAOProtocol
+from ravyn import DaoProtocol
 
-class UserDAO(DAOProtocol):
+class UserDAO(DaoProtocol):
     def get(self, user_id: int):
         return db.query("SELECT * FROM users WHERE id = ?", user_id)
-    
+
     def get_all(self):
         return db.query("SELECT * FROM users")
-    
+
     def create(self, data: dict):
         user_id = db.execute("INSERT INTO users ...", data)
         return {"id": user_id, **data}
-    
+
     def update(self, user_id: int, data: dict):
         db.execute("UPDATE users ...", data, user_id)
         return {"id": user_id, **data}
-    
+
     def delete(self, user_id: int):
         db.execute("DELETE FROM users WHERE id = ?", user_id)
         return {"deleted": True}
@@ -197,7 +197,7 @@ class UserDAO(DAOProtocol):
 
 ## Required Methods
 
-Both `AsyncDAOProtocol` and `DAOProtocol` require these methods:
+Both `AsyncDAOProtocol` and `DaoProtocol` require these methods:
 
 | Method | Purpose | Parameters | Returns |
 |--------|---------|------------|---------|
@@ -226,52 +226,52 @@ class UserDAO(AsyncDAOProtocol):
         if not user:
             raise NotFound(f"User {user_id} not found")
         return user
-    
+
     async def get_all(self):
         return await db.fetch_all("SELECT * FROM users")
-    
+
     async def create(self, data: dict):
         # Validate
         if await self.email_exists(data["email"]):
             raise ValidationError("Email already exists")
-        
+
         # Create
         user_id = await db.execute(
             "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
             data["name"], data["email"], data["password"]
         )
-        
+
         # Send welcome email
         await self._send_welcome_email(data["email"])
-        
+
         return {"id": user_id, **data}
-    
+
     async def update(self, user_id: int, data: dict):
         # Check exists
         if not await self.exists(user_id):
             raise NotFound(f"User {user_id} not found")
-        
+
         # Update
         await db.execute(
             "UPDATE users SET name = ?, email = ? WHERE id = ?",
             data["name"], data["email"], user_id
         )
-        
+
         return {"id": user_id, **data}
-    
+
     async def delete(self, user_id: int):
         await db.execute("DELETE FROM users WHERE id = ?", user_id)
         return {"deleted": True}
-    
+
     # Additional custom methods
     async def email_exists(self, email: str) -> bool:
         result = await db.fetch_one("SELECT id FROM users WHERE email = ?", email)
         return result is not None
-    
+
     async def exists(self, user_id: int) -> bool:
         result = await db.fetch_one("SELECT id FROM users WHERE id = ?", user_id)
         return result is not None
-    
+
     async def _send_welcome_email(self, email: str):
         # Email sending logic
         pass
@@ -327,7 +327,7 @@ async def delete_user(user_id: int) -> dict:
 class UserDAO(AsyncDAOProtocol):
     async def get(self, user_id: int):
         return await db.fetch_one("SELECT * FROM users WHERE id = ?", user_id)
-    
+
     # Missing: get_all, create, update, delete
 ```
 
@@ -338,16 +338,16 @@ class UserDAO(AsyncDAOProtocol):
 class UserDAO(AsyncDAOProtocol):
     async def get(self, user_id: int):
         pass
-    
+
     async def get_all(self):
         pass
-    
+
     async def create(self, data: dict):
         pass
-    
+
     async def update(self, user_id: int, data: dict):
         pass
-    
+
     async def delete(self, user_id: int):
         pass
 ```
@@ -364,13 +364,13 @@ async def create_user(email: str) -> dict:
     existing = await db.fetch_one("SELECT * FROM users WHERE email = ?", email)
     if existing:
         raise ValidationError("User exists")
-    
+
     # Create user
     user_id = await db.execute("INSERT INTO users ...")
-    
+
     # Send email
     await send_email(email, "Welcome!")
-    
+
     return {"user_id": user_id}
 ```
 
@@ -388,10 +388,10 @@ class UserDAO(AsyncDAOProtocol):
         # All logic here
         if await self.email_exists(data["email"]):
             raise ValidationError("User exists")
-        
+
         user_id = await db.execute("INSERT INTO users ...")
         await send_email(data["email"], "Welcome!")
-        
+
         return {"user_id": user_id, **data}
 ```
 
@@ -441,16 +441,16 @@ class UserDAO(AsyncDAOProtocol):
     # Required methods
     async def get(self, user_id: int):
         pass
-    
+
     # ... other required methods ...
-    
+
     # Custom methods
     async def get_by_email(self, email: str):
         return await db.fetch_one("SELECT * FROM users WHERE email = ?", email)
-    
+
     async def get_active_users(self):
         return await db.fetch_all("SELECT * FROM users WHERE active = true")
-    
+
     async def deactivate(self, user_id: int):
         await db.execute("UPDATE users SET active = false WHERE id = ?", user_id)
 ```
@@ -474,19 +474,19 @@ class UserDAO(AsyncDAOProtocol):
 For creating custom interceptors:
 
 ```python
-from ravyn.protocols import InterceptorProtocol
+from ravyn.core.protocols.interceptor import InterceptorProtocol
 
 class MyInterceptor(InterceptorProtocol):
     async def intercept(self, request, call_next):
         # Pre-request logic
         print(f"Request: {request.url.path}")
-        
+
         # Call handler
         response = await call_next(request)
-        
+
         # Post-request logic
         print(f"Response: {response.status_code}")
-        
+
         return response
 ```
 

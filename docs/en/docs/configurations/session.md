@@ -24,7 +24,7 @@ Configure session management for your Ravyn application to maintain user state a
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import SessionConfig
+from ravyn import SessionConfig
 
 app = Ravyn(
     session_config=SessionConfig(
@@ -55,7 +55,7 @@ app = Ravyn(
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import SessionConfig
+from ravyn import SessionConfig
 
 app = Ravyn(
     session_config=SessionConfig(
@@ -103,11 +103,11 @@ from ravyn import post, Request
 async def login(request: Request, email: str, password: str) -> dict:
     # Verify credentials
     user = await authenticate(email, password)
-    
+
     # Store in session
     request.session["user_id"] = user.id
     request.session["email"] = user.email
-    
+
     return {"message": "Logged in"}
 ```
 
@@ -120,10 +120,10 @@ from ravyn import get, Request
 async def profile(request: Request) -> dict:
     # Get from session
     user_id = request.session.get("user_id")
-    
+
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     user = await User.get(id=user_id)
     return {"user": user}
 ```
@@ -144,7 +144,7 @@ async def logout(request: Request) -> dict:
 
 ```python
 from ravyn import RavynSettings
-from ravyn.config import SessionConfig
+from ravyn import SessionConfig
 
 class AppSettings(RavynSettings):
     session_config: SessionConfig = SessionConfig(

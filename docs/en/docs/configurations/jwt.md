@@ -24,7 +24,7 @@ Configure JWT authentication in your Ravyn application for secure, stateless aut
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import JWTConfig
+from ravyn.core.config.jwt import JWTConfig
 from ravyn.contrib.auth.edgy.middleware import JWTAuthMiddleware
 
 app = Ravyn(
@@ -74,7 +74,7 @@ eyJhbGc...  .  eyJzdWI...  .  SflKxw...
 
 ```python
 from ravyn import Ravyn
-from ravyn.config import JWTConfig
+from ravyn.core.config.jwt import JWTConfig
 
 app = Ravyn(
     jwt_config=JWTConfig(
@@ -205,10 +205,10 @@ from typing import Literal
 
 class AppToken(Token):
     token_type: Literal["access", "refresh"]
-    
+
     def is_access_token(self) -> bool:
         return self.token_type == "access"
-    
+
     def is_refresh_token(self) -> bool:
         return self.token_type == "refresh"
 ```
@@ -226,7 +226,7 @@ def create_tokens(user_id: str) -> dict:
         exp=datetime.utcnow() + timedelta(hours=1),
         iat=datetime.utcnow()
     )
-    
+
     # Refresh token (long-lived)
     refresh_token = AppToken(
         sub=user_id,
@@ -234,7 +234,7 @@ def create_tokens(user_id: str) -> dict:
         exp=datetime.utcnow() + timedelta(days=7),
         iat=datetime.utcnow()
     )
-    
+
     return {
         "access_token": access_token.encode(key=settings.secret_key, algorithm="HS256"),
         "refresh_token": refresh_token.encode(key=settings.secret_key, algorithm="HS256")
@@ -250,7 +250,7 @@ def create_tokens(user_id: str) -> dict:
 ```python
 from ravyn import Ravyn
 from ravyn.contrib.auth.edgy.middleware import JWTAuthMiddleware
-from ravyn.config import JWTConfig
+from ravyn.core.config.jwt import JWTConfig
 
 app = Ravyn(
     middleware=[JWTAuthMiddleware],
@@ -293,10 +293,10 @@ async def login(data: LoginRequest) -> dict:
     user = await User.get(email=data.email)
     if not user or not user.verify_password(data.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    
+
     # Generate tokens
     tokens = create_tokens(str(user.id))
-    
+
     return {
         "access_token": tokens["access_token"],
         "refresh_token": tokens["refresh_token"],
@@ -316,11 +316,11 @@ async def refresh_token(refresh_token: str) -> dict:
             key=settings.secret_key,
             algorithms=["HS256"]
         )
-        
+
         # Verify it's a refresh token
         if not token.is_refresh_token():
             raise HTTPException(status_code=401, detail="Invalid token type")
-        
+
         # Generate new access token
         new_access_token = AppToken(
             sub=token.sub,
@@ -328,9 +328,9 @@ async def refresh_token(refresh_token: str) -> dict:
             exp=datetime.utcnow() + timedelta(hours=1),
             iat=datetime.utcnow()
         ).encode(key=settings.secret_key, algorithm="HS256")
-        
+
         return {"access_token": new_access_token}
-        
+
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 ```
@@ -341,7 +341,7 @@ async def refresh_token(refresh_token: str) -> dict:
 
 ```python
 from ravyn import RavynSettings
-from ravyn.config import JWTConfig
+from ravyn.core.config.jwt import JWTConfig
 
 class AppSettings(RavynSettings):
     jwt_config: JWTConfig = JWTConfig(

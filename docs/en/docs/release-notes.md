@@ -408,7 +408,7 @@ from ravyn.middleware import SessionMiddleware
 **After**
 
 ```python
-from esmerald.middleware.sessions import SessionMiddleware
+from lilya.middleware.sessions import SessionMiddleware
 ```
 
 !!! Warning

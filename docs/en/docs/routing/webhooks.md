@@ -17,11 +17,11 @@ from ravyn import Ravyn, post
 @post("/webhooks/stripe")
 async def stripe_webhook(data: dict) -> dict:
     event_type = data.get("type")
-    
+
     if event_type == "payment.succeeded":
         # Process payment
         pass
-    
+
     return {"received": True}
 
 app = Ravyn(routes=[Gateway(handler=stripe_webhook)])
@@ -58,9 +58,9 @@ from ravyn import post
 async def github_webhook(data: dict) -> dict:
     event = data.get("action")
     repository = data.get("repository", {}).get("name")
-    
+
     print(f"GitHub event: {event} on {repository}")
-    
+
     return {"status": "received"}
 ```
 
@@ -73,14 +73,14 @@ from ravyn import post, Request
 async def stripe_webhook(request: Request) -> dict:
     # Get signature from headers
     signature = request.headers.get("stripe-signature")
-    
+
     # Get raw body
     body = await request.body()
-    
+
     # Verify signature
     if not verify_stripe_signature(body, signature):
         raise HTTPException(status_code=401, detail="Invalid signature")
-    
+
     # Process webhook
     data = await request.json()
     return {"received": True}
@@ -103,7 +103,7 @@ STRIPE_WEBHOOK_SECRET = "whsec_..."
 async def stripe_webhook(request: Request) -> dict:
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
-    
+
     try:
         # Verify signature
         expected_sig = hmac.new(
@@ -111,16 +111,16 @@ async def stripe_webhook(request: Request) -> dict:
             payload,
             hashlib.sha256
         ).hexdigest()
-        
+
         if not hmac.compare_digest(sig_header, expected_sig):
             raise HTTPException(status_code=401, detail="Invalid signature")
-        
+
         # Process event
         event = await request.json()
         handle_stripe_event(event)
-        
+
         return {"status": "success"}
-        
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 ```
@@ -138,24 +138,24 @@ GITHUB_WEBHOOK_SECRET = "your-secret"
 async def github_webhook(request: Request) -> dict:
     payload = await request.body()
     signature = request.headers.get("x-hub-signature-256")
-    
+
     # Verify signature
     expected = "sha256=" + hmac.new(
         GITHUB_WEBHOOK_SECRET.encode(),
         payload,
         hashlib.sha256
     ).hexdigest()
-    
+
     if not hmac.compare_digest(signature, expected):
         raise HTTPException(status_code=401, detail="Invalid signature")
-    
+
     # Process event
     event = await request.json()
     event_type = request.headers.get("x-github-event")
-    
+
     if event_type == "push":
         handle_push_event(event)
-    
+
     return {"status": "received"}
 ```
 
@@ -172,23 +172,23 @@ from ravyn import post, Request
 async def stripe_webhook(request: Request) -> dict:
     event = await request.json()
     event_type = event.get("type")
-    
+
     handlers = {
         "payment_intent.succeeded": handle_payment_success,
         "payment_intent.failed": handle_payment_failure,
         "customer.created": handle_customer_created,
     }
-    
+
     handler = handlers.get(event_type)
     if handler:
         await handler(event)
-    
+
     return {"received": True}
 
 async def handle_payment_success(event: dict):
     payment_id = event["data"]["object"]["id"]
     # Process successful payment
-    
+
 async def handle_payment_failure(event: dict):
     # Handle failed payment
     pass
@@ -203,7 +203,7 @@ from ravyn import post, BackgroundTask
 async def github_webhook(data: dict, background_tasks: BackgroundTask) -> dict:
     # Queue for background processing
     background_tasks.add_task(process_github_event, data)
-    
+
     # Return immediately
     return {"status": "queued"}
 
@@ -227,10 +227,10 @@ async def stripe_webhook(data: dict) -> dict:
         payload=data,
         received_at=datetime.utcnow()
     )
-    
+
     # Process event
     await process_stripe_event(data)
-    
+
     return {"received": True}
 ```
 
@@ -246,7 +246,7 @@ async def stripe_webhook(data: dict) -> dict:
 async def webhook(request: Request) -> dict:
     if not verify_signature(request):
         raise HTTPException(status_code=401)
-    
+
     data = await request.json()
     return {"received": True}
 ```
@@ -261,7 +261,7 @@ from ravyn import post, Request, HTTPException
 async def stripe_webhook(request: Request) -> dict:
     if request.url.scheme != "https":
         raise HTTPException(status_code=403, detail="HTTPS required")
-    
+
     # Process webhook
     return {"received": True}
 ```
@@ -271,11 +271,22 @@ async def stripe_webhook(request: Request) -> dict:
 ```python
 # Good - rate limiting
 from ravyn import post
-from ravyn.middleware import RateLimitMiddleware
+from lilya.middleware import DefineMiddleware
+
+
+class WebhookRateLimitMiddleware:
+    def __init__(self, app, max_requests: int = 100, window: int = 60) -> None:
+        self.app = app
+        self.max_requests = max_requests
+        self.window = window
+
+    async def __call__(self, scope, receive, send) -> None:
+        # Implement your own rate-limit logic here.
+        await self.app(scope, receive, send)
 
 @post(
     "/webhooks/github",
-    middleware=[RateLimitMiddleware(max_requests=100, window=60)]
+    middleware=[DefineMiddleware(WebhookRateLimitMiddleware, max_requests=100, window=60)]
 )
 async def github_webhook(data: dict) -> dict:
     return {"received": True}
@@ -327,7 +338,7 @@ async def stripe_webhook(data: dict) -> dict:
 async def stripe_webhook(request: Request) -> dict:
     if not verify_stripe_signature(request):
         raise HTTPException(status_code=401)
-    
+
     data = await request.json()
     return {"received": True}
 ```
@@ -351,12 +362,12 @@ async def stripe_webhook(data: dict) -> dict:
 @post("/webhooks/stripe")
 async def stripe_webhook(data: dict) -> dict:
     payment_id = data["id"]
-    
+
     # Check if already processed
     existing = await Payment.get_or_none(id=payment_id)
     if existing:
         return {"received": True, "duplicate": True}
-    
+
     # Process new webhook
     await Payment.create(id=payment_id)
     return {"received": True}
@@ -385,7 +396,7 @@ ngrok http 8000
 ### Mock Webhooks
 
 ```python
-from ravyn import RavynTestClient
+from ravyn.testclient import RavynTestClient
 
 def test_stripe_webhook():
     with RavynTestClient(app) as client:
@@ -393,7 +404,7 @@ def test_stripe_webhook():
             "type": "payment_intent.succeeded",
             "data": {"object": {"id": "pi_123"}}
         }
-        
+
         response = client.post("/webhooks/stripe", json=payload)
         assert response.status_code == 200
         assert response.json() == {"received": True}
@@ -415,14 +426,14 @@ def verify_signature(request: Request, secret: str) -> bool:
     signature = request.headers.get("x-webhook-signature")
     if not signature:
         return False
-    
+
     payload = request.body()
     expected = hmac.new(
         secret.encode(),
         payload,
         hashlib.sha256
     ).hexdigest()
-    
+
     return hmac.compare_digest(signature, expected)
 
 @post("/webhooks/payment")
@@ -433,26 +444,26 @@ async def payment_webhook(
     # Verify signature
     if not verify_signature(request, WEBHOOK_SECRET):
         raise HTTPException(status_code=401, detail="Invalid signature")
-    
+
     # Parse event
     event = await request.json()
     event_type = event.get("type")
-    
+
     # Log webhook
     await WebhookLog.create(
         event_type=event_type,
         payload=event
     )
-    
+
     # Process in background
     background_tasks.add_task(process_payment_event, event)
-    
+
     return {"status": "received", "event_type": event_type}
 
 async def process_payment_event(event: dict):
     """Process payment event in background."""
     event_type = event.get("type")
-    
+
     if event_type == "payment.succeeded":
         await handle_payment_success(event)
     elif event_type == "payment.failed":
