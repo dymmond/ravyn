@@ -293,17 +293,17 @@ hatch run docs:build_lang en
 ### Serving Documentation Locally
 
 ```bash
-# Serve all languages (default)
+# Serve default language (English)
 hatch run docs:serve
 
 # Serve on specific port
 hatch run docs:serve -p 8080
 
-# Serve one language in live mode
-hatch run docs:serve --lang en --single-lang
+# Serve one specific language
+hatch run docs:serve --lang en
 
-# Serve specific language
-hatch run docs:serve --lang es --single-lang
+# Serve all languages (for language switcher/full preview)
+hatch run docs:serve --all
 ```
 
 The documentation will be available at `http://localhost:8000`.

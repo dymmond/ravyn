@@ -265,7 +265,7 @@ build = "python scripts/docs.py build --clean"
 build_lang = "python scripts/docs.py build-lang --lang {args} --clean"
 serve = "python scripts/docs.py serve {args}"
 dev = "python scripts/docs.py dev"
-serve_lang = "python scripts/docs.py serve --single-lang --lang {args}"
+serve_lang = "python scripts/docs.py serve --lang {args}"
 new_lang = "python scripts/docs.py new-lang --lang {args}"
 
 [tool.hatch.envs.test]

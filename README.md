@@ -373,11 +373,14 @@ hatch run docs:build
 # Build one language
 hatch run docs:build_lang en
 
-# Serve all languages (language selector works)
+# Serve default language (English)
 hatch run docs:serve
 
-# Live preview one language
-hatch run docs:serve --lang en --single-lang
+# Serve all languages
+hatch run docs:serve --all
+
+# Serve a specific language
+hatch run docs:serve --lang ru
 ```
 
 For contributor docs workflow and translation steps, see [Contributing](./contributing.md).

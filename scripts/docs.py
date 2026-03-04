@@ -562,28 +562,9 @@ def serve(
             is_flag=True,
         ),
     ] = False,
-    single_lang: Annotated[
-        bool,
-        Option(
-            False,
-            "--single-lang",
-            help="Serve a single language in live mode. Useful for focused authoring.",
-            is_flag=True,
-        ),
-    ] = False,
 ) -> None:
     """Serve docs in live mode for one language, or static merged mode for all."""
     languages, alternates = _ensure_valid_languages()
-
-    if serve_all and single_lang:
-        raise click.ClickException("Choose either --all or --single-lang, not both.")
-
-    if not serve_all and not single_lang and len(languages) > 1:
-        info(
-            "Multiple languages detected; serving all languages so the language selector "
-            "works locally. Use --single-lang to serve one language."
-        )
-        serve_all = True
 
     if serve_all:
         _prepare_languages(languages)
@@ -673,7 +654,6 @@ def serve_lang(
         open_browser=False,
         watch_sources=True,
         serve_all=False,
-        single_lang=True,
     )
 
 
