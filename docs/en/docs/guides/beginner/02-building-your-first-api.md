@@ -1,122 +1,183 @@
 # Building Your First API
 
-In this guide, we’ll walk you through how to build a basic API using Ravyn. You’ll learn how to define routes,
-use path and query parameters, and return structured responses.
+In this guide, we’ll build a small API from scratch using Ravyn. You’ll define routes, accept path and query parameters, validate request bodies, and return structured responses.
 
-## Prerequisites
+## What you'll build
 
-- Ravyn installed: `pip install ravyn[standard]`
-- Familiarity with basic Python and HTTP concepts
+A tiny API with:
+
+- `GET /` to confirm the app is running.
+- `GET /users/{user_id}` using a path parameter.
+- `GET /search` using query parameters.
+- `POST /users` with request validation.
 
 ---
 
-## Defining Your First Routes
+## Mental model first
 
-In Ravyn, routes are created using decorators like `@get`, `@post`, etc., which map to HTTP methods.
+A Ravyn request usually follows this flow:
+
+```text
+HTTP Request
+   -> route match (@get/@post/...)
+   -> parameter parsing (path/query/body)
+   -> validation (type hints + Pydantic)
+   -> handler execution
+   -> response serialization
+HTTP Response
+```
+
+If you keep this flow in mind, each feature in the next chapters will feel predictable.
+
+---
+
+## Step 1: Create and run a minimal app
 
 ```python
 from ravyn import Ravyn, get
+
 
 @get("/")
 def home() -> dict:
     return {"message": "Welcome to your API!"}
 
+
 app = Ravyn(routes=[home])
 ```
 
-Start the server with:
+Run it:
+
 ```bash
 palfrey main:app --reload
 ```
 
-Visit `http://127.0.0.1:8000/` to see your message.
+Open `http://127.0.0.1:8000/`.
 
 ---
 
-## Path Parameters
+## Step 2: Add path and query parameters
 
-Path parameters let you capture parts of the URL.
+### Path parameter
 
 ```python
 from ravyn import get
+
 
 @get("/users/{user_id}")
 def get_user(user_id: int) -> dict:
     return {"user_id": user_id, "name": f"User {user_id}"}
 ```
 
-- `http://127.0.0.1:8000/users/42` → `{ "user_id": 42, "name": "User 42" }`
+- `GET /users/42` returns `{"user_id": 42, "name": "User 42"}`.
+- `user_id` is converted to `int` automatically.
 
-Path parameters are automatically converted to the specified type (`int` in this case).
-
----
-
-## Query Parameters
-
-Query parameters are passed using `?key=value` syntax.
+### Query parameters
 
 ```python
-from ravyn import get, Query
+from ravyn import Query, get
+
 
 @get("/search")
 def search(term: str = Query(...), limit: int = Query(10)) -> dict:
     return {"term": term, "limit": limit}
 ```
 
-- `http://127.0.0.1:8000/search?term=ravyn&limit=5`
+Try:
 
-You’ll get:
-```json
-{"term": "ravyn", "limit": 5}
-```
+- `GET /search?term=ravyn`
+- `GET /search?term=ravyn&limit=5`
 
 ---
 
-## JSON Body (POST requests)
-
-To handle JSON body data, just declare a parameter with a type.
+## Step 3: Accept and validate JSON body data
 
 ```python
 from pydantic import BaseModel
 from ravyn import post
 
-class User(BaseModel):
+
+class CreateUser(BaseModel):
     name: str
     age: int
 
+
 @post("/users")
-def create_user(user: User) -> dict:
+def create_user(user: CreateUser) -> dict:
     return {"created": True, "user": user.model_dump()}
 ```
 
-Curl test:
+Test with curl:
+
 ```bash
-curl -X POST http://localhost:8000/users -H "Content-Type: application/json" \
-     -d '{"name": "Alice", "age": 30}'
+curl -X POST http://127.0.0.1:8000/users \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Alice", "age": 30}'
+```
+
+Invalid data is rejected automatically with a structured error response.
+
+---
+
+## Step 4: Put everything together
+
+```python
+from pydantic import BaseModel
+from ravyn import Query, Ravyn, get, post
+
+
+class CreateUser(BaseModel):
+    name: str
+    age: int
+
+
+@get("/")
+def home() -> dict:
+    return {"message": "Welcome to your API!"}
+
+
+@get("/users/{user_id}")
+def get_user(user_id: int) -> dict:
+    return {"user_id": user_id, "name": f"User {user_id}"}
+
+
+@get("/search")
+def search(term: str = Query(...), limit: int = Query(10)) -> dict:
+    return {"term": term, "limit": limit}
+
+
+@post("/users")
+def create_user(user: CreateUser) -> dict:
+    return {"created": True, "user": user.model_dump()}
+
+
+app = Ravyn(routes=[home, get_user, search, create_user])
 ```
 
 ---
 
-## Route Summary
+## Common mistakes at this stage
 
-| Decorator | HTTP Method |
-|----------|-------------|
-| `@get()` | GET         |
-| `@post()`| POST        |
-| `@put()` | PUT         |
-| `@patch()`| PATCH      |
-| `@delete()`| DELETE    |
-| `@options()`| OPTIONS  |
-| `@trace()` | TRACE     |
+### 1. Missing return types
+
+Always annotate handler return types (`-> dict`, `-> Model`, etc.).
+
+### 2. Treating query/path values as untyped strings
+
+Use type annotations (`int`, `bool`, `UUID`) so Ravyn validates and converts for you.
+
+### 3. Mixing too many concepts at once
+
+Keep each route focused while learning: one feature per endpoint.
 
 ---
+
+## Related pages
+
+- [Routing Basics](./05-routing.md)
+- [Request and Response Models](./03-request-and-response-models.md)
+- [Handling Errors](./04-handling-errors.md)
+- [Application Basics](../../application/applications.md)
 
 ## What's Next?
 
-Now that you know how to build basic routes, let’s move into **request validation, response models, and data schemas**.
-
-👉 Continue to [the next section](03-request-and-response-models.md) to start defining schemas using Pydantic and working with structured input/output.
-
----
-
-You're on your way to mastering Ravyn APIs! 💚
+Continue to [Request and Response Models](./03-request-and-response-models.md) to go deeper into schema design and validation behavior.

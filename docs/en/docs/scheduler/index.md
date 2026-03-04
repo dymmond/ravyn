@@ -2,6 +2,15 @@
 
 Schedule and automate background tasks in your Ravyn application using Asyncz.
 
+## Conceptual flow
+
+```text
+Scheduler config
+   -> register task handlers
+   -> trigger executes handler
+   -> task side effects (email, cleanup, sync jobs)
+```
+
 ## In This Section
 
 - [Scheduler Setup](./scheduler.md) - Configure the scheduler
@@ -33,3 +42,8 @@ Schedule and automate background tasks in your Ravyn application using Asyncz.
 Ravyn integrates with [Asyncz](https://asyncz.dymmond.com) to provide powerful task scheduling capabilities for automated background jobs.
 
 For complete documentation, visit the [Asyncz documentation](https://asyncz.dymmond.com).
+
+## Related pages
+
+- [Background Tasks](../background-tasks.md)
+- [Scheduler Configuration](../configurations/scheduler.md)

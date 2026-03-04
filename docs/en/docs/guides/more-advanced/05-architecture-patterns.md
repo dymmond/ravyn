@@ -1,152 +1,199 @@
 # Architecture Patterns
 
-When building scalable and maintainable Ravyn applications, it's essential to choose the right architecture pattern. This guide explores common architecture styles and how to implement them using Ravyn.
+When Ravyn projects grow, architecture decisions start to matter more than syntax. This guide shows practical patterns and when to choose each one.
 
 ---
 
-## Project Structure
+## A simple decision map
 
-Keeping your project organized is crucial. A common structure for medium to large Ravyn applications looks like this:
+```text
+Small API, single team, fast iteration
+  -> Monolith with feature folders
 
+Growing API, multiple domains, independent ownership
+  -> Modular / feature-based with Includes and Routers
+
+Complex business rules and long-lived domains
+  -> Layered or DDD-inspired structure
+
+Independent deploy/release cycles per domain
+  -> Microservices (HTTP/gRPC between services)
 ```
+
+---
+
+## Baseline structure for most projects
+
+For many production Ravyn apps, this is a strong default:
+
+```text
 app/
-├── api/
-│   ├── v1/
-│   │   ├── endpoints/
-│   │   └── __init__.py
-│   └── __init__.py
-├── core/
-│   ├── config.py
-│   ├── security.py
-│   └── __init__.py
-├── models/
-├── services/
-├── schemas/
-├── utils/
-├── main.py
-└── __init__.py
+  main.py
+  settings.py
+  users/
+    routes.py
+    service.py
+    schemas.py
+  billing/
+    routes.py
+    service.py
+    schemas.py
+```
+
+Use `Include` in `main.py` to keep composition explicit.
+
+```python
+from ravyn import Include, Ravyn
+
+
+app = Ravyn(
+    routes=[
+        Include("/users", namespace="app.users.routes"),
+        Include("/billing", namespace="app.billing.routes"),
+    ]
+)
 ```
 
 ---
 
-## Pattern 1: Monolithic
+## Pattern 1: Monolith (clean and simple)
 
-All code is packaged into a single deployable unit.
+All code ships as one service.
 
-**Pros**:
+### When it fits
 
-- Simple to develop and deploy
-- Great for small projects
+- Team is small.
+- Domains are tightly coupled.
+- Operational simplicity matters most.
 
-**Cons**:
-
-- Hard to scale and maintain as the app grows
-
-**Example**:
+### Example
 
 ```python
 from ravyn import Ravyn, get
 
+
 @get("/")
 def home() -> dict:
-    return {"message": "Welcome to the monolith"}
+    return {"message": "Welcome"}
+
 
 app = Ravyn(routes=[home])
 ```
 
 ---
 
-## Pattern 2: Modular / Feature-Based
+## Pattern 2: Modular feature-based architecture
 
-Break your application into features or domains.
+Split code by domain (`users`, `orders`, `payments`).
 
-**Structure**:
-```
-app/
-├── features/
-│   ├── users/
-│   │   ├── routes.py
-│   │   ├── models.py
-│   │   ├── services.py
-│   │   └── schemas.py
-│   └── items/
-...
-```
+### Why this is often the best middle ground
 
-**Benefits**:
+- Better ownership by feature.
+- Lower merge conflicts.
+- Easier onboarding for new developers.
 
-- Easier to maintain
-- Encourages separation of concerns
-
-**Example**:
+### Example module
 
 ```python
-# features/users/routes.py
+# app/users/routes.py
 from ravyn import get
 
-@get("/users")
-def list_users() -> dict:
-    return ["Alice", "Bob"]
 
-# main.py
-from ravyn import Ravyn
-from features.users.routes import list_users
+@get("/")
+def list_users() -> dict:
+    return {"users": ["Alice", "Bob"]}
+```
+
+```python
+# app/main.py
+from ravyn import Include, Ravyn
+
+
+app = Ravyn(routes=[Include("/users", namespace="app.users.routes")])
+```
+
+---
+
+## Pattern 3: Layered / DDD-inspired approach
+
+Separate transport, business, and persistence concerns.
+
+```text
+HTTP layer (routes/controllers)
+    -> Application/service layer
+        -> Repository/DAO layer
+            -> Database or external systems
+```
+
+### Ravyn mapping
+
+- HTTP layer: `Gateway`, `Router`, `Controller`
+- Service/repository wiring: `Inject`, `Injects`, `Factory`
+- Policies: `permissions`, middleware, interceptors
+
+### Example
+
+```python
+from ravyn import Inject, Injects, Ravyn, get
+
+
+class UserService:
+    async def list(self) -> list[str]:
+        return ["Alice", "Bob"]
+
+
+def get_user_service() -> UserService:
+    return UserService()
+
+
+@get("/users", dependencies={"service": Inject(get_user_service)})
+async def list_users(service: UserService = Injects()) -> dict:
+    return {"users": await service.list()}
+
 
 app = Ravyn(routes=[list_users])
 ```
 
 ---
 
-## Pattern 3: Domain-Driven Design (DDD)
-
-Structure your application around domain concepts.
-
-**Folders**:
-
-- `domain/` (core business logic)
-- `application/` (use cases)
-- `infrastructure/` (DB, APIs)
-- `interfaces/` (HTTP, CLI)
-
-**Benefits**:
-
-- Better separation of concerns
-- Easier to reason about business rules
-
----
-
 ## Pattern 4: Microservices
 
-Split functionality into separate deployable services.
+Split domains into independently deployable services.
 
-**Ravyn's support**:
+### Use this when
 
-- Lightweight
-- Decoupled services via HTTP or gRPC
-- Dynamic routing with versioning
+- Teams release independently.
+- Different scalability profiles are required.
+- Service boundaries are stable and intentional.
 
-**Example**:
-
-- Service A: `/users`
-- Service B: `/payments`
-
-Deploy independently and communicate via HTTP or messaging queues.
+Ravyn supports this model with normal HTTP boundaries and experimental gRPC integration.
 
 ---
 
-## Choosing the Right Pattern
+## Common pitfalls
 
-| Project Type        | Suggested Pattern       |
-|---------------------|--------------------------|
-| Small Script/API    | Monolith                 |
-| Medium App          | Modular / Feature-Based  |
-| Large App/Enterprise| DDD or Microservices     |
+### 1. Premature microservices
+
+Start modular inside one service first. Extract later when boundaries are proven.
+
+### 2. Domain logic in handlers
+
+Keep handlers thin; move business rules into services/DAOs.
+
+### 3. Inconsistent route composition
+
+Use a single composition style (`Include` by namespace or explicit route lists) to keep route trees predictable.
 
 ---
+
+## Related pages
+
+- [Dependency Injection](./06-dependency-injection.md)
+- [Advanced Concepts](./07-advanced-concepts.md)
+- [Routing](../../routing/index.md)
+- [Extensions](../../extensions.md)
+- [Experimental gRPC](../../experimental/grpc.md)
 
 ## What's Next?
 
-You've learned about architecture patterns in Ravyn. Next, we'll explore advanced dependency injection and lifecycle
-management.
-
-👉 Continue to [16-dependency-injection](./06-dependency-injection.md).
+Continue to [Dependency Injection](./06-dependency-injection.md) to formalize service wiring and keep architecture boundaries clean.

@@ -1,106 +1,131 @@
 # Requests and Responses
 
-In this section, you'll learn how to handle input and output data using request and response models in Ravyn.
+In this section, you'll connect all core input/output pieces: path params, query params, body data, headers, cookies, file uploads, and response objects.
 
----
+## Request data sources at a glance
 
-## Using Pydantic Models for Requests
-
-Ravyn uses Pydantic to define and validate incoming request bodies:
-
-```python
-from pydantic import BaseModel
-from ravyn import post
-
-class Item(BaseModel):
-    name: str
-    price: float
-
-@post("/items")
-def create_item(data: Item) -> dict:
-    return {"name": data.name, "price": data.price}
-```
-
-Sending invalid data returns:
-
-```json
-{
-  "detail": [
-    {
-      "loc": ["body", "price"],
-      "msg": "field required",
-      "type": "value_error.missing"
-    }
-  ]
-}
+```text
+URL path      -> /items/{item_id}
+Query string  -> ?limit=10
+Headers       -> X-API-TOKEN: ...
+Cookies       -> session=...
+Body          -> JSON or form payload
+Files         -> multipart/form-data
 ```
 
 ---
 
-## Query Parameters and Path Parameters
-
-You can use type annotations to declare query and path parameters:
+## Path + query in one handler
 
 ```python
-from ravyn import get
+from ravyn import Query, get
+
 
 @get("/items/{item_id}")
-def get_item(item_id: int, q: str = "") -> dict:
+def get_item(item_id: int, q: str = Query("")) -> dict:
     return {"item_id": item_id, "query": q}
 ```
 
 ---
 
-## Response Models
-
-You can also define a response model:
+## JSON request body with Pydantic
 
 ```python
-class ResponseModel(BaseModel):
+from pydantic import BaseModel
+from ravyn import post
+
+
+class ItemIn(BaseModel):
     name: str
     price: float
 
+
 @post("/items")
-def create_item(data: Item) -> ResponseModel:
-    return ResponseModel(name=data.name, price=data.price)
+def create_item(data: ItemIn) -> dict:
+    return {"name": data.name, "price": data.price}
 ```
 
 ---
 
-## Custom JSONResponse
-
-You can return your own response:
+## Headers and cookies
 
 ```python
+from ravyn import Cookie, Header, get
+
+
+@get("/session")
+def read_session(
+    token: str = Header(value="X-API-TOKEN"),
+    session_id: str = Cookie(value="session"),
+) -> dict:
+    return {"token": token, "session": session_id}
+```
+
+---
+
+## File uploads
+
+```python
+from ravyn import File, UploadFile, post
+
+
+@post("/upload")
+async def upload(file: UploadFile = File()) -> dict:
+    return {"filename": file.filename, "content_type": file.content_type}
+```
+
+---
+
+## Choosing a response style
+
+### Return Python types directly
+
+```python
+from ravyn import get
+
+
+@get("/simple")
+def simple() -> dict:
+    return {"message": "ok"}
+```
+
+### Return an explicit response object
+
+```python
+from ravyn import get
 from ravyn.responses import JSONResponse
+
 
 @get("/custom")
 def custom() -> JSONResponse:
-    return JSONResponse({"message": "Custom"}, status_code=201)
+    return JSONResponse({"message": "created"}, status_code=201)
+```
+
+Use explicit response classes when you need fine-grained control (status, headers, media type).
+
+---
+
+## End-to-end request/response flow
+
+```text
+Incoming request
+   -> parse inputs (path/query/body/header/cookie/file)
+   -> validate types/models
+   -> execute handler
+   -> serialize output
+   -> send response
 ```
 
 ---
 
-## Extra: Headers, Cookies, Files
+## Related pages
 
-You can also extract headers, cookies, and file uploads via parameters:
-
-```python
-from ravyn import Header, Cookie, UploadFile, post, File
-
-@post("/upload")
-async def upload(
-        file: UploadFile = File(),
-        token: str = Header(value="X-API-TOKEN"),
-        session: str = Cookie(value="session")
-):
-    return {"filename": file.filename, "token": token, "session": session}
-```
-
----
+- [Request and Response Models](./03-request-and-response-models.md)
+- [A bit more about Routing](./10-routing.md)
+- [Requests](../../requests.md)
+- [Responses](../../responses.md)
+- [Upload Files](../../extras/upload-files.md)
 
 ## What's Next?
 
-You've now learned how to use request and response models with validation.
-
-👉 Continue to [routing](./10-routing.md) to organize routes and build modular applications.
+Continue to [A bit more about Routing](./10-routing.md) to organize larger route trees cleanly.

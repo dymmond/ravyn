@@ -1,101 +1,156 @@
 # Request and Response Models
 
-In this section, you'll learn how to validate and structure input and output using Pydantic models in Ravyn.
+In this section, you'll learn how to validate input and shape output with Pydantic models in Ravyn.
 
-## Why Use Models?
+## Why models matter
 
-Pydantic models offer:
+Models give you a clear contract between your API and its consumers:
 
-- **Automatic validation** of incoming request data
-- **Auto-generated documentation**
-- **Clear structure** for responses
+- Request model: what clients are allowed to send.
+- Response model: what your API guarantees to return.
+
+That contract improves correctness, readability, and generated API docs.
 
 ---
 
-## Request Model Example
-
-Define a Pydantic model to validate incoming data:
+## Request model: validate incoming JSON
 
 ```python
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from ravyn import post
 
+
 class CreateUserRequest(BaseModel):
-    name: str
-    age: int
+    name: str = Field(min_length=2)
+    age: int = Field(ge=0)
+
 
 @post("/users")
 def create_user(data: CreateUserRequest) -> dict:
-    return {"message": f"Created user {data.name} who is {data.age} years old"}
+    return {"message": f"Created user {data.name} ({data.age})"}
 ```
 
-When a POST request is made to `/users`, Ravyn:
+What Ravyn does automatically:
 
-- Automatically parses the JSON
-- Validates it against `CreateUserRequest`
-- Injects the model instance into the handler
+1. Reads JSON body.
+2. Validates against `CreateUserRequest`.
+3. Injects a typed model instance into `data`.
 
-Invalid request? Ravyn returns a 422 with helpful details.
+If validation fails, the request is rejected before your handler logic runs.
 
 ---
 
-## Response Model Example
-
-Define a model to **structure** the output:
+## Response model: control output shape
 
 ```python
 from pydantic import BaseModel
 from ravyn import get
 
+
 class UserResponse(BaseModel):
     id: int
     name: str
+
 
 @get("/users/{user_id}")
 def get_user(user_id: int) -> UserResponse:
     return UserResponse(id=user_id, name=f"User {user_id}")
 ```
 
-- Ravyn converts the returned model into JSON automatically
+Returning a Pydantic model keeps your response consistent and explicit.
 
 ---
 
-## Nested Models
+## Nested models
 
 ```python
+from pydantic import BaseModel
+from ravyn import get
+
+
 class Address(BaseModel):
     city: str
     country: str
 
+
 class UserProfile(BaseModel):
     name: str
     address: Address
+
 
 @get("/profile")
 def get_profile() -> UserProfile:
     return UserProfile(name="Alice", address=Address(city="Berlin", country="Germany"))
 ```
 
+This pattern is useful when response objects have clear sub-structures.
+
 ---
 
-## List of Models
-
-Returning a list? Just use `list[Model]` or `List[Model]`.
+## Lists of models
 
 ```python
+from ravyn import get
+
+
 @get("/users")
 def list_users() -> list[UserResponse]:
-    return [UserResponse(id=1, name="Alice"), UserResponse(id=2, name="Bob")]
+    return [
+        UserResponse(id=1, name="Alice"),
+        UserResponse(id=2, name="Bob"),
+    ]
 ```
 
 ---
 
+## Input/output flow (conceptual)
+
+```text
+Client JSON
+   -> Request Model (validation)
+   -> Handler (business logic)
+   -> Response Model (shape)
+   -> JSON response
+```
+
+This is a good default for most endpoints.
+
+---
+
+## Practical pattern: split request and response models
+
+```python
+from pydantic import BaseModel
+from ravyn import post
+
+
+class CreatePostRequest(BaseModel):
+    title: str
+    content: str
+
+
+class PostResponse(BaseModel):
+    id: int
+    title: str
+
+
+@post("/posts")
+def create_post(data: CreatePostRequest) -> PostResponse:
+    # Simulated persistence
+    return PostResponse(id=1, title=data.title)
+```
+
+Use this pattern when internal fields should not be exposed in responses.
+
+---
+
+## Related pages
+
+- [Handling Errors](./04-handling-errors.md)
+- [Requests and Responses (overview)](./09-requests-and-responses.md)
+- [Body Parameters](../../extras/body-fields.md)
+- [Responses](../../responses.md)
+
 ## What's Next?
 
-You've now learned how to:
-
-- Use request models for validation
-- Use response models for output structure
-- Handle nesting and collections
-
-👉 Continue to [the next section](04-handling-errors.md) to learn about custom error handling, exceptions, and status codes in Ravyn.
+Continue to [Handling Errors](./04-handling-errors.md) to learn how validation and domain errors should be returned consistently.

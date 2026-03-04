@@ -1,0 +1,84 @@
+name: Docs Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  docs-guard:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed files
+        id: diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          git diff --name-only "$BASE" "$HEAD" > changed_files.txt
+          echo "changed=$(wc -l < changed_files.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Docs relevance check
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Adjust patterns to your repo.
+          # "Public surface" (likely docs-impacting)
+          PUBLIC_PATTERNS=(
+            '^src/'                 # or your package root
+            '^ravyn/'               # if package root is named
+            '^cli/'                 # CLI commands
+            '^scripts/'             # docs build scripts
+            '^examples?/'           # examples folder
+            '^docs_src/'            # snippet sources like FastAPI style
+            '^.*(public|api)\.py$'  # optional conventions
+          )
+
+          # Docs locations
+          DOCS_PATTERNS=(
+            '^docs/'
+            '^documentation/'
+            '^README\.md$'
+            '^CHANGELOG\.md$'
+            '^mkdocs\.yml$'
+            '^zensical\.'
+            '^scripts/docs'
+          )
+
+          changed_public=0
+          changed_docs=0
+
+          while read -r f; do
+            for p in "${PUBLIC_PATTERNS[@]}"; do
+              if [[ "$f" =~ $p ]]; then changed_public=1; fi
+            done
+            for p in "${DOCS_PATTERNS[@]}"; do
+              if [[ "$f" =~ $p ]]; then changed_docs=1; fi
+            done
+          done < changed_files.txt
+
+          echo "changed_public=$changed_public"
+          echo "changed_docs=$changed_docs"
+
+          if [[ "$changed_public" == "1" && "$changed_docs" == "0" ]]; then
+            echo "::error::This PR changes public surface areas but does not update documentation. Please update docs (or add a note explaining why not)."
+            echo "Changed files:"
+            cat changed_files.txt
+            exit 1
+          fi
+      - name: "Install hatch"
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          pip install hatch
+      - name: Build docs (optional but recommended)
+        if: always()
+        run: |
+          hatch run docs:build

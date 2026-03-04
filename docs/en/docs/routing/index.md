@@ -2,6 +2,17 @@
 
 Learn how to define routes and handle requests in your Ravyn application.
 
+## Conceptual map
+
+```text
+Decorator or Gateway
+   -> Router / Include composition
+   -> optional middleware/permissions/dependencies
+   -> handler execution
+```
+
+Use this section when you need to move from a few endpoints to a maintainable route tree.
+
 ## In This Section
 
 - [Routes](./routes.md) - Gateway, Include, and route organization
@@ -30,3 +41,17 @@ Learn how to define routes and handle requests in your Ravyn application.
 - [ChildRavyn applications](./router.md#child-ravyn)
 - [Route parameters](./routes.md#path-parameters)
 - [Webhook handling](./webhooks.md#quick-start)
+
+## Recommended order
+
+1. [Routes](./routes.md)
+2. [Handlers](./handlers.md)
+3. [Router](./router.md)
+4. [Controllers](./controllers.md)
+5. [Webhooks](./webhooks.md)
+
+## Related sections
+
+- [Application](../application/index.md)
+- [Permissions](../permissions/index.md)
+- [Security](../security/index.md)

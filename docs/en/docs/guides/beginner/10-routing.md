@@ -1,98 +1,165 @@
 # A bit more about Routing
 
-In this section, you’ll learn how to structure and organize your API with routes and routers in Ravyn.
+In this section, you’ll move from single-file routing to a structure that scales.
+
+By the end, you’ll know when to use:
+
+- Route decorators (`@get`, `@post`, ...)
+- `Router` for grouping handlers
+- `Include` for route-tree composition
+- `Controller` for class-based endpoints
 
 ---
 
-## Basic Routes
+## Route organization mental model
 
-A route maps a URL path and HTTP method to a Python function:
+```text
+Ravyn app
+  -> Include('/api', ...)
+      -> Router / route list
+          -> Gateway / handler
+```
+
+As your API grows, this layered approach helps keep files small and navigation predictable.
+
+---
+
+## Step 1: Start with simple handlers
 
 ```python
-from ravyn import get
+from ravyn import Ravyn, get
+
 
 @get("/hello")
-def say_hello():
+def say_hello() -> dict:
     return {"message": "Hello, world!"}
+
+
+app = Ravyn(routes=[say_hello])
 ```
+
+This is great for small APIs or early prototypes.
 
 ---
 
-## Dynamic Routes
-
-You can use parameters in your path:
+## Step 2: Group routes with `Router`
 
 ```python
-@get("/items/{item_id}")
-def read_item(item_id: int):
-    return {"id": item_id}
-```
+from ravyn import Ravyn, Router
 
----
-
-## Routers
-
-Group related routes into a `Router`:
-
-```python
-from ravyn import Router
 
 user_router = Router()
 
+
 @user_router.get("/users")
-def list_users():
+def list_users() -> list[str]:
     return ["user1", "user2"]
 
+
 @user_router.post("/users")
-def create_user():
+def create_user() -> dict:
     return {"status": "created"}
-```
 
-Include the router in your app:
-
-```python
-from ravyn import Ravyn
 
 app = Ravyn(routes=[user_router])
 ```
 
----
-
-## Nested Routes
-
-You can nest routers with prefixes:
-
-```python
-api_router = Router(path="/api")
-
-app = Ravyn(routes=[...])
-app.add_router(user_router)
-```
+Use this when a feature has multiple endpoints that belong together.
 
 ---
 
-## Tags and Summaries
-
-Add metadata for documentation:
+## Step 3: Compose larger apps with `Include`
 
 ```python
-@get("/status", tags=["Health"], summary="Check API status")
-def status():
+from ravyn import Include, Ravyn, Router
+
+
+api_router = Router()
+
+
+@api_router.get("/status")
+def status() -> dict:
     return {"status": "ok"}
+
+
+app = Ravyn(
+    routes=[
+        Include("/api", routes=[api_router]),
+    ]
+)
 ```
 
----
-
-## Conditional Routing
-
-Routes can depend on headers, query parameters, or even environment flags.
-
-You can also dynamically register routes at runtime (e.g. based on settings).
+Now your endpoint is available at `/api/status`.
 
 ---
+
+## Step 4: Use class-based routing with `Controller`
+
+```python
+from ravyn import Controller, Ravyn, get
+
+
+class HealthController(Controller):
+    @get("/health")
+    def health(self) -> dict:
+        return {"ok": True}
+
+
+app = Ravyn(routes=[HealthController])
+```
+
+Use controllers when multiple endpoints share class-level concerns.
+
+---
+
+## Choosing the right tool
+
+| Need | Best Fit |
+|------|----------|
+| One or two endpoints | Decorated handlers |
+| A feature module with many endpoints | `Router` |
+| Prefix/group subtrees (`/api`, `/v1`) | `Include` |
+| Shared class behavior | `Controller` |
+
+---
+
+## Practical file layout
+
+```text
+app/
+  main.py
+  users/
+    routes.py
+  billing/
+    routes.py
+```
+
+`main.py`:
+
+```python
+from ravyn import Include, Ravyn
+
+
+app = Ravyn(
+    routes=[
+        Include("/users", namespace="app.users.routes"),
+        Include("/billing", namespace="app.billing.routes"),
+    ]
+)
+```
+
+This keeps each feature isolated while maintaining a clean top-level app file.
+
+---
+
+## Related pages
+
+- [Routing (core docs)](../../routing/index.md)
+- [Routes](../../routing/routes.md)
+- [Router](../../routing/router.md)
+- [Controllers](../../routing/controllers.md)
+- [Webhooks](../../routing/webhooks.md)
 
 ## What's Next?
 
-Now that you know how to build routes and organize them into routers, it's time to look at security.
-
-👉 Continue to [security](../more-advanced/01-security.md) to implement auth and secure your endpoints.
+You completed the beginner path. Next, continue with [Security](../more-advanced/01-security.md) in the advanced section.
