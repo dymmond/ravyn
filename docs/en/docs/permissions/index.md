@@ -92,6 +92,17 @@ app = Ravyn(
 )
 ```
 
+## Authorization flow
+
+```text
+request enters app
+  -> global permissions (app/include)
+  -> route-level permissions
+  -> handler execution (if all checks pass)
+```
+
+Use higher levels (app/include) for broad policy and route-level permissions for endpoint-specific rules.
+
 ## Permission composition (AND, OR, NOT, XOR, NOR)
 
 Ravyn supports composing permissions using operators in `BasePermission`.
@@ -117,6 +128,24 @@ Combined = IsAuthenticated & HasVerifiedEmail
 
 Then use `Combined` anywhere permissions are accepted.
 
+### Composition example on a route
+
+```python
+from ravyn import get
+from ravyn.permissions import BasePermission, IsAuthenticated
+
+
+class HasStaffFlag(BasePermission):
+    async def has_permission(self, request, controller) -> bool:
+        user = getattr(request, "user", None)
+        return bool(user and getattr(user, "is_staff", False))
+
+
+@get("/admin", permissions=[IsAuthenticated & HasStaffFlag])
+def admin_dashboard() -> dict:
+    return {"ok": True}
+```
+
 ## Ravyn vs Lilya permissions
 
 Ravyn supports both Ravyn-native and Lilya-style permissions.
@@ -131,3 +160,4 @@ If you use Ravyn-native permissions, stay consistent in that route tree.
 - Reuse permission classes instead of inline checks in handlers.
 - Compose small permission classes for complex access rules.
 - Prefer explicit denial messages in your exception handlers when needed.
+- Pair permissions with [Security dependencies](../security/index.md) when credentials and authorization rules are both required.

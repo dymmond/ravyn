@@ -25,6 +25,18 @@ app = Ravyn(
 )
 ```
 
+## How the application pieces fit together
+
+```text
+Ravyn instance
+  -> route tree (Gateway/Include/Router)
+  -> request pipeline (middleware, permissions, dependencies)
+  -> handler
+  -> response conversion
+```
+
+This is the core execution model you will see repeated across the framework.
+
 ---
 
 ## Creating an Application

@@ -4,6 +4,17 @@ Welcome to the beginner path for Ravyn.
 
 If this is your first time with the framework, follow this section in order. Each chapter builds on the previous one and keeps the examples practical.
 
+## Learning flow
+
+```text
+first routes
+  -> request/response models
+  -> error handling
+  -> routing structure
+  -> middleware/background/dependencies
+  -> full request/response handling
+```
+
 ## What you'll learn
 
 - Build and run your first Ravyn API.
@@ -33,3 +44,5 @@ If this is your first time with the framework, follow this section in order. Eac
 ## Next step
 
 Start with [Building Your First API](./02-building-your-first-api.md).
+
+After this track, continue with [Getting Deeper into Ravyn](../more-advanced/index.md).

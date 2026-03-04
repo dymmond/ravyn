@@ -75,6 +75,32 @@ Import from:
 
 This keeps handler logic explicit and OpenAPI output accurate.
 
+```text
+request
+  -> security dependency resolves credentials
+  -> handler receives typed credentials
+  -> optional permission checks run
+  -> response
+```
+
+## Additional example: API key in header
+
+```python
+from ravyn import Inject, Injects, get
+from ravyn.security.api_key import APIKeyInHeader
+
+api_key_header = APIKeyInHeader(name="X-API-Key")
+
+
+@get(
+    "/internal",
+    dependencies={"api_key": Inject(api_key_header)},
+    security=[api_key_header],
+)
+def internal(api_key: str = Injects()) -> dict:
+    return {"api_key_received": bool(api_key)}
+```
+
 ## OpenAPI integration
 
 Security dependencies that inherit from Ravyn security base classes are automatically represented in OpenAPI.
@@ -88,3 +114,4 @@ That means `/docs/swagger`, `/docs/redoc`, and `/docs/elements` show the right a
 - [Simple OAuth2](./simple-oauth2.md)
 - [OAuth2 + JWT](./oauth-jwt.md)
 - [Available Security](./available-security.md)
+- [Permissions](../permissions/index.md)

@@ -1,126 +1,146 @@
 # Dependency Injection
 
-Ravyn supports a powerful and flexible dependency injection system inspired by Angular and other modern frameworks. You can declare dependencies in a clean and declarative way, enabling separation of concerns, easy testing, and better structure for your application.
+Ravyn's dependency system helps you keep handlers thin and business logic reusable.
 
-This guide walks through how to use Ravyn's dependency injection using `Inject` and `Injects`.
+This guide focuses on production patterns with `Inject`, `Injects`, and `Factory`.
 
 ---
 
-## Basic Usage
+## Why DI matters in larger apps
 
-Use `Inject` in the `dependencies` argument of the route decorator to define a dependency provider. Then, retrieve it with `Injects` inside your handler.
+Without DI, handlers tend to accumulate infrastructure logic.
 
-### Example
+With DI, you separate concerns:
 
-```python
-from ravyn import get, Inject, Injects
-
-# A service we want to inject
-def get_token() -> str:
-    return "my-secret-token"
-
-@get("/token", dependencies={"token": Inject(get_token)})
-def read_token(token: str = Injects()) -> dict:
-    return {"token": token}
+```text
+HTTP handler
+   -> injected service
+       -> injected repository/client
 ```
 
-Note: Every route handler must include an explicit return type in Ravyn.
+This improves testability and keeps boundaries explicit.
 
 ---
 
-## Injecting Custom Services
+## Core building blocks
 
-Dependency injection is not limited to simple values. You can also inject classes or more complex services.
-
-### Example
-
-```python
-from ravyn import get, Inject, Injects
-
-class Database:
-    def connect(self) -> str:
-        return "Connected to DB"
-
-def get_db() -> Database:
-    return Database()
-
-@get("/db", dependencies={"db": Inject(get_db)})
-def read_db(db: Database = Injects()) -> dict:
-    return {"status": db.connect()}
-```
+- `Inject(provider)` registers how to build a dependency.
+- `Injects()` receives the resolved dependency in the handler signature.
+- `Factory(...)` creates dependency providers from classes/callables.
 
 ---
 
-## Sharing Dependencies Across Routes
-
-Define your dependencies once and reuse them across multiple routes using a dictionary or shared module.
+## Pattern 1: service injection
 
 ```python
-# dependencies.py
-from ravyn import Inject
-from .services import get_db
+from ravyn import Inject, Injects, Ravyn, get
 
-common_dependencies = {
-    "db": Inject(get_db),
-}
 
-# routes.py
-from ravyn import get, Injects
-from .dependencies import common_dependencies
+class UserService:
+    async def profile(self, user_id: int) -> dict:
+        return {"id": user_id, "name": f"User {user_id}"}
 
-@get("/users", dependencies=common_dependencies)
-def list_users(db=Injects()) -> dict:
-    return {"db": str(db)}
+
+def get_user_service() -> UserService:
+    return UserService()
+
+
+@get("/users/{user_id}", dependencies={"service": Inject(get_user_service)})
+async def get_user(user_id: int, service: UserService = Injects()) -> dict:
+    return await service.profile(user_id)
+
+
+app = Ravyn(routes=[get_user])
 ```
 
 ---
 
-## Using Dependency Injection with Classes
+## Pattern 2: compose dependencies
 
-You can inject dependencies into class-based handlers or services.
-
-```python
-from ravyn import Inject, Injects, get
-
-class MyService:
-    def greet(self, name: str) -> str:
-        return f"Hello {name}"
-
-def get_service() -> MyService:
-    return MyService()
-
-@get("/greet", dependencies={"service": Inject(get_service)})
-def greet(service: MyService = Injects()) -> dict:
-    return {"message": service.greet("Ravyn")}
-```
-
----
-
-## Lifecycle of Dependencies
-
-- Functions used with `Inject()` are called **once per request**.
-- Dependencies can be composed: you can inject dependencies inside other dependency functions.
+Providers can depend on other providers.
 
 ```python
-from ravyn import Inject, Requires
+from ravyn import Inject, Injects, Requires, get
 
-def get_settings():
-    return {"env": "production"}
 
-def get_config(settings=Requires(get_settings)):
-    return f"Running in {settings['env']} mode"
+def get_settings() -> dict:
+    return {"region": "eu"}
+
+
+def get_api_client(settings: dict = Requires(get_settings)) -> dict:
+    return {"base_url": f"https://api.{settings['region']}.example.com"}
+
+
+@get(
+    "/client",
+    dependencies={
+        "client": Inject(get_api_client),
+    },
+)
+def client_info(client: dict = Injects()) -> dict:
+    return client
 ```
 
----
-
-## Tips
-
-- Always annotate injected parameters with their type for clarity and validation.
-- Avoid injecting raw functions as values; prefer dependency providers.
-- If using `Requires()` inside a function that isn't a route, make sure it's declared properly.
+This keeps construction logic centralized and reusable.
 
 ---
+
+## Pattern 3: class-based factories
+
+```python
+from ravyn import Factory, Inject, Injects, get
+
+
+class TokenService:
+    def issue(self) -> str:
+        return "token-123"
+
+
+def get_token_service() -> TokenService:
+    return TokenService()
+
+
+token_factory = Factory(get_token_service)
+
+
+@get("/token", dependencies={"service": Inject(token_factory)})
+def token(service: TokenService = Injects()) -> dict:
+    return {"token": service.issue()}
+```
+
+Use `Factory` when you want explicit construction wrappers and reusable provider definitions.
+
+---
+
+## Request-level flow
+
+```text
+request arrives
+  -> resolve dependency graph
+  -> run handler with injected values
+  -> serialize handler result
+```
+
+If a dependency fails, Ravyn stops before business logic executes.
+
+---
+
+## Practical recommendations
+
+- Inject services, not ORM sessions or low-level objects directly into every handler.
+- Keep provider functions small and deterministic.
+- Use type hints on injected parameters for readability.
+- Group shared providers in dedicated modules (`dependencies.py`, `providers.py`).
+
+---
+
+## Related pages
+
+- [Beginner Dependencies](../beginner/08-dependencies.md)
+- [Architecture Patterns](./05-architecture-patterns.md)
+- [Protocols](../../protocols.md)
+- [Testing](./02-testing.md)
 
 ## What's Next?
 
-You now understand how to use dependency injection in Ravyn, from simple values to complex services.
+Continue to [Advanced Concepts](./07-advanced-concepts.md) to connect DI with larger application design patterns.
