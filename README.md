@@ -18,10 +18,6 @@
 <a href="https://pypi.org/project/ravyn" target="_blank">
     <img src="https://img.shields.io/pypi/pyversions/ravyn.svg?color=%2334D058" alt="Supported Python versions">
 </a>
-
-<a href="https://codspeed.io/dymmond/ravyn?utm_source=badge" target="_blank">
-    <img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge/dymmond/ravyn" alt="CodSpeed">
-</a>
 </p>
 
 ---
