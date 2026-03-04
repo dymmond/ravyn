@@ -34,7 +34,6 @@ theme:
   - content.code.select
   - navigation.indexes
   - navigation.path
-  - navigation.tabs
 repo_name: dymmond/ravyn
 repo_url: https://github.com/dymmond/ravyn
 edit_uri: ''
