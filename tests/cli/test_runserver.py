@@ -104,7 +104,7 @@ async def test_runserver_uses_cli_path(monkeypatch):
     )
 
     assert called
-    assert called["app"] == app
+    assert called["config_or_app"] == app
     assert called["port"] == 9000
     assert called["host"] == "127.0.0.1"
     assert called["reload"] is False
@@ -257,7 +257,7 @@ def test_runserver_uses_env_path(monkeypatch):
 
     runserver_module.runserver.callback(path=None)
 
-    assert called["app"] == app
+    assert called["config_or_app"] == app
 
 
 def test_runserver_exits_if_no_path(monkeypatch):
@@ -310,4 +310,4 @@ def test_runserver_with_reload_or_workers(monkeypatch):
     runserver_module.runserver.callback(path="tests.cli.main:app", reload=True)
 
     # When reload=True, it should use string path, not app object
-    assert called["app"] == "tests.cli.main:app"
+    assert called["config_or_app"] == "tests.cli.main:app"

@@ -1,9 +1,10 @@
 import os
 import sys
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any, cast
 
 import click
+from lilya.types import ASGIApp
 from rich.tree import Tree
 from sayer import Argument, Option, command, error
 
@@ -95,10 +96,10 @@ def runserver(
     """
     ctx = click.get_current_context()
     env = ctx.ensure_object(DirectiveEnv)
-
     with get_ui_toolkit() as toolkit:
+        # Analyse the app structure
         toolkit.print(
-            "[gray50]Identifying package structures based on directories with [pink]__init__.py[/pink] files[/gray50]"
+            "[gray50]Identifying package structures based on directories with [green]__init__.py[/green] files[/gray50]"
         )
 
         if getattr(env, "app", None) is None:
@@ -115,7 +116,7 @@ def runserver(
             import palfrey
         except ImportError:
             raise DirectiveError(
-                detail="Palfrey needs to be installed to run Ravyn `runserver`."
+                detail="Palfrey needs to be installed to run Ravyn. Run `pip install palfrey`."
             ) from None
 
         server_environment: str = ""
@@ -128,34 +129,34 @@ def runserver(
         if not server_environment:
             server_environment = "development"
 
-        toolkit.print_title(f"[pink]Starting {server_environment} server[/pink]", tag="Ravyn")
-        toolkit.print(f"Importing from [pink]{env.command_path}[/pink]", tag="Ravyn")
+        toolkit.print_title(f"[green]Starting {server_environment} server[/green]", tag="Ravyn")
+        toolkit.print(f"Importing from [green]{env.command_path}[/green]", tag="Ravyn")
         toolkit.print(f"Importing module '{env.path}'", tag="Ravyn")
         toolkit.print_line()
 
-        if env.module_info.module_paths:
+        module_info = env.module_info
+        if (
+            module_info
+            and module_info.module_paths
+            and module_info.discovery_file
+            and module_info.module_import
+        ):
             root_tree = get_app_tree(
-                env.module_info.module_paths, discovery_file=env.module_info.discovery_file
+                module_info.module_paths, discovery_file=module_info.discovery_file
             )
-
             toolkit.print(root_tree, tag="module")
             toolkit.print_line()
-
             toolkit.print(
-                "[pink]The [bold]Ravyn[/bold] object is imported using the following code:[/pink]",
+                "The [bold]Ravyn[/bold] object is imported using the following code:",
                 tag="code",
             )
-            module_import = env.module_info.module_import
-            if module_import:
-                toolkit.print(
-                    f"[underline]from [bold]{module_import[0]}[/bold] import [bold]{module_import[1]}[/bold]",
-                    tag=module_import[1],
-                )
+            toolkit.print(
+                f"[underline]from [bold]{module_info.module_import[0]}[/bold] import [bold]{module_info.module_import[1]}[/bold]",
+                tag=module_info.module_import[1],
+            )
 
-        # For the text access
         url = f"http://{host}:{port}"
         docs = f"http://{host}:{port}/docs/swagger"
-
         toolkit.print_line()
         toolkit.print(
             f"Server started at [link={url}]{url}[/]",
@@ -167,33 +168,37 @@ def runserver(
         )
 
         if os.environ.get("RAVYN_SETTINGS_MODULE"):
-            custom_message = f"'{os.environ['RAVYN_SETTINGS_MODULE']}'"
+            custom_message = f"'{os.environ.get('RAVYN_SETTINGS_MODULE')}'"
             toolkit.print(
-                f"Using custom settings module: [bold][pink]{custom_message}[/pink][/bold]",
+                f"Using custom settings module: [bold][green]{custom_message}[/green][/bold]",
                 tag="settings",
             )
         else:
             from ravyn.conf import settings as ravyn_settings
 
             toolkit.print(
-                f"Using default settings module: [bold][pink]{ravyn_settings.__class__.__module__}.Settings[/pink][/bold]",
+                f"Using default settings module: [bold][green]{ravyn_settings.__class__.__module__}.Settings[/green][/bold]",
                 tag="settings",
             )
 
+        toolkit.print_line()
         toolkit.print(
             "[green]You can use the runserver to run in production too.[/green]",
             tag="note",
         )
-        toolkit.print_line()
 
         if debug and env.ravyn_app:
-            env.ravyn_app.debug = debug
+            env.ravyn_app.debug = debug  # type: ignore[attr-defined]
 
+        toolkit.print_line()
+
+        # Determine which app path or object to run
+        app_target: str | ASGIApp
         if path:
             # User explicitly provided the app path (e.g., myproject.main:app)
             app_target = path
             toolkit.print(f"Using app path provided: [green]{path}[/green]", tag="Ravyn")
-        elif getattr(env, "path", None):
+        elif env.path:
             # Use discovered or environment app path
             app_target = env.path
         else:
@@ -207,18 +212,18 @@ def runserver(
             app_to_run = env.app or app_target
         else:
             # Use import path string for reload/workers compatibility
-            app_to_run = app_target  # type: ignore[assignment]
+            app_to_run = app_target
 
-        palfrey.run(
+        palfrey.run(  # type: ignore[call-overload]
             # in case of no reload and workers, we might end up initializing twice when
             # using a function, so use app instead
-            app=app_to_run,
+            config_or_app=app_to_run,
             port=port,
             host=host,
             reload=reload,
-            lifespan=lifespan,  # type: ignore
+            lifespan=cast(Any, lifespan),
+            log_level=log_level,
             proxy_headers=proxy_headers,
             workers=workers,
-            log_level=log_level,
             log_config=get_log_config(),
         )
