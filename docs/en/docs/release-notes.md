@@ -1,5 +1,11 @@
 # Release Notes
 
+## 0.3.10
+
+### Fixed
+
+- `runserver` directive was not initialising properly with the config or app parameter.
+
 ## 0.3.9
 
 ### Added

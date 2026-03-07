@@ -857,7 +857,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
             if is_async_callable(interceptor.intercept):
                 await interceptor.intercept(scope, receive, send)
             else:
-                await run_in_threadpool(interceptor.intercept, scope, receive, send)
+                await run_in_threadpool(interceptor.intercept, scope, receive, send)  # type: ignore
 
     async def handle_permissions(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -2915,7 +2915,7 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
             if is_async_callable(interceptor.intercept):
                 await interceptor.intercept(scope, receive, send)
             else:
-                await run_in_threadpool(interceptor.intercept, scope, receive, send)
+                await run_in_threadpool(interceptor.intercept, scope, receive, send)  # type: ignore
 
     async def handle_permissions(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -3429,7 +3429,7 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
             if is_async_callable(interceptor.intercept):
                 await interceptor.intercept(scope, receive, send)
             else:
-                await run_in_threadpool(interceptor.intercept, scope, receive, send)
+                await run_in_threadpool(interceptor.intercept, scope, receive, send)  # type: ignore
 
     async def handle_permissions(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -4201,7 +4201,7 @@ class Include(Dispatcher, LilyaInclude):
             if is_async_callable(interceptor.intercept):
                 await interceptor.intercept(scope, receive, send)
             else:
-                await run_in_threadpool(interceptor.intercept, scope, receive, send)
+                await run_in_threadpool(interceptor.intercept, scope, receive, send)  # type: ignore
 
     async def handle_permissions(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
