@@ -212,7 +212,7 @@ def runserver(
         palfrey.run(
             # in case of no reload and workers, we might end up initializing twice when
             # using a function, so use app instead
-            app=app_to_run,
+            config_or_app=app_to_run,
             port=port,
             host=host,
             reload=reload,
