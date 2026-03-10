@@ -42,3 +42,4 @@ example.sqlite
 docker-compose.override.yml
 compose.override.yml
 .sisyphus
+python_files.txt
