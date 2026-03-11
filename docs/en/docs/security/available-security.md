@@ -4,7 +4,7 @@ Let's explore the additional security components that Ravyn offers out-of-the-bo
 
 You don't need to implement them exactly as described here. Instead, you can use the special `Security` object from Ravyn to inject security into each API.
 
-Additionally, there are packages like `esmerald-simple-jwt` that implement Bearer token checks at the middleware level, rather than using the `Security` object. This flexibility allows you to choose the approach that best suits your needs.
+Additionally, there are packages like `ravyn-simple-jwt` that implement Bearer token checks at the middleware level, rather than using the `Security` object. This flexibility allows you to choose the approach that best suits your needs.
 
 ## HTTPBearer
 
