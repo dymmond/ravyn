@@ -9,7 +9,6 @@ from typing import (
     Set,
     Type,
     Union,
-    cast,
     get_args,
     get_origin,
 )
@@ -314,7 +313,7 @@ class SignatureModel(ArbitraryBaseModel):
 
         try:
             if isinstance(exception, (HTTPException, LilyaHTTPException)):
-                return cast(HTTPException, exception)
+                return exception
 
             method, url = get_connection_info(connection)
             error_message = f"Validation failed for {url} with method {method}."
