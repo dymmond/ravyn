@@ -1,90 +1,69 @@
 import os
-import shutil
-
-import pytest
+import shlex
+from pathlib import Path
 
 from ravyn import Ravyn
-from tests.cli.utils import run_cmd
 
 app = Ravyn(routes=[])
 
 
-@pytest.fixture(scope="module")
-def create_folders():
-    os.chdir(os.path.split(os.path.abspath(__file__))[0])
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
-
-    yield
-
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
+def _run_cmd(safe_run_cmd, cmd: str, is_app: bool = True, **kwargs):
+    if is_app:
+        os.environ["RAVYN_DEFAULT_APP"] = "tests.cli.main:app"
+    process = safe_run_cmd(shlex.split(cmd), **kwargs)
+    return process.stdout, process.stderr, process.returncode
 
 
-def _run_asserts():
-    assert os.path.isfile("myapp/__init__.py") is True
-    assert os.path.isfile("myapp/tests.py") is True
-    assert os.path.isfile("myapp/dtos.py") is True
-    assert os.path.isfile("myapp/urls.py") is True
-    assert os.path.isfile("myapp/controllers.py") is True
-    assert os.path.isfile("myapp/repository.py") is True
-    assert os.path.isfile("myapp/service.py") is True
-    assert os.path.isfile("myapp/directives/__init__.py") is True
-    assert os.path.isfile("myapp/directives/operations/__init__.py") is True
+def _run_asserts(base_dir: Path):
+    assert (base_dir / "myapp/__init__.py").is_file() is True
+    assert (base_dir / "myapp/tests.py").is_file() is True
+    assert (base_dir / "myapp/dtos.py").is_file() is True
+    assert (base_dir / "myapp/urls.py").is_file() is True
+    assert (base_dir / "myapp/controllers.py").is_file() is True
+    assert (base_dir / "myapp/repository.py").is_file() is True
+    assert (base_dir / "myapp/service.py").is_file() is True
+    assert (base_dir / "myapp/directives/__init__.py").is_file() is True
+    assert (base_dir / "myapp/directives/operations/__init__.py").is_file() is True
 
 
-def test_create_app_with_env_var(create_folders):
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createproject myproject")
+def test_create_app_with_env_var(cli_tmp_dir: Path, safe_run_cmd):
+    (o, e, ss) = _run_cmd(safe_run_cmd, "ravyn createproject myproject")
     assert ss == 0
 
-    os.chdir("myproject/myproject/apps")
+    apps_dir = cli_tmp_dir / "myproject/myproject/apps"
 
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createapp myapp --context")
+    (o, e, ss) = _run_cmd(safe_run_cmd, "ravyn createapp myapp --context", cwd=apps_dir)
 
-    _run_asserts()
+    _run_asserts(apps_dir)
 
 
-def test_create_app_without_env_var(create_folders):
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createproject myproject", is_app=False)
+def test_create_app_without_env_var(cli_tmp_dir: Path, safe_run_cmd):
+    (o, e, ss) = _run_cmd(safe_run_cmd, "ravyn createproject myproject", is_app=False)
     assert ss == 0
 
-    os.chdir("myproject/myproject/apps")
+    apps_dir = cli_tmp_dir / "myproject/myproject/apps"
 
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createapp myapp --context", is_app=False)
-
-    _run_asserts()
-
-
-def test_create_app_without_env_var_with_app_flag(create_folders):
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createproject myproject", is_app=False)
-    assert ss == 0
-
-    os.chdir("myproject/myproject/apps")
-
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app",
-        "ravyn --app tests.cli.main:app createapp myapp --context",
+    (o, e, ss) = _run_cmd(
+        safe_run_cmd,
+        "ravyn createapp myapp --context",
         is_app=False,
+        cwd=apps_dir,
     )
 
-    _run_asserts()
+    _run_asserts(apps_dir)
+
+
+def test_create_app_without_env_var_with_app_flag(cli_tmp_dir: Path, safe_run_cmd):
+    (o, e, ss) = _run_cmd(safe_run_cmd, "ravyn createproject myproject", is_app=False)
+    assert ss == 0
+
+    apps_dir = cli_tmp_dir / "myproject/myproject/apps"
+
+    (o, e, ss) = _run_cmd(
+        safe_run_cmd,
+        "ravyn --app tests.cli.main:app createapp myapp --context",
+        is_app=False,
+        cwd=apps_dir,
+    )
+
+    _run_asserts(apps_dir)
