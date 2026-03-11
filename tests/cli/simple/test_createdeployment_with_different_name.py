@@ -1,101 +1,81 @@
 import os
-import shutil
-
-import pytest
+import shlex
+from pathlib import Path
 
 from ravyn import Ravyn
-from tests.cli.utils import run_cmd
 
 app = Ravyn(routes=[])
 
 
-@pytest.fixture(scope="module")
-def create_folders():
-    os.chdir(os.path.split(os.path.abspath(__file__))[0])
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
-        shutil.rmtree("simple/myproject")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
-
-    yield
-
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
-        shutil.rmtree("simple/myproject")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
+def _run_cmd(safe_run_cmd, app: str, cmd: str, is_app: bool = True, cwd: Path | None = None):
+    if is_app:
+        os.environ["RAVYN_DEFAULT_APP"] = app
+    process = safe_run_cmd(shlex.split(cmd), cwd=cwd, env=dict(os.environ))
+    return process.stdout, process.stderr, process.returncode
 
 
-def _run_asserts():
-    assert os.path.isfile("deploy/docker/Dockerfile") is True
-    assert os.path.isfile("deploy/gunicorn/gunicorn_conf.py") is True
-    assert os.path.isfile("deploy/nginx/nginx.conf") is True
-    assert os.path.isfile("deploy/nginx/nginx.json-logging.conf") is True
-    assert os.path.isfile("deploy/supervisor/supervisord.conf") is True
+def _run_asserts(base_dir: Path):
+    assert (base_dir / "deploy/docker/Dockerfile").is_file() is True
+    assert (base_dir / "deploy/gunicorn/gunicorn_conf.py").is_file() is True
+    assert (base_dir / "deploy/nginx/nginx.conf").is_file() is True
+    assert (base_dir / "deploy/nginx/nginx.json-logging.conf").is_file() is True
+    assert (base_dir / "deploy/supervisor/supervisord.conf").is_file() is True
 
 
-def test_create_app_with_env_var(create_folders):
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createproject myproject --simple")
+def test_create_app_with_env_var(cli_tmp_dir: Path, safe_run_cmd):
+    (o, e, ss) = _run_cmd(
+        safe_run_cmd, "tests.cli.main:app", "ravyn createproject myproject --simple"
+    )
     assert ss == 0
 
-    os.chdir("myproject")
+    project_dir = cli_tmp_dir / "myproject"
 
-    (o, e, ss) = run_cmd(
+    (o, e, ss) = _run_cmd(
+        safe_run_cmd,
         "tests.cli.main:app",
         "ravyn createdeployment myproject --deployment-folder-name deploy",
+        cwd=project_dir,
     )
 
-    _run_asserts()
+    _run_asserts(project_dir)
 
 
-def test_create_app_without_env_var(create_folders):
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app", "ravyn createproject myproject --simple", is_app=False
+def test_create_app_without_env_var(cli_tmp_dir: Path, safe_run_cmd):
+    (o, e, ss) = _run_cmd(
+        safe_run_cmd, "tests.cli.main:app", "ravyn createproject myproject --simple", is_app=False
     )
     assert ss == 0
 
-    os.chdir("myproject")
+    project_dir = cli_tmp_dir / "myproject"
 
-    (o, e, ss) = run_cmd(
+    (o, e, ss) = _run_cmd(
+        safe_run_cmd,
         "tests.cli.main:app",
         "ravyn createdeployment myproject --deployment-folder-name deploy ",
         is_app=False,
+        cwd=project_dir,
     )
 
-    _run_asserts()
+    _run_asserts(project_dir)
 
 
-def test_create_app_without_env_var_with_app_flag(create_folders):
-    (o, e, ss) = run_cmd(
+def test_create_app_without_env_var_with_app_flag(cli_tmp_dir: Path, safe_run_cmd):
+    (o, e, ss) = _run_cmd(
+        safe_run_cmd,
         "tests.cli.main:app",
         "ravyn createproject myproject --deployment-folder-name deploy --simple",
         is_app=False,
     )
     assert ss == 0
 
-    os.chdir("myproject")
+    project_dir = cli_tmp_dir / "myproject"
 
-    (o, e, ss) = run_cmd(
+    (o, e, ss) = _run_cmd(
+        safe_run_cmd,
         "tests.cli.main:app",
         "ravyn --app tests.cli.main:app createdeployment myproject --deployment-folder-name deploy",
         is_app=False,
+        cwd=project_dir,
     )
 
-    _run_asserts()
+    _run_asserts(project_dir)
