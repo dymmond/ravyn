@@ -1926,6 +1926,28 @@ class Application(BaseLilya):
         return setting_value
 
     def activate_openapi(self) -> None:
+        """
+        Activates the OpenAPI documentation for the application.
+
+        This internal method transfers application-level settings (title, version, description, etc.)
+        to the OpenAPI configuration object and enables the OpenAPI schema generation.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn(
+            title="My API",
+            version="1.0.0",
+            enable_openapi=True
+        )
+
+        # OpenAPI is activated automatically during app initialization
+        app.activate_openapi()
+        ```
+        """
+
         def set_value(value: Any, name: str) -> Any:
             """Sets the value to be passed into the openapi configuration"""
             if value or not getattr(self.openapi_config, name, None):
@@ -2876,6 +2898,23 @@ class Application(BaseLilya):
             await super().__call__(scope, receive, send)
 
     def websocket_route(self, path: str, name: Optional[str] = None) -> Callable:
+        """
+        **Deprecated**: Use `WebSocketGateway` instead.
+
+        This method is no longer supported and will raise an `ImproperlyConfigured` exception.
+
+        **Example (correct approach)**
+
+        ```python
+        from ravyn import Ravyn, WebSocketGateway
+
+        app = Ravyn(
+            routes=[
+                WebSocketGateway("/ws", handler=websocket_handler)
+            ]
+        )
+        ```
+        """
         raise ImproperlyConfigured("`websocket_route` is not valid. Use WebSocketGateway instead.")
 
     def on_event(self, event_type: str) -> Callable:  # pragma: nocover
@@ -2888,6 +2927,25 @@ class Application(BaseLilya):
         return self.router.on_event(event_type)
 
     def add_event_handler(self, event_type: str, func: Callable) -> None:  # pragma: no cover
+        """
+        Registers an event handler for application lifecycle events.
+
+        This method adds event handlers for `startup` and `shutdown` events.
+        It delegates to the router's event handler system.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        async def on_startup():
+            print("Application starting...")
+
+        app.add_event_handler("startup", on_startup)
+        ```
+        """
         self.router.add_event_handler(event_type, func)
 
     def register_encoder(self, encoder: Encoder) -> None:
@@ -3026,6 +3084,26 @@ class Ravyn(RoutingMethodsMixin, Application):
             ),
         ] = None,
     ) -> Callable:
+        """
+        Decorator for registering HTTP route handlers.
+
+        This decorator registers a handler function for one or more HTTP methods at the specified path.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.route("/users", methods=["GET", "POST"])
+        async def handle_users(request):
+            if request.method == "GET":
+                return {"users": []}
+            else:
+                return {"created": True}
+        ```
+        """
         return self.router.route(
             path=path,
             methods=methods,
@@ -3117,6 +3195,25 @@ class Ravyn(RoutingMethodsMixin, Application):
             ),
         ] = None,
     ) -> Callable:
+        """
+        Decorator for registering WebSocket handlers.
+
+        This decorator registers a WebSocket handler function at the specified path.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.websocket("/ws")
+        async def websocket_endpoint(socket):
+            await socket.accept()
+            await socket.send_json({"message": "Connected"})
+            await socket.close()
+        ```
+        """
         return self.router.websocket(
             path=path,
             name=name,
