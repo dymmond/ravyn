@@ -1,5 +1,20 @@
 # Release Notes
 
+## 0.3.11
+
+### Added
+
+- Simplification of HTTP/Websocket handlers upon initialisation.
+
+### Fixed
+
+- Code smells and types.
+
+### Documentation
+
+- Improve the quality of the documentation and fix some typos and broken links.
+- Add examples and more details for permissions, middlewares, exception handlers.
+
 ## 0.3.10
 
 ### Fixed
