@@ -35,7 +35,7 @@ class AppTestSettings(RavynSettings):
         # not cached, so always a new object is returned
         # should be wrapped in a registry
         return EdgyDatabaseTestClient(
-            "postgresql+asyncpg://postgres:postgres@localhost:5432/esmerald_edgy",
+            "postgresql+asyncpg://postgres:postgres@localhost:5432/ravyn_edgy",
             drop_database=False,
             use_existing=True,
         )
