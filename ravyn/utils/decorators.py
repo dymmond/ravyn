@@ -330,7 +330,7 @@ def generate_cache_key(func: Callable, args: Any, kwargs: Any) -> str:
         bound_method = inspect.ismethod(func) or (
             len(args) > 0 and hasattr(args[0], func.__name__)
         )
-    except Exception:  # noqa
+    except (AttributeError, IndexError):  # Catch attribute access and empty args errors
         bound_method = False
 
     args_to_encode = args[1:] if bound_method else args
@@ -422,22 +422,28 @@ class cache:  # noqa
                 Returns:
                     Any: The cached value if available, otherwise the function result.
                 """
+                backend = self.backend
+                if backend is None:
+                    return await func(*args, **kwargs)
+
                 key = generate_cache_key(func, args, kwargs)
 
                 async with anyio.Lock():  # Ensure async thread safety
                     try:
-                        cached_value = await self.backend.get(key)
+                        cached_value = await backend.get(key)
                         if cached_value is not None:
                             return cached_value
-                    except Exception as e:
+                    except (ConnectionError, TimeoutError, OSError, TypeError, ValueError) as e:
+                        # Catch network, timeout, serialization, and value errors from cache backend
                         logger.error(f"Cache backend failure in get(): {e}", exc_info=True)
 
                     # Proceed with function execution if cache fails
                     result = await func(*args, **kwargs)
 
                     try:
-                        await self.backend.set(key, result, self.ttl)
-                    except Exception as e:
+                        await backend.set(key, result, self.ttl)
+                    except (ConnectionError, TimeoutError, OSError, TypeError, ValueError) as e:
+                        # Catch network, timeout, serialization, and value errors from cache backend
                         logger.error(f"Cache backend failure in set(): {e}", exc_info=True)
 
                     return result
@@ -460,33 +466,43 @@ class cache:  # noqa
                 Returns:
                     Any: The cached value if available, otherwise the function result.
                 """
+                backend = self.backend
+                if backend is None:
+                    return func(*args, **kwargs)
+
                 key = generate_cache_key(func, args, kwargs)
 
                 with cache_lock:  # Ensure sync thread safety
                     try:
-
-                        async def get_cached() -> Any:
-                            """Retrieve a cached value asynchronously inside a sync function."""
-                            return await self.backend.get(key)
-
-                        cached_value = anyio.run(get_cached)
+                        cached_value = anyio.run(backend.get, key)
 
                         if cached_value is not None:
                             return cached_value
-                    except Exception as e:
+                    except (
+                        ConnectionError,
+                        TimeoutError,
+                        OSError,
+                        TypeError,
+                        ValueError,
+                        RuntimeError,
+                    ) as e:
+                        # Catch async runtime, network, timeout, and serialization errors
                         logger.error(f"Cache backend failure in get(): {e}", exc_info=True)
 
                     # Proceed with function execution if cache fails
                     result = func(*args, **kwargs)
 
                     try:
-
-                        async def set_cache() -> None:
-                            """Store a computed value asynchronously inside a sync function."""
-                            await self.backend.set(key, result, self.ttl)
-
-                        anyio.run(set_cache)
-                    except Exception as e:
+                        anyio.run(backend.set, key, result, self.ttl)
+                    except (
+                        ConnectionError,
+                        TimeoutError,
+                        OSError,
+                        TypeError,
+                        ValueError,
+                        RuntimeError,
+                    ) as e:
+                        # Catch async runtime, network, timeout, and serialization errors
                         logger.error(f"Cache backend failure in set(): {e}", exc_info=True)
 
                     return result
@@ -512,15 +528,22 @@ class cache:  # noqa
 
             >>> cache.invalidate(get_user_data, user_id=42)  # Removes cache for user 42
         """
+        backend = self.backend
+        if backend is None:
+            return None
+
         key = generate_cache_key(func, args, kwargs)
 
         with cache_lock:  # Prevent multiple threads from invalidating at the same time
             try:
-
-                async def delete_cache() -> None:
-                    """Delete a cache entry asynchronously."""
-                    await self.backend.delete(key)
-
-                anyio.run(delete_cache)
-            except Exception as e:
+                anyio.run(backend.delete, key)
+            except (
+                ConnectionError,
+                TimeoutError,
+                OSError,
+                TypeError,
+                ValueError,
+                RuntimeError,
+            ) as e:
+                # Catch async runtime, network, timeout, and serialization errors
                 logger.error(f"Cache backend failure in delete(): {e}", exc_info=True)
