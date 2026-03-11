@@ -618,9 +618,10 @@ class BaseRouter(Dispatcher, LilyaRouter):
                     ),
                     tags=route.tags if not self.is_member_descriptor(route.tags) else [],
                     include_in_schema=(
-                        route.include_in_schema
-                        if not self.is_member_descriptor(route.include_in_schema)
-                        else True
+                        True
+                        if self.is_member_descriptor(route.include_in_schema)
+                        or route.include_in_schema is None
+                        else route.include_in_schema
                     ),
                     deprecated=(
                         route.deprecated
@@ -659,7 +660,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
         ]
 
         super().__init__(
-            redirect_slashes=redirect_slashes,
+            redirect_slashes=redirect_slashes if redirect_slashes is not None else True,
             routes=new_routes,
             default=default,
             lifespan=lifespan,
@@ -695,7 +696,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
         if self.__base_permissions__:
             self.permissions: Any = {
                 index: wrap_permission(permission)
-                for index, permission in enumerate(permissions)
+                for index, permission in enumerate(self.__base_permissions__)
                 if is_ravyn_permission(permission)
             }
         else:
@@ -756,9 +757,11 @@ class BaseRouter(Dispatcher, LilyaRouter):
     def reorder_routes(self) -> list[Sequence[Union[APIGateHandler, Include]]]:
         routes = sorted(
             self.routes,
-            key=lambda route: not (
-                isinstance(route, (Gateway, WebhookGateway, WebSocketGateway))
-                and getattr(route, "path", None) in ("", "/")
+            key=lambda route: (
+                not (
+                    isinstance(route, (Gateway, WebhookGateway, WebSocketGateway))
+                    and getattr(route, "path", None) in ("", "/")
+                )
             ),
         )
         return routes
@@ -839,9 +842,9 @@ class BaseRouter(Dispatcher, LilyaRouter):
         await super().app(scope, receive, send)
 
     async def handle_interceptors(self, scope: "Scope", receive: "Receive", send: "Send") -> None:
-        # Inherit interceptors from parent if any
         if self.parent and self.parent.interceptors:
-            for parent_interceptor in self.parent.interceptors:
+            parent = self.parent
+            for parent_interceptor in parent.interceptors:
                 if parent_interceptor not in self.interceptors:
                     self.interceptors.insert(0, parent_interceptor)
 
@@ -875,11 +878,11 @@ class BaseRouter(Dispatcher, LilyaRouter):
             )
         else:
             if self.parent and self.parent.permissions:
-                # If the parent has permissions, we need to merge them with the current permissions
+                parent = self.parent
                 self.permissions.update(
                     {
                         index + len(self.permissions): wrap_permission(permission)
-                        for index, permission in enumerate(self.parent.permissions)
+                        for index, permission in enumerate(parent.permissions)
                         if is_ravyn_permission(permission)
                     }
                 )
@@ -2749,7 +2752,7 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
     def __init__(
         self,
         path: Optional[str] = None,
-        handler: Callable[..., Any] = None,
+        handler: Optional[Callable[..., Any]] = None,
         *,
         name: Optional[str] = None,
         methods: Optional[Sequence[str]] = None,
@@ -2857,7 +2860,7 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         if self.__base_permissions__:
             self.permissions: Any = {
                 index: wrap_permission(permission)
-                for index, permission in enumerate(permissions)
+                for index, permission in enumerate(self.__base_permissions__)
                 if is_ravyn_permission(permission)
             }
         else:
@@ -2933,15 +2936,14 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
             )
         else:
             if self.parent and self.parent.permissions:
+                parent = self.parent
                 if not self.permissions:
-                    # If the parent has permissions, we need to merge them with the current permissions
-                    self.permissions.update(self.parent.permissions)
+                    self.permissions.update(parent.permissions)
                 else:
-                    # If the parent has permissions, we need to merge them with the current permissions
-                    all_perms = list(self.parent.permissions.values())
+                    all_perms = list(parent.permissions.values())
                     for perm in self.permissions.values():
                         all_perms.append(perm)
-                    self.permissions = dict(enumerate(all_perms))  #
+                    self.permissions = dict(enumerate(all_perms))
 
             effective_permissions = self.permissions if self.permissions else {}
             effective_lilya_permissions = self.lilya_permissions if self.lilya_permissions else {}
@@ -3334,7 +3336,7 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         self,
         path: Optional[str] = None,
         *,
-        handler: Callable[..., Any] = None,
+        handler: Optional[Callable[..., Any]] = None,
         dependencies: Optional[Dependencies] = None,
         exception_handlers: Optional[ExceptionHandlerMap] = None,
         permissions: Optional[list[Permission]] = None,
@@ -3392,7 +3394,7 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         if self.__base_permissions__:
             self.permissions: Any = {
                 index: wrap_permission(permission)
-                for index, permission in enumerate(permissions)
+                for index, permission in enumerate(self.__base_permissions__)
                 if is_ravyn_permission(permission)
             }
         else:
@@ -3447,7 +3449,8 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
             )
         else:
             if self.parent and self.parent.permissions:
-                parent_perms = self.parent.permissions.copy()
+                parent = self.parent
+                parent_perms = parent.permissions.copy()
             else:
                 parent_perms = {}
 
@@ -3660,7 +3663,7 @@ class Include(Dispatcher, LilyaInclude):
             ),
         ] = None,
         app: Annotated[
-            ASGIApp | str,
+            ASGIApp | str | None,
             Doc(
                 """
                 An application can be anything that is treated as an ASGI application.
@@ -4062,7 +4065,7 @@ class Include(Dispatcher, LilyaInclude):
         if self.__base_permissions__:
             self.permissions: Any = {
                 index: wrap_permission(permission)
-                for index, permission in enumerate(permissions)
+                for index, permission in enumerate(self.__base_permissions__)
                 if is_ravyn_permission(permission)
             }
         else:
