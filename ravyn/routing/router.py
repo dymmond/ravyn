@@ -961,6 +961,26 @@ class BaseRouter(Dispatcher, LilyaRouter):
         raise NoMatchFound(name, path_params)
 
     def url_path_for(self, name: str, **path_params: Any) -> URLPath:
+        """
+        Look up a URL path by route name with path parameters.
+
+        This method searches through all registered routes to find a matching
+        route name and construct the full URL path with the provided parameters.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.get("/users/{user_id}", name="get_user")
+        def get_user(user_id: int) -> dict:
+            return {"id": user_id}
+
+        path = app.url_path_for("get_user", user_id=123)
+        ```
+        """
         for route in self.routes or []:
             try:
                 return cast("URLPath", route.url_path_for(name, **path_params))
@@ -977,6 +997,25 @@ class BaseRouter(Dispatcher, LilyaRouter):
         raise NoMatchFound(name, path_params)
 
     def add_event_handler(self, event_type: str, func: Callable) -> None:  # pragma: no cover
+        """
+        Register an event handler for application lifecycle events.
+
+        Supports 'startup' and 'shutdown' event types to run initialization
+        or cleanup code when the application starts or stops.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        async def startup_handler() -> None:
+            print("Application started")
+
+        app.add_event_handler("startup", startup_handler)
+        ```
+        """
         assert event_type in ("startup", "shutdown")
 
         if event_type == "startup":
@@ -986,6 +1025,29 @@ class BaseRouter(Dispatcher, LilyaRouter):
             self.on_shutdown.append(func)
 
     def on_event(self, event_type: str) -> Callable:  # pragma: no cover
+        """
+        Decorator for registering application lifecycle event handlers.
+
+        Use this to register startup or shutdown event handlers in a decorator style.
+        This is an alternative to using `add_event_handler()`.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.on_event("startup")
+        async def on_startup() -> None:
+            print("Application is starting")
+
+        @app.on_event("shutdown")
+        async def on_shutdown() -> None:
+            print("Application is shutting down")
+        ```
+        """
+
         def decorator(func: Callable) -> Callable:
             self.add_event_handler(event_type, func)
             return func
@@ -1148,6 +1210,24 @@ class RoutingMethodsMixin:  # HTTP method decorators extend Lilya with intercept
             ),
         ] = None,
     ) -> Callable:
+        """
+        Register a DELETE request handler as a decorator.
+
+        Use this decorator for handlers that delete resources.
+        Supports dependency injection, permissions, interceptors, and middleware.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.delete("/users/{user_id}")
+        async def delete_user(user_id: int) -> dict:
+            return {"deleted": user_id}
+        ```
+        """
         return self.forward_single_method_route(
             path=path,
             method=HttpMethod.GET.value,
@@ -1364,6 +1444,24 @@ class RoutingMethodsMixin:  # HTTP method decorators extend Lilya with intercept
             ),
         ] = None,
     ) -> Callable:
+        """
+        Register a POST request handler as a decorator.
+
+        Use this decorator for handlers that create new resources or submit data.
+        Supports dependency injection, permissions, interceptors, and middleware.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.post("/users")
+        async def create_user(name: str, email: str) -> dict:
+            return {"id": 123, "name": name, "email": email}
+        ```
+        """
         return self.forward_single_method_route(
             path=path,
             method=HttpMethod.POST.value,
@@ -2598,6 +2696,24 @@ class Router(RoutingMethodsMixin, BaseRouter):  # type: ignore[misc]
             ),
         ] = None,
     ) -> Callable:
+        """
+        Register a route handler for one or more HTTP methods as a decorator.
+
+        This is a flexible decorator that allows you to handle multiple HTTP methods
+        with a single handler function. Defaults to GET if no methods are specified.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.route("/items/{item_id}", methods=["GET", "POST"])
+        async def handle_item(item_id: int) -> dict:
+            return {"item_id": item_id, "method": "GET or POST"}
+        ```
+        """
         if methods is None:
             methods = [HttpMethod.GET.value]
 
@@ -2696,6 +2812,29 @@ class Router(RoutingMethodsMixin, BaseRouter):  # type: ignore[misc]
             ),
         ] = None,
     ) -> Callable:
+        """
+        Register a WebSocket handler as a decorator.
+
+        Use this decorator to create WebSocket endpoints that handle bidirectional
+        communication with clients. Supports dependency injection, permissions, and interceptors.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+        from ravyn.websockets import WebSocket
+
+        app = Ravyn()
+
+        @app.websocket("/ws")
+        async def websocket_endpoint(socket: WebSocket) -> None:
+            await socket.accept()
+            data = await socket.receive_json()
+            await socket.send_json({"echo": data})
+            await socket.close()
+        ```
+        """
+
         def wrapper(func: Callable) -> Callable:
             handler = WebSocketHandler(
                 dependencies=dependencies,
