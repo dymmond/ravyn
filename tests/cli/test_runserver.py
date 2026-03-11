@@ -1,60 +1,62 @@
 import builtins
 import os
-import shutil
+import shlex
 import sys
 import types
+from pathlib import Path
+from typing import Any
 
-import click
-import pytest
+import click  # type: ignore[import-not-found]
+import pytest  # type: ignore[import-not-found]
 
 from ravyn import Ravyn
 from ravyn.core.directives.operations import runserver as runserver_module
-from tests.cli.utils import run_cmd
 
 app = Ravyn(routes=[])
 
 
-@pytest.fixture(scope="module")
-def create_folders():
-    os.chdir(os.path.split(os.path.abspath(__file__))[0])
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
+def _run_cmd(monkeypatch: pytest.MonkeyPatch, safe_run_cmd, app_ref: str, cmd: str):
+    monkeypatch.setenv("RAVYN_DEFAULT_APP", app_ref)
+    process = safe_run_cmd(shlex.split(cmd))
+    return process.stdout, process.stderr, process.returncode
 
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
 
-    yield
+def _module_info() -> Any:
+    return type(
+        "M",
+        (),
+        {
+            "module_paths": [],
+            "discovery_file": "serve.py",
+            "module_import": ("tests.cli.main", "app"),
+        },
+    )()
 
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
 
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
+def _install_fake_palfrey(fake_run) -> None:
+    fake_module = types.ModuleType("palfrey")
+    fake_module.run = fake_run  # type: ignore[attr-defined]
+    sys.modules["palfrey"] = fake_module
+
+
+def _runserver_callback(**kwargs: Any) -> None:
+    callback: Any = runserver_module.runserver.callback
+    callback(**kwargs)
 
 
 @pytest.mark.anyio
-async def test_runserver_uses_cli_path(monkeypatch):
+async def test_runserver_uses_cli_path(
+    monkeypatch: pytest.MonkeyPatch, cli_tmp_dir: Path, safe_run_cmd
+):
     """
     Ensures that runserver uses the CLI `path` argument when provided
     and calls palfrey.run() with correct parameters.
     """
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createproject myproject")
+    (cli_tmp_dir / "main.py").write_text(
+        "from ravyn import Ravyn\n\napp = Ravyn(routes=[])\n",
+        encoding="utf-8",
+    )
+    (o, e, ss) = _run_cmd(monkeypatch, safe_run_cmd, "main:app", "ravyn createproject myproject")
     assert ss == 0
 
     called = {}
@@ -65,8 +67,7 @@ async def test_runserver_uses_cli_path(monkeypatch):
 
     monkeypatch.setenv("RAVYN_DEFAULT_APP", "")
 
-    fake_uvicorn = types.SimpleNamespace(run=fake_run)
-    sys.modules["palfrey"] = fake_uvicorn
+    _install_fake_palfrey(fake_run)
 
     os.environ.pop("RAVYN_DEFAULT_APP", None)
 
@@ -75,22 +76,14 @@ async def test_runserver_uses_cli_path(monkeypatch):
     env.path = "tests.cli.main:app"
     env.ravyn_app = app
     env.command_path = "tests.cli.main:app"
-    env.module_info = type(
-        "M",
-        (),
-        {
-            "module_paths": [],
-            "discovery_file": "serve.py",
-            "module_import": ("tests.cli.main", "app"),
-        },
-    )()
+    env.module_info = _module_info()
 
     ctx = click.Context(runserver_module.runserver)
     ctx.obj = env
     click.globals._local.stack = [ctx]
 
     # Directly invoke the command
-    runserver_module.runserver.callback(
+    _runserver_callback(
         path="tests.cli.main:app",
         port=9000,
         reload=False,
@@ -122,7 +115,7 @@ def test_runserver_exits_if_no_app(monkeypatch):
     monkeypatch.setattr(sys, "exit", lambda code: (_ for _ in ()).throw(SystemExit(code)))
 
     with pytest.raises(SystemExit) as exc:
-        runserver_module.runserver.callback(path=None)
+        _runserver_callback(path=None)
     assert exc.value.code == 1
 
 
@@ -133,7 +126,7 @@ def test_runserver_sets_custom_settings(monkeypatch):
         called.update(kwargs)
         return None
 
-    sys.modules["palfrey"] = types.SimpleNamespace(run=fake_run)
+    _install_fake_palfrey(fake_run)
     monkeypatch.delenv("RAVYN_SETTINGS_MODULE", raising=False)
 
     env = runserver_module.DirectiveEnv()
@@ -141,23 +134,13 @@ def test_runserver_sets_custom_settings(monkeypatch):
     env.path = "tests.cli.main:app"
     env.ravyn_app = app
     env.command_path = "tests.cli.main:app"
-    env.module_info = type(
-        "M",
-        (),
-        {
-            "module_paths": [],
-            "discovery_file": "serve.py",
-            "module_import": ("tests.cli.main", "app"),
-        },
-    )()
+    env.module_info = _module_info()
 
     ctx = click.Context(runserver_module.runserver)
     ctx.obj = env
     click.globals._local.stack = [ctx]
 
-    runserver_module.runserver.callback(
-        path="tests.cli.main:app", settings="tests.settings.CustomSettings"
-    )
+    _runserver_callback(path="tests.cli.main:app", settings="tests.settings.CustomSettings")
 
     assert os.environ["RAVYN_SETTINGS_MODULE"] == "tests.settings.CustomSettings"
     assert called
@@ -167,33 +150,30 @@ def test_runserver_uses_default_settings(monkeypatch):
     def fake_run(**_):
         return None
 
-    sys.modules["palfrey"] = types.SimpleNamespace(run=fake_run)
+    _install_fake_palfrey(fake_run)
 
     class FakeSettings:
-        __class__ = type("Settings", (), {"__module__": "ravyn.conf.default"})
+        pass
 
-    monkeypatch.setitem(sys.modules, "ravyn.conf", types.SimpleNamespace(settings=FakeSettings()))
+    FakeSettings.__module__ = "ravyn.conf.default"
+
+    fake_conf = types.ModuleType("ravyn.conf")
+    fake_conf.settings = FakeSettings()  # type: ignore[attr-defined]
+
+    monkeypatch.setitem(sys.modules, "ravyn.conf", fake_conf)
 
     env = runserver_module.DirectiveEnv()
     env.app = app
     env.path = "tests.cli.main:app"
     env.ravyn_app = app
     env.command_path = "tests.cli.main:app"
-    env.module_info = type(
-        "M",
-        (),
-        {
-            "module_paths": [],
-            "discovery_file": "serve.py",
-            "module_import": ("tests.cli.main", "app"),
-        },
-    )()
+    env.module_info = _module_info()
 
     ctx = click.Context(runserver_module.runserver)
     ctx.obj = env
     click.globals._local.stack = [ctx]
 
-    runserver_module.runserver.callback(path="tests.cli.main:app")
+    _runserver_callback(path="tests.cli.main:app")
 
 
 def test_runserver_raises_directive_error_if_uvicorn_missing(monkeypatch):
@@ -211,22 +191,14 @@ def test_runserver_raises_directive_error_if_uvicorn_missing(monkeypatch):
     env.path = "tests.cli.main:app"
     env.ravyn_app = app
     env.command_path = "tests.cli.main:app"
-    env.module_info = type(
-        "M",
-        (),
-        {
-            "module_paths": [],
-            "discovery_file": "serve.py",
-            "module_import": ("tests.cli.main", "app"),
-        },
-    )()
+    env.module_info = _module_info()
 
     ctx = click.Context(runserver_module.runserver)
     ctx.obj = env
     click.globals._local.stack = [ctx]
 
     with pytest.raises(runserver_module.DirectiveError):
-        runserver_module.runserver.callback(path="tests.cli.main:app")
+        _runserver_callback(path="tests.cli.main:app")
 
 
 def test_runserver_uses_env_path(monkeypatch):
@@ -236,26 +208,18 @@ def test_runserver_uses_env_path(monkeypatch):
         called.update(kwargs)
         return None
 
-    sys.modules["palfrey"] = types.SimpleNamespace(run=fake_run)
+    _install_fake_palfrey(fake_run)
 
     env = runserver_module.DirectiveEnv()
     env.app = app
     env.path = "tests.cli.main:app"
     env.ravyn_app = app
-    env.module_info = type(
-        "M",
-        (),
-        {
-            "module_paths": [],
-            "discovery_file": "serve.py",
-            "module_import": ("tests.cli.main", "app"),
-        },
-    )()
+    env.module_info = _module_info()
     ctx = click.Context(runserver_module.runserver)
     ctx.obj = env
     click.globals._local.stack = [ctx]
 
-    runserver_module.runserver.callback(path=None)
+    _runserver_callback(path=None)
 
     assert called["config_or_app"] == app
 
@@ -265,15 +229,7 @@ def test_runserver_exits_if_no_path(monkeypatch):
     env.app = app
     env.path = None
 
-    env.module_info = type(
-        "M",
-        (),
-        {
-            "module_paths": [],
-            "discovery_file": "serve.py",
-            "module_import": ("tests.cli.main", "app"),
-        },
-    )()
+    env.module_info = _module_info()
 
     ctx = click.Context(runserver_module.runserver)
     ctx.obj = env
@@ -283,31 +239,23 @@ def test_runserver_exits_if_no_path(monkeypatch):
     monkeypatch.setattr(sys, "exit", lambda code: (_ for _ in ()).throw(SystemExit(code)))
 
     with pytest.raises(SystemExit):
-        runserver_module.runserver.callback(path=None)
+        _runserver_callback(path=None)
 
 
 def test_runserver_with_reload_or_workers(monkeypatch):
     called = {}
-    sys.modules["palfrey"] = types.SimpleNamespace(run=lambda **kw: called.update(kw))
+    _install_fake_palfrey(lambda **kw: called.update(kw))
 
     env = runserver_module.DirectiveEnv()
     env.app = app
     env.path = "tests.cli.main:app"
-    env.module_info = type(
-        "M",
-        (),
-        {
-            "module_paths": [],
-            "discovery_file": "serve.py",
-            "module_import": ("tests.cli.main", "app"),
-        },
-    )()
+    env.module_info = _module_info()
     env.ravyn_app = app
     ctx = click.Context(runserver_module.runserver)
     ctx.obj = env
     click.globals._local.stack = [ctx]
 
-    runserver_module.runserver.callback(path="tests.cli.main:app", reload=True)
+    _runserver_callback(path="tests.cli.main:app", reload=True)
 
     # When reload=True, it should use string path, not app object
     assert called["config_or_app"] == "tests.cli.main:app"
