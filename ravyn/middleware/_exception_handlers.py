@@ -35,7 +35,9 @@ def wrap_app_handling_exceptions(app: ASGIApp, conn: typing.Union[Request, WebSo
 
         try:
             await app(scope, receive, sender)
-        except Exception as exc:
+        except (
+            Exception
+        ) as exc:  # Catch all exceptions to allow custom handlers and prevent unhandled errors
             handler = None
 
             if isinstance(exc, HTTPException):

@@ -56,7 +56,9 @@ class AsyncExitStackMiddleware(MiddlewareProtocol):
         scope["_ravyn_route_boundary"] = True
         try:
             await self.app(scope, receive, send)
-        except Exception as e:
+        except (
+            Exception
+        ) as e:  # Catch all exceptions to ensure exit stack cleanup before re-raising
             exception = e
         finally:
             await lazy_stack.aclose()

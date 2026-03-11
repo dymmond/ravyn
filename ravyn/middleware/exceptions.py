@@ -87,7 +87,9 @@ class RavynAPIException:  # pragma: no cover
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         try:
             await self.app(scope, receive, send)
-        except Exception as ex:
+        except (
+            Exception
+        ) as ex:  # Catch all exceptions as last resort to prevent middleware chain from breaking
             if scope["type"] == ScopeType.HTTP:
                 exception_handler = self.get_exception_handler(self.exception_handlers, ex)
                 if (
