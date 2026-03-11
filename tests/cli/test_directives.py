@@ -1,10 +1,9 @@
 import os
+import shlex
 import shutil
-
-import pytest
+from pathlib import Path
 
 from ravyn import Ravyn
-from tests.cli.utils import run_cmd
 
 app = Ravyn(routes=[])
 
@@ -12,70 +11,41 @@ app = Ravyn(routes=[])
 FOUND_DIRECTIVES = ["createapp", "createproject", "runserver", "show_urls"]
 
 
-@pytest.fixture(scope="module")
-def create_folders():
-    os.chdir(os.path.split(os.path.abspath(__file__))[0])
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
-
-    yield
-
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
+def _run_cmd(safe_run_cmd, cmd: str, is_app: bool = True, **kwargs):
+    if is_app:
+        os.environ["RAVYN_DEFAULT_APP"] = "tests.cli.main:app"
+    process = safe_run_cmd(shlex.split(cmd), **kwargs)
+    return process.stdout, process.stderr, process.returncode
 
 
-def test_list_directives_no_app(create_folders):
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn directives", is_app=False)
+def test_list_directives_no_app(cli_tmp_dir: Path, safe_run_cmd):
+    (o, e, ss) = _run_cmd(safe_run_cmd, "ravyn directives", is_app=False)
     assert ss == 0
 
     for directive in FOUND_DIRECTIVES:
         assert directive in str(o)
 
 
-def test_list_directives_with_app(create_folders):
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn directives")
+def test_list_directives_with_app(cli_tmp_dir: Path, safe_run_cmd):
+    (o, e, ss) = _run_cmd(safe_run_cmd, "ravyn directives")
     assert ss == 0
 
     for directive in FOUND_DIRECTIVES:
         assert directive in str(o)
 
 
-def test_list_directives_with_flag(create_folders):
-    original_path = os.getcwd()
-    run_cmd("tests.cli.main:app", "ravyn createproject myproject")
+def test_list_directives_with_flag(cli_tmp_dir: Path, safe_run_cmd):
+    _run_cmd(safe_run_cmd, "ravyn createproject myproject")
 
-    os.chdir("myproject/myproject/apps")
-
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createapp myapp")
-
-    os.chdir(original_path)
+    apps_dir = cli_tmp_dir / "myproject/myproject/apps"
+    (o, e, ss) = _run_cmd(safe_run_cmd, "ravyn createapp myapp", cwd=apps_dir)
 
     shutil.copyfile(
-        "createsuperuser.py",
-        "myproject/myproject/apps/myapp/directives/operations/createsuperuser.py",
+        Path(__file__).with_name("createsuperuser.py"),
+        cli_tmp_dir / "myproject/myproject/apps/myapp/directives/operations/createsuperuser.py",
     )
 
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn --app tests.cli.main:app directives")
+    (o, e, ss) = _run_cmd(safe_run_cmd, "ravyn --app tests.cli.main:app directives")
     assert ss == 0
 
     for directive in FOUND_DIRECTIVES:

@@ -70,7 +70,7 @@ class JWTAuthBackend(CommonJWTAuthBackend):  # pragma: no cover
             return await self.user_model.objects.get(**user_field)  # type: ignore
         except DocumentNotFound:
             raise NotAuthorized() from None
-        except Exception as e:
+        except (ConnectionError, TimeoutError, AttributeError, TypeError) as e:
             raise AuthenticationError(detail=str(e)) from e
 
 

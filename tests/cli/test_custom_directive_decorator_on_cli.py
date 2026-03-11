@@ -1,70 +1,35 @@
 import os
+import shlex
 import shutil
-
-import pytest
-
-from tests.cli.utils import run_cmd
+from pathlib import Path
 
 
-@pytest.fixture(scope="module")
-def create_folders():
-    os.chdir(os.path.split(os.path.abspath(__file__))[0])
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
-
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
-
-    yield
-
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
-
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
+def _run_cmd(safe_run_cmd, cmd: str, is_app: bool = True, **kwargs):
+    if is_app:
+        os.environ["RAVYN_DEFAULT_APP"] = "tests.cli.main:app"
+    process = safe_run_cmd(shlex.split(cmd), **kwargs)
+    return process.stdout, process.stderr, process.returncode
 
 
-def generate():
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createproject myproject")
+def generate(cli_tmp_dir: Path, safe_run_cmd):
+    (o, e, ss) = _run_cmd(safe_run_cmd, "ravyn createproject myproject")
     assert ss == 0
 
-    os.chdir("myproject/myproject/apps")
+    apps_dir = cli_tmp_dir / "myproject/myproject/apps"
+    (o, e, ss) = _run_cmd(safe_run_cmd, "ravyn createapp myapp", cwd=apps_dir)
 
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn createapp myapp")
 
-
-def test_custom_directive(create_folders):
-    original_path = os.getcwd()
-
-    generate()
-
-    # Back to starting point
-    os.chdir(original_path)
+def test_custom_directive(cli_tmp_dir: Path, safe_run_cmd):
+    generate(cli_tmp_dir, safe_run_cmd)
 
     # Copy the createuser custom directive
     shutil.copyfile(
-        "createusercli.py",
-        "myproject/myproject/apps/myapp/directives/operations/createusercli.py",
+        Path(__file__).with_name("createusercli.py"),
+        cli_tmp_dir / "myproject/myproject/apps/myapp/directives/operations/createusercli.py",
     )
 
     # Execute custom directive
-    (o, e, ss) = run_cmd("tests.cli.main:app", "ravyn")
+    (o, e, ss) = _run_cmd(safe_run_cmd, "ravyn")
 
     assert "create-user" in str(o)
     assert "Custom directive" in str(o)

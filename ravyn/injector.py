@@ -120,10 +120,14 @@ class Inject(ArbitraryHashableBaseModel):
         return hash((type(self),) + tuple(values))
 
 
-class Injects(FieldInfo):
+class Injects(FieldInfo):  # type: ignore[misc]
     """
     Creates a FieldInfo class with extra parameters.
     This is used for dependencies and to inject them.
+
+    Note: Intentionally extends Pydantic's @final FieldInfo to enable dependency injection.
+    The DI system relies on isinstance(param, FieldInfo) to detect injection points.
+    Composition would break this detection, so we extend FieldInfo despite its @final marker.
 
     **Example**
 

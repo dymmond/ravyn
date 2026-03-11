@@ -207,6 +207,121 @@ Ravyn automatically resolves the chain: `config` → `db` → `service` → `han
 
 ---
 
+## Practical Examples
+
+Here are common real-world patterns for dependency injection in Ravyn.
+
+### Database Session Injection
+
+Injecting a database session that automatically closes after the request is a common pattern.
+
+```python
+from typing import Generator
+from ravyn import Ravyn, Gateway, Inject, Injects, get
+
+class DatabaseSession:
+    def query(self, model: str):
+        return [f"{model} 1", f"{model} 2"]
+
+    def close(self):
+        # Logic to close connection
+        pass
+
+def get_db() -> Generator[DatabaseSession, None, None]:
+    db = DatabaseSession()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@get("/users")
+def list_users(db: DatabaseSession = Injects()) -> dict:
+    return {"users": db.query("User")}
+
+app = Ravyn(
+    routes=[Gateway(handler=list_users)],
+    dependencies={"db": Inject(get_db)}
+)
+```
+
+### Authenticated User Injection
+
+You can inject the current user by inspecting the request headers or cookies.
+
+```python
+from typing import Optional
+from ravyn import Ravyn, Gateway, Inject, Injects, get, Request
+
+class User:
+    def __init__(self, username: str):
+        self.username = username
+
+async def get_current_user(request: Request) -> Optional[User]:
+    token = request.headers.get("Authorization")
+    if token == "secret-token":
+        return User(username="admin")
+    return None
+
+@get("/me")
+def read_current_user(user: Optional[User] = Injects()) -> dict:
+    if not user:
+        return {"error": "Not authenticated"}
+    return {"username": user.username}
+
+app = Ravyn(
+    routes=[Gateway(handler=read_current_user)],
+    dependencies={"user": Inject(get_current_user)}
+)
+```
+
+### Configuration Injection
+
+Injecting application settings helps keep your handlers clean and testable.
+
+```python
+from ravyn import Ravyn, Gateway, Inject, Injects, get, RavynSettings
+
+class Settings(RavynSettings):
+    api_key: str = "default-key"
+
+def get_settings() -> Settings:
+    return Settings()
+
+@get("/config")
+def read_config(settings: Settings = Injects()) -> dict:
+    return {"api_key": settings.api_key}
+
+app = Ravyn(
+    routes=[Gateway(handler=read_config)],
+    dependencies={"settings": Inject(get_settings)}
+)
+```
+
+---
+
+## Dependency Scopes and Lifecycle
+
+Understanding when dependencies are created and destroyed is crucial for managing resources like database connections.
+
+### Scopes
+
+Ravyn primarily uses **Request Scope** for dependencies.
+
+1.  **Request-Scoped**: Most dependencies are resolved once per request. If multiple handlers or other dependencies require the same dependency, Ravyn resolves it once and shares the value within that request (if `use_cache=True` is set in `Inject`, which is the default for most systems).
+2.  **Singleton/App-Scoped**: Ravyn doesn't have a native "Singleton" scope for individual dependencies, but you can achieve this by instantiating an object at the module level and returning it in your dependency function.
+
+### Lifecycle (Yield Dependencies)
+
+As shown in the Database example, Ravyn supports the `yield` keyword in dependency functions.
+
+1.  **Startup**: The code before `yield` executes.
+2.  **Injection**: The yielded value is injected into the handler.
+3.  **Teardown**: After the response is sent, the code after `yield` executes.
+
+This ensures resources are properly cleaned up even if an exception occurs during request processing.
+
+---
+
 ## Simplified Syntax (Without Inject)
 
 You can skip the `Inject()` wrapper for simple cases:

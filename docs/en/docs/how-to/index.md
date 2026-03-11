@@ -5,6 +5,9 @@ Use this section when you need to complete a specific task quickly.
 ## Available guides
 
 - [Add JWT Authentication](./add-jwt-authentication.md)
+- [Handle Errors with Custom Exception Handlers](./error-handling.md)
+- [Implement WebSockets](./websockets.md)
+- [Handle File Uploads](./file-uploads.md)
 - [Structure a Large Ravyn Project](./structure-a-large-ravyn-project.md)
 - [Add Observability and Logging](./add-observability-and-logging.md)
 

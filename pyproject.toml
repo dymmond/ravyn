@@ -384,7 +384,6 @@ omit = [
     "ravyn/openapi/security/*",
     "tests/databases/edgy/*",
     "tests/utils/functional.py",
-    "tests/cli/*",
 ]
 
 [tool.pytest.ini_options]

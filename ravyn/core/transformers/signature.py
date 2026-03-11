@@ -9,6 +9,7 @@ from typing import (
     Set,
     Type,
     Union,
+    cast,
     get_args,
     get_origin,
 )
@@ -280,7 +281,7 @@ class SignatureModel(ArbitraryBaseModel):
     @classmethod
     def build_encoder_exception(
         cls, connection: Union[Request, WebSocket], exception: Exception
-    ) -> Exception:
+    ) -> HTTPException:
         """
         Constructs an exception for encoder-related errors.
 
@@ -289,7 +290,7 @@ class SignatureModel(ArbitraryBaseModel):
             exception (Exception): The original exception object.
 
         Returns:
-            Exception: Constructed exception with detailed error message and context.
+            HTTPException: Constructed exception with detailed error message and context.
         """
 
         def extract_error_message(exception: Exception) -> dict[str, Any]:
@@ -313,21 +314,22 @@ class SignatureModel(ArbitraryBaseModel):
 
         try:
             if isinstance(exception, (HTTPException, LilyaHTTPException)):
-                return exception
+                return cast(HTTPException, exception)
 
             method, url = get_connection_info(connection)
             error_message = f"Validation failed for {url} with method {method}."
             error_detail = extract_error_message(exception)
             return ValidationErrorException(detail=error_message, extra=[error_detail])
         except Exception as e:
-            # Handle any unexpected errors here
-            # Return the original exception if unable to construct ValidationErrorException
-            return e
+            # If we fail to construct the expected exception, raise the caught exception
+            # rather than returning it. This preserves the exception chain and ensures
+            # the caller's `raise cls.build_encoder_exception(...)` pattern works correctly.
+            raise e from exception
 
     @classmethod
     def build_base_system_exception(
         cls, connection: Union[Request, WebSocket], exception: ValidationError
-    ) -> Union["InternalServerError", "ValidationErrorException", "Exception"]:
+    ) -> Union["InternalServerError", "ValidationErrorException"]:
         """
         Constructs a system exception based on validation errors, categorizing them
         as server or client errors, and providing detailed context.
@@ -371,9 +373,10 @@ class SignatureModel(ArbitraryBaseModel):
                 return ValidationErrorException(detail=error_message, extra=client_errors)
             return InternalServerError(detail=error_message, extra=server_errors)
         except Exception as e:
-            # Handle any unexpected errors here
-            # Return the original exception if unable to construct the expected exceptions
-            return e
+            # If we fail to construct the expected exception, raise the caught exception
+            # rather than returning it. This preserves the exception chain and ensures
+            # the caller's `raise cls.build_base_system_exception(...)` pattern works correctly.
+            raise e from exception
 
     def field_value(self, key: str) -> Any:
         return self.__getattribute__(key)
@@ -522,11 +525,34 @@ class SignatureFactory(ArbitraryExtraBaseModel):
         """
         Creates a SignatureModel based on function parameters and annotations.
 
+        This is the main entry point for generating a Pydantic-based signature model
+        from a callable's signature. The model is used for request validation,
+        dependency injection, and parameter encoding.
+
         Returns:
-            Type[SignatureModel]: The created SignatureModel class.
+            Type[SignatureModel]: The created SignatureModel class with dependency names,
+                encoders, and return annotation metadata attached.
 
         Raises:
-            ImproperlyConfigured: If there is an error during signature creation.
+            ImproperlyConfigured: If there is an error during signature creation
+                (e.g., invalid parameter types or missing annotations).
+
+        **Example**
+
+        ```python
+        from ravyn.core.transformers.signature import SignatureFactory
+
+        def my_handler(name: str, age: int = 18) -> dict:
+            return {"name": name, "age": age}
+
+        factory = SignatureFactory(my_handler, dependency_names=set())
+        signature_model = factory.create_signature()
+
+        # Use the signature model for validation
+        validated = signature_model(name="Alice", age=25)
+        print(validated.field_value("name"))  # "Alice"
+        print(validated.field_value("age"))   # 25
+        ```
         """
         try:
             encoders = self._handle_encoders()

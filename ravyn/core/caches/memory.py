@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from typing import Any
@@ -28,6 +29,7 @@ class InMemoryCache(CacheBackend):
     def __init__(self) -> None:
         """Initializes the in-memory cache."""
         self._store: dict[str, tuple[bytes, float | None]] = {}
+        self._lock = asyncio.Lock()
 
     async def get(self, key: str) -> Any | None:
         """Retrieve a value from cache asynchronously.
@@ -41,7 +43,8 @@ class InMemoryCache(CacheBackend):
         Returns:
             Any | None: The deserialized value if found and not expired, otherwise `None`.
         """
-        return self.sync_get(key)
+        async with self._lock:
+            return self.sync_get(key)
 
     async def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Store a value in cache asynchronously with an optional TTL.
@@ -54,7 +57,8 @@ class InMemoryCache(CacheBackend):
             value (Any): The value to be cached.
             ttl (int | None, optional): Time-to-live in seconds. If `None`, the value never expires.
         """
-        self.sync_set(key, value, ttl)
+        async with self._lock:
+            self.sync_set(key, value, ttl)
 
     async def delete(self, key: str) -> None:
         """Remove a value from cache asynchronously.
@@ -65,7 +69,8 @@ class InMemoryCache(CacheBackend):
         Args:
             key (str): The cache key to delete.
         """
-        self.sync_delete(key)
+        async with self._lock:
+            self.sync_delete(key)
 
     def sync_get(self, key: str) -> Any | None:
         """Retrieve a value from cache synchronously.
@@ -94,7 +99,7 @@ class InMemoryCache(CacheBackend):
                 return None
 
             return orjson.loads(value)
-        except Exception as e:
+        except (orjson.JSONDecodeError, KeyError, TypeError) as e:
             logger.exception(f"Cache get error: {e}")
             return None
 
@@ -115,7 +120,7 @@ class InMemoryCache(CacheBackend):
         try:
             expiry = time.time() + ttl if ttl else None
             self._store[key] = (orjson.dumps(json_encode(value)), expiry)
-        except Exception as e:
+        except (orjson.JSONEncodeError, TypeError) as e:
             logger.exception(f"Cache set error: {e}")
 
     def sync_delete(self, key: str) -> None:
@@ -131,5 +136,5 @@ class InMemoryCache(CacheBackend):
         """
         try:
             self._store.pop(key, None)
-        except Exception as e:
+        except TypeError as e:
             logger.exception(f"Cache delete error: {e}")

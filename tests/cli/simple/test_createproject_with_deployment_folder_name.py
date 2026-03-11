@@ -1,7 +1,4 @@
-import os
-import shutil
-
-import pytest
+from pathlib import Path
 
 from ravyn import Ravyn
 from tests.cli.utils import run_cmd
@@ -9,41 +6,7 @@ from tests.cli.utils import run_cmd
 app = Ravyn(routes=[])
 
 
-@pytest.fixture(scope="module")
-def create_folders():
-    os.chdir(os.path.split(os.path.abspath(__file__))[0])
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
-        shutil.rmtree("simple/myproject")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
-
-    yield
-
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
-        shutil.rmtree("simple/myproject")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
-
-
-def test_create_project(create_folders):
+def test_create_project(cli_tmp_dir: Path):
     (o, e, ss) = run_cmd(
         "tests.cli.main:app",
         "ravyn createproject myproject --with-deployment --deployment-folder-name deploy --simple",
@@ -56,37 +19,37 @@ def test_create_project(create_folders):
         assert """__name__""" in f.read()
 
 
-def _run_asserts():
-    assert os.path.isfile("myproject/Taskfile.yaml") is True
-    assert os.path.isfile("myproject/README.md") is True
+def _run_asserts(base_dir: Path):
+    assert (base_dir / "myproject/Taskfile.yaml").is_file() is True
+    assert (base_dir / "myproject/README.md").is_file() is True
 
     # Deployment
-    assert os.path.isfile("myproject/deploy/docker/Dockerfile") is True
-    assert os.path.isfile("myproject/deploy/gunicorn/gunicorn_conf.py") is True
-    assert os.path.isfile("myproject/deploy/nginx/nginx.conf") is True
-    assert os.path.isfile("myproject/deploy/nginx/nginx.json-logging.conf") is True
-    assert os.path.isfile("myproject/deploy/supervisor/supervisord.conf") is True
+    assert (base_dir / "myproject/deploy/docker/Dockerfile").is_file() is True
+    assert (base_dir / "myproject/deploy/gunicorn/gunicorn_conf.py").is_file() is True
+    assert (base_dir / "myproject/deploy/nginx/nginx.conf").is_file() is True
+    assert (base_dir / "myproject/deploy/nginx/nginx.json-logging.conf").is_file() is True
+    assert (base_dir / "myproject/deploy/supervisor/supervisord.conf").is_file() is True
 
     # General
-    assert os.path.isfile("myproject/.gitignore") is True
-    assert os.path.isfile("myproject/myproject/__init__.py") is True
-    assert os.path.isfile("myproject/myproject/app.py") is True
-    assert os.path.isfile("myproject/myproject/tests/__init__.py") is True
-    assert os.path.isfile("myproject/myproject/tests/test_app.py") is True
-    assert os.path.isfile("myproject/pyproject.toml") is True
+    assert (base_dir / "myproject/.gitignore").is_file() is True
+    assert (base_dir / "myproject/myproject/__init__.py").is_file() is True
+    assert (base_dir / "myproject/myproject/app.py").is_file() is True
+    assert (base_dir / "myproject/myproject/tests/__init__.py").is_file() is True
+    assert (base_dir / "myproject/myproject/tests/test_app.py").is_file() is True
+    assert (base_dir / "myproject/pyproject.toml").is_file() is True
 
 
-def test_create_project_files_with_env_var(create_folders):
+def test_create_project_files_with_env_var(cli_tmp_dir: Path):
     (o, e, ss) = run_cmd(
         "tests.cli.main:app",
         "ravyn createproject myproject --with-deployment --deployment-folder-name deploy --simple",
     )
     assert ss == 0
 
-    _run_asserts()
+    _run_asserts(cli_tmp_dir)
 
 
-def test_create_project_files_without_env_var(create_folders):
+def test_create_project_files_without_env_var(cli_tmp_dir: Path):
     (o, e, ss) = run_cmd(
         "tests.cli.main:app",
         "ravyn createproject myproject --with-deployment --deployment-folder-name deploy --simple",
@@ -94,10 +57,10 @@ def test_create_project_files_without_env_var(create_folders):
     )
     assert ss == 0
 
-    _run_asserts()
+    _run_asserts(cli_tmp_dir)
 
 
-def test_create_project_files_without_env_var_and_with_app_flag(create_folders):
+def test_create_project_files_without_env_var_and_with_app_flag(cli_tmp_dir: Path):
     (o, e, ss) = run_cmd(
         "tests.cli.main:app",
         "ravyn --app tests.cli.main:app createproject myproject --with-deployment --deployment-folder-name deploy --simple",
@@ -105,4 +68,4 @@ def test_create_project_files_without_env_var_and_with_app_flag(create_folders):
     )
     assert ss == 0
 
-    _run_asserts()
+    _run_asserts(cli_tmp_dir)

@@ -220,7 +220,7 @@ def get_system_encoding() -> str:
     try:
         encoding = locale.getlocale()[1] or "ascii"
         codecs.lookup(encoding)
-    except Exception:
+    except (LookupError, TypeError):
         encoding = "ascii"
     return encoding
 

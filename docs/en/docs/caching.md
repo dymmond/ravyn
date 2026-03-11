@@ -211,17 +211,56 @@ async def get_data() -> dict:
 
 ## Cache TTL (Time-To-Live)
 
-TTL determines how long data stays in cache:
+TTL determines how long data stays in cache before expiring. When the TTL expires, the cache entry is automatically removed, and the next request will execute the function and cache the fresh result.
 
 ```python
+from ravyn import get
+from ravyn.utils.decorators import cache
+
 # Cache for 1 minute
+@get("/quick-data")
 @cache(ttl=60)
+async def get_quick_data() -> dict:
+    return {"data": "expires in 60 seconds"}
 
 # Cache for 1 hour
+@get("/hourly-data")
 @cache(ttl=3600)
+async def get_hourly_data() -> dict:
+    return {"data": "expires in 1 hour"}
 
 # Cache for 1 day
+@get("/daily-data")
 @cache(ttl=86400)
+async def get_daily_data() -> dict:
+    return {"data": "expires in 24 hours"}
+
+# Cache forever (no expiration)
+@get("/permanent-data")
+@cache(ttl=None)
+async def get_permanent_data() -> dict:
+    return {"data": "never expires automatically"}
+```
+
+### What Happens When Cache Expires?
+
+1. **Before expiration:** Cached value is returned instantly (no function execution)
+2. **After expiration:** Cache entry is deleted, function executes normally
+3. **Result is cached again** with a fresh TTL
+
+```python
+from ravyn import get
+from ravyn.utils.decorators import cache
+import time
+
+@get("/timestamp")
+@cache(ttl=5)  # 5-second TTL
+async def get_timestamp() -> dict:
+    return {"timestamp": time.time()}
+
+# First request: Executes function, returns timestamp=1234567890, caches result
+# Requests within 5 seconds: Returns cached timestamp=1234567890
+# After 5 seconds: Cache expired, function executes, returns new timestamp=1234567895
 ```
 
 ### Choosing TTL
@@ -232,6 +271,191 @@ TTL determines how long data stays in cache:
 | **Frequently updated** | Minutes | `ttl=300` |
 | **Expensive queries** | 5-15 minutes | `ttl=600` |
 | **External API data** | 10-30 minutes | `ttl=1800` |
+| **Never expires** | No TTL | `ttl=None` |
+
+---
+
+## Advanced Caching Patterns
+
+### Conditional Caching
+
+Cache only certain responses based on conditions:
+
+```python
+from ravyn import get
+from ravyn.utils.decorators import cache
+from ravyn.core.caches.memory import InMemoryCache
+
+memory_cache = InMemoryCache()
+
+@get("/user/{user_id}")
+async def get_user(user_id: int) -> dict:
+    # Fetch user data
+    user = await fetch_user_from_db(user_id)
+
+    # Only cache if user is not a premium member
+    if not user.get("is_premium"):
+        cache_key = f"user:{user_id}"
+        await memory_cache.set(cache_key, user, ttl=300)
+
+    return user
+```
+
+Another approach: Skip caching for specific request headers:
+
+```python
+from ravyn import get, Request
+
+@get("/data")
+async def get_data(request: Request) -> dict:
+    # Check if client requested fresh data
+    if request.headers.get("Cache-Control") == "no-cache":
+        return {"data": await fetch_fresh_data()}
+
+    # Use cached version
+    return await get_cached_data()
+```
+
+### Manual Cache Control
+
+Directly interact with cache backends for fine-grained control:
+
+```python
+from ravyn import get, post
+from ravyn.core.caches.memory import InMemoryCache
+
+cache_backend = InMemoryCache()
+
+@get("/stats")
+async def get_stats() -> dict:
+    # Check cache first
+    cached = await cache_backend.get("stats_key")
+    if cached:
+        return cached
+
+    # Compute expensive stats
+    stats = await compute_expensive_stats()
+
+    # Cache with 10-minute TTL
+    await cache_backend.set("stats_key", stats, ttl=600)
+
+    return stats
+
+@post("/clear-cache")
+async def clear_cache() -> dict:
+    # Manually delete cache entry
+    await cache_backend.delete("stats_key")
+    return {"message": "Cache cleared"}
+```
+
+### Cache Warming
+
+Pre-populate cache on application startup:
+
+```python
+from ravyn import Ravyn, get
+from ravyn.core.caches.memory import InMemoryCache
+
+cache_backend = InMemoryCache()
+app = Ravyn()
+
+@app.on_event("startup")
+async def warm_cache():
+    """Populate cache with frequently accessed data before serving requests"""
+    # Fetch and cache popular products
+    popular_products = await fetch_popular_products()
+    await cache_backend.set("popular_products", popular_products, ttl=3600)
+
+    # Cache site configuration
+    site_config = await fetch_site_config()
+    await cache_backend.set("site_config", site_config, ttl=None)  # Never expires
+
+@get("/popular")
+async def get_popular() -> dict:
+    # This will hit warm cache immediately
+    products = await cache_backend.get("popular_products")
+    return {"products": products}
+```
+
+---
+
+## InMemoryCache vs External Backends
+
+### InMemoryCache (Built-in)
+
+**Advantages:**
+- ⚡ **Fastest** - No network overhead
+- **Zero dependencies** - No external services required
+- **Simple setup** - Works out of the box
+
+**Limitations:**
+- ❌ **No persistence** - Lost on server restart
+- ❌ **Single process only** - Not shared across multiple workers/servers
+- ❌ **Memory bound** - Limited by server RAM
+
+**When to use:**
+- Development and testing
+- Single-server deployments
+- Small-scale applications
+- Temporary/session caching
+
+**Example:**
+
+```python
+from ravyn import get
+from ravyn.utils.decorators import cache
+
+# Uses InMemoryCache by default
+@get("/data")
+@cache(ttl=60)
+async def get_data() -> dict:
+    return {"data": "in-memory"}
+```
+
+### Redis (External Backend)
+
+**Advantages:**
+- ✅ **Persistent** - Survives server restarts
+- ✅ **Distributed** - Shared across all workers and servers
+- ✅ **Scalable** - Handles large datasets
+- ✅ **Production-ready** - Battle-tested reliability
+
+**Limitations:**
+- Network latency (slightly slower than in-memory)
+- Requires Redis server setup
+- Additional dependency (`pip install redis`)
+
+**When to use:**
+- Production environments
+- Multi-server deployments
+- Applications with multiple workers (Gunicorn, Uvicorn)
+- Need cache persistence
+
+**Example:**
+
+```python
+from ravyn import get
+from ravyn.utils.decorators import cache
+from ravyn.core.caches.redis import RedisCache
+
+redis_cache = RedisCache("redis://localhost:6379")
+
+@get("/data")
+@cache(ttl=60, backend=redis_cache)
+async def get_data() -> dict:
+    return {"data": "in-redis"}
+```
+
+### Comparison Table
+
+| Feature | InMemoryCache | Redis |
+|---------|--------------|-------|
+| **Speed** | ⚡⚡⚡ Fastest | ⚡⚡ Very Fast |
+| **Persistence** | ❌ No | ✅ Yes |
+| **Multi-process** | ❌ No | ✅ Yes |
+| **Scalability** | Limited | Excellent |
+| **Setup** | None | Redis server required |
+| **Use Case** | Development | Production |
 
 ---
 
@@ -378,30 +602,112 @@ async def get_data() -> dict:
 
 ## Cache Invalidation
 
-Manually clear cache when data changes:
+Manually clear cache when data changes to ensure users see fresh content.
+
+### Method 1: Using Cache Backend Directly
 
 ```python
 from ravyn import post, get
 from ravyn.utils.decorators import cache
-
-# Cache backend instance
 from ravyn.core.caches.redis import RedisCache
+
 redis = RedisCache("redis://localhost:6379")
 
 @get("/products")
 @cache(ttl=300, backend=redis)
 async def get_products() -> dict:
-    return {"products": fetch_products()}
+    products = await fetch_products_from_db()
+    return {"products": products}
 
 @post("/products")
 async def create_product(product: dict) -> dict:
-    # Create product
-    save_product(product)
+    # Save new product to database
+    await save_product(product)
 
-    # Invalidate cache
+    # Invalidate cache so next GET request fetches fresh data
     await redis.delete("products")
 
-    return {"created": True}
+    return {"created": True, "product": product}
+```
+
+### Method 2: Using Cache Decorator's `invalidate()` Method
+
+```python
+from ravyn import post, get
+from ravyn.utils.decorators import cache
+
+cache_decorator = cache(ttl=300)
+
+@get("/users")
+@cache_decorator
+async def get_users() -> dict:
+    users = await fetch_users_from_db()
+    return {"users": users}
+
+@post("/users")
+async def create_user(user: dict) -> dict:
+    # Save user
+    await save_user(user)
+
+    # Invalidate the specific cache entry for get_users
+    cache_decorator.invalidate(get_users)
+
+    return {"created": True, "user": user}
+```
+
+### Method 3: Invalidating Specific Keys
+
+For parameterized functions, invalidate cache for specific arguments:
+
+```python
+from ravyn import get, put
+from ravyn.utils.decorators import cache
+
+@get("/user/{user_id}")
+@cache(ttl=600)
+async def get_user(user_id: int) -> dict:
+    user = await fetch_user(user_id)
+    return {"user": user}
+
+@put("/user/{user_id}")
+async def update_user(user_id: int, data: dict) -> dict:
+    # Update user
+    await update_user_in_db(user_id, data)
+
+    # Invalidate cache for this specific user
+    from ravyn.core.caches.memory import InMemoryCache
+    cache_backend = InMemoryCache()
+    cache_key = f"get_user:{user_id}"
+    await cache_backend.delete(cache_key)
+
+    return {"updated": True}
+```
+
+### Method 4: Pattern-Based Invalidation (Redis)
+
+Clear all caches matching a pattern:
+
+```python
+from ravyn import post
+from ravyn.core.caches.redis import RedisCache
+
+redis = RedisCache("redis://localhost:6379")
+
+@post("/clear-user-caches")
+async def clear_all_user_caches() -> dict:
+    # Clear all keys matching pattern "user:*"
+    # Note: This requires direct Redis client access
+    import redis as redis_client
+    r = redis_client.from_url("redis://localhost:6379")
+
+    # Get all matching keys
+    keys = r.keys("user:*")
+
+    # Delete all matching keys
+    if keys:
+        r.delete(*keys)
+
+    return {"cleared": len(keys)}
 ```
 
 ---

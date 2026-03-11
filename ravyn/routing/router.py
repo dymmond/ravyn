@@ -618,9 +618,10 @@ class BaseRouter(Dispatcher, LilyaRouter):
                     ),
                     tags=route.tags if not self.is_member_descriptor(route.tags) else [],
                     include_in_schema=(
-                        route.include_in_schema
-                        if not self.is_member_descriptor(route.include_in_schema)
-                        else True
+                        True
+                        if self.is_member_descriptor(route.include_in_schema)
+                        or route.include_in_schema is None
+                        else route.include_in_schema
                     ),
                     deprecated=(
                         route.deprecated
@@ -659,7 +660,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
         ]
 
         super().__init__(
-            redirect_slashes=redirect_slashes,
+            redirect_slashes=redirect_slashes if redirect_slashes is not None else True,
             routes=new_routes,
             default=default,
             lifespan=lifespan,
@@ -675,7 +676,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
         self.parent: Optional[ParentType] = parent or app
         self.dependencies = dependencies or {}  # type: ignore
         self.exception_handlers = exception_handlers or {}
-        self.interceptors: Sequence[Interceptor] = interceptors or []
+        self.interceptors: list[Interceptor] = list(interceptors or [])
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
         self._permissions_cache: dict[int, Any] | VoidType = Void
         self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
@@ -695,7 +696,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
         if self.__base_permissions__:
             self.permissions: Any = {
                 index: wrap_permission(permission)
-                for index, permission in enumerate(permissions)
+                for index, permission in enumerate(self.__base_permissions__)
                 if is_ravyn_permission(permission)
             }
         else:
@@ -756,9 +757,11 @@ class BaseRouter(Dispatcher, LilyaRouter):
     def reorder_routes(self) -> list[Sequence[Union[APIGateHandler, Include]]]:
         routes = sorted(
             self.routes,
-            key=lambda route: not (
-                isinstance(route, (Gateway, WebhookGateway, WebSocketGateway))
-                and getattr(route, "path", None) in ("", "/")
+            key=lambda route: (
+                not (
+                    isinstance(route, (Gateway, WebhookGateway, WebSocketGateway))
+                    and getattr(route, "path", None) in ("", "/")
+                )
             ),
         )
         return routes
@@ -839,9 +842,9 @@ class BaseRouter(Dispatcher, LilyaRouter):
         await super().app(scope, receive, send)
 
     async def handle_interceptors(self, scope: "Scope", receive: "Receive", send: "Send") -> None:
-        # Inherit interceptors from parent if any
         if self.parent and self.parent.interceptors:
-            for parent_interceptor in self.parent.interceptors:
+            parent = self.parent
+            for parent_interceptor in parent.interceptors:
                 if parent_interceptor not in self.interceptors:
                     self.interceptors.insert(0, parent_interceptor)
 
@@ -875,11 +878,11 @@ class BaseRouter(Dispatcher, LilyaRouter):
             )
         else:
             if self.parent and self.parent.permissions:
-                # If the parent has permissions, we need to merge them with the current permissions
+                parent = self.parent
                 self.permissions.update(
                     {
                         index + len(self.permissions): wrap_permission(permission)
-                        for index, permission in enumerate(self.parent.permissions)
+                        for index, permission in enumerate(parent.permissions)
                         if is_ravyn_permission(permission)
                     }
                 )
@@ -958,6 +961,26 @@ class BaseRouter(Dispatcher, LilyaRouter):
         raise NoMatchFound(name, path_params)
 
     def url_path_for(self, name: str, **path_params: Any) -> URLPath:
+        """
+        Look up a URL path by route name with path parameters.
+
+        This method searches through all registered routes to find a matching
+        route name and construct the full URL path with the provided parameters.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.get("/users/{user_id}", name="get_user")
+        def get_user(user_id: int) -> dict:
+            return {"id": user_id}
+
+        path = app.url_path_for("get_user", user_id=123)
+        ```
+        """
         for route in self.routes or []:
             try:
                 return cast("URLPath", route.url_path_for(name, **path_params))
@@ -974,6 +997,25 @@ class BaseRouter(Dispatcher, LilyaRouter):
         raise NoMatchFound(name, path_params)
 
     def add_event_handler(self, event_type: str, func: Callable) -> None:  # pragma: no cover
+        """
+        Register an event handler for application lifecycle events.
+
+        Supports 'startup' and 'shutdown' event types to run initialization
+        or cleanup code when the application starts or stops.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        async def startup_handler() -> None:
+            print("Application started")
+
+        app.add_event_handler("startup", startup_handler)
+        ```
+        """
         assert event_type in ("startup", "shutdown")
 
         if event_type == "startup":
@@ -983,6 +1025,29 @@ class BaseRouter(Dispatcher, LilyaRouter):
             self.on_shutdown.append(func)
 
     def on_event(self, event_type: str) -> Callable:  # pragma: no cover
+        """
+        Decorator for registering application lifecycle event handlers.
+
+        Use this to register startup or shutdown event handlers in a decorator style.
+        This is an alternative to using `add_event_handler()`.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.on_event("startup")
+        async def on_startup() -> None:
+            print("Application is starting")
+
+        @app.on_event("shutdown")
+        async def on_shutdown() -> None:
+            print("Application is shutting down")
+        ```
+        """
+
         def decorator(func: Callable) -> Callable:
             self.add_event_handler(event_type, func)
             return func
@@ -1051,8 +1116,8 @@ class BaseRouter(Dispatcher, LilyaRouter):
                 self.routes.pop(self.routes.index(value))
 
 
-class RoutingMethodsMixin:
-    def get(
+class RoutingMethodsMixin:  # HTTP method decorators extend Lilya with interceptors and enhanced DI
+    def get(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1145,6 +1210,24 @@ class RoutingMethodsMixin:
             ),
         ] = None,
     ) -> Callable:
+        """
+        Register a DELETE request handler as a decorator.
+
+        Use this decorator for handlers that delete resources.
+        Supports dependency injection, permissions, interceptors, and middleware.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.delete("/users/{user_id}")
+        async def delete_user(user_id: int) -> dict:
+            return {"deleted": user_id}
+        ```
+        """
         return self.forward_single_method_route(
             path=path,
             method=HttpMethod.GET.value,
@@ -1160,7 +1243,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def head(
+    def head(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1268,7 +1351,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def post(
+    def post(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1361,6 +1444,24 @@ class RoutingMethodsMixin:
             ),
         ] = None,
     ) -> Callable:
+        """
+        Register a POST request handler as a decorator.
+
+        Use this decorator for handlers that create new resources or submit data.
+        Supports dependency injection, permissions, interceptors, and middleware.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.post("/users")
+        async def create_user(name: str, email: str) -> dict:
+            return {"id": 123, "name": name, "email": email}
+        ```
+        """
         return self.forward_single_method_route(
             path=path,
             method=HttpMethod.POST.value,
@@ -1376,7 +1477,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def put(
+    def put(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1484,7 +1585,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def patch(
+    def patch(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1592,7 +1693,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def delete(
+    def delete(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1700,7 +1801,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def trace(
+    def trace(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1808,7 +1909,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def options(
+    def options(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1916,7 +2017,9 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def forward_single_method_route(self, path: str, method: str, **kwargs: Any) -> Callable:
+    def forward_single_method_route(  # type: ignore[override]  # Ravyn customization: routes through enhanced route() method
+        self, path: str, method: str, **kwargs: Any
+    ) -> Callable:
         """For customization, defaults to route."""
         return self.route(path=path, methods=[method], **kwargs)
 
@@ -2102,7 +2205,7 @@ class RoutingMethodsMixin:
         raise NotImplementedError()
 
 
-class Router(RoutingMethodsMixin, BaseRouter):
+class Router(RoutingMethodsMixin, BaseRouter):  # type: ignore[misc]
     """
     The `Router` object used by `Ravyn` upon instantiation.
 
@@ -2111,6 +2214,9 @@ class Router(RoutingMethodsMixin, BaseRouter):
 
     This object is complex and very powerful. Read more in detail about [the Router](https://ravyn.dev/routing/router/) and how to use it.
 
+    Note: Ravyn's Router intentionally extends Lilya's base Router with additional
+    parameters (interceptors, enhanced dependency injection, etc.) for all routing
+    methods. This creates method signature incompatibilities that are by design.
     """
 
     def add_apiview(
@@ -2213,7 +2319,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
             self.create_signature_models(route)
         self.activate()
 
-    def add_route(
+    def add_route(  # type: ignore[override]  # Ravyn extends Lilya's add_route with interceptors and enhanced dependency injection
         self,
         path: Annotated[
             str,
@@ -2358,7 +2464,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
         self.create_signature_models(gateway)
         self.routes.append(gateway)
 
-    def add_websocket_route(
+    def add_websocket_route(  # type: ignore[override]  # Ravyn extends Lilya's add_websocket_route with interceptors and enhanced dependency injection
         self,
         path: Annotated[
             str,
@@ -2489,7 +2595,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
         self.create_signature_models(websocket_gateway)
         self.routes.append(websocket_gateway)
 
-    def route(
+    def route(  # type: ignore[override]  # Ravyn extends Lilya's route decorator with interceptors and enhanced features
         self,
         path: Annotated[
             str,
@@ -2590,6 +2696,24 @@ class Router(RoutingMethodsMixin, BaseRouter):
             ),
         ] = None,
     ) -> Callable:
+        """
+        Register a route handler for one or more HTTP methods as a decorator.
+
+        This is a flexible decorator that allows you to handle multiple HTTP methods
+        with a single handler function. Defaults to GET if no methods are specified.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+
+        app = Ravyn()
+
+        @app.route("/items/{item_id}", methods=["GET", "POST"])
+        async def handle_item(item_id: int) -> dict:
+            return {"item_id": item_id, "method": "GET or POST"}
+        ```
+        """
         if methods is None:
             methods = [HttpMethod.GET.value]
 
@@ -2612,7 +2736,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
 
         return wrapper
 
-    def websocket(
+    def websocket(  # type: ignore[override]  # Ravyn extends Lilya's websocket decorator with interceptors and enhanced features
         self,
         path: Annotated[
             str,
@@ -2688,6 +2812,29 @@ class Router(RoutingMethodsMixin, BaseRouter):
             ),
         ] = None,
     ) -> Callable:
+        """
+        Register a WebSocket handler as a decorator.
+
+        Use this decorator to create WebSocket endpoints that handle bidirectional
+        communication with clients. Supports dependency injection, permissions, and interceptors.
+
+        **Example**
+
+        ```python
+        from ravyn import Ravyn
+        from ravyn.websockets import WebSocket
+
+        app = Ravyn()
+
+        @app.websocket("/ws")
+        async def websocket_endpoint(socket: WebSocket) -> None:
+            await socket.accept()
+            data = await socket.receive_json()
+            await socket.send_json({"echo": data})
+            await socket.close()
+        ```
+        """
+
         def wrapper(func: Callable) -> Callable:
             handler = WebSocketHandler(
                 dependencies=dependencies,
@@ -2749,7 +2896,7 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
     def __init__(
         self,
         path: Optional[str] = None,
-        handler: Callable[..., Any] = None,
+        handler: Optional[Callable[..., Any]] = None,
         *,
         name: Optional[str] = None,
         methods: Optional[Sequence[str]] = None,
@@ -2857,7 +3004,7 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
         if self.__base_permissions__:
             self.permissions: Any = {
                 index: wrap_permission(permission)
-                for index, permission in enumerate(permissions)
+                for index, permission in enumerate(self.__base_permissions__)
                 if is_ravyn_permission(permission)
             }
         else:
@@ -2869,7 +3016,7 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
 
         self.before_request = list(before_request or [])
         self.after_request = list(after_request or [])
-        self.interceptors: Sequence[Interceptor] = []
+        self.interceptors: list[Interceptor] = []
         self.middleware = list(middleware) if middleware else []
         self.description = self.description.split("\f")[0]
         self.media_type = media_type
@@ -2933,15 +3080,14 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
             )
         else:
             if self.parent and self.parent.permissions:
+                parent = self.parent
                 if not self.permissions:
-                    # If the parent has permissions, we need to merge them with the current permissions
-                    self.permissions.update(self.parent.permissions)
+                    self.permissions.update(parent.permissions)
                 else:
-                    # If the parent has permissions, we need to merge them with the current permissions
-                    all_perms = list(self.parent.permissions.values())
+                    all_perms = list(parent.permissions.values())
                     for perm in self.permissions.values():
                         all_perms.append(perm)
-                    self.permissions = dict(enumerate(all_perms))  #
+                    self.permissions = dict(enumerate(all_perms))
 
             effective_permissions = self.permissions if self.permissions else {}
             effective_lilya_permissions = self.lilya_permissions if self.lilya_permissions else {}
@@ -3334,7 +3480,7 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         self,
         path: Optional[str] = None,
         *,
-        handler: Callable[..., Any] = None,
+        handler: Optional[Callable[..., Any]] = None,
         dependencies: Optional[Dependencies] = None,
         exception_handlers: Optional[ExceptionHandlerMap] = None,
         permissions: Optional[list[Permission]] = None,
@@ -3374,7 +3520,7 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
         self._permissions_cache: dict[int, Any] | VoidType = Void
         self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
-        self.interceptors: Sequence[Interceptor] = []
+        self.interceptors: list[Interceptor] = []
         self.handler = handler
         self.parent: ParentType = None
         self.dependencies = dependencies  # type: ignore
@@ -3392,7 +3538,7 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         if self.__base_permissions__:
             self.permissions: Any = {
                 index: wrap_permission(permission)
-                for index, permission in enumerate(permissions)
+                for index, permission in enumerate(self.__base_permissions__)
                 if is_ravyn_permission(permission)
             }
         else:
@@ -3447,7 +3593,8 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
             )
         else:
             if self.parent and self.parent.permissions:
-                parent_perms = self.parent.permissions.copy()
+                parent = self.parent
+                parent_perms = parent.permissions.copy()
             else:
                 parent_perms = {}
 
@@ -3660,7 +3807,7 @@ class Include(Dispatcher, LilyaInclude):
             ),
         ] = None,
         app: Annotated[
-            ASGIApp | str,
+            ASGIApp | str | None,
             Doc(
                 """
                 An application can be anything that is treated as an ASGI application.
@@ -4009,7 +4156,7 @@ class Include(Dispatcher, LilyaInclude):
         self.app = self.resolve_app_parent(app=app)
 
         self.dependencies = dependencies or {}  # type: ignore
-        self.interceptors: Sequence[Interceptor] = interceptors or []
+        self.interceptors: list[Interceptor] = list(interceptors or [])
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
         self._permissions_cache: dict[int, Any] | VoidType = Void
         self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
@@ -4062,7 +4209,7 @@ class Include(Dispatcher, LilyaInclude):
         if self.__base_permissions__:
             self.permissions: Any = {
                 index: wrap_permission(permission)
-                for index, permission in enumerate(permissions)
+                for index, permission in enumerate(self.__base_permissions__)
                 if is_ravyn_permission(permission)
             }
         else:

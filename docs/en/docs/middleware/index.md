@@ -38,6 +38,187 @@ app = Ravyn(
 
 ---
 
+## Practical Middleware Patterns
+
+This section covers real-world middleware patterns you can use in your Ravyn applications.
+
+### Request Logging Middleware
+
+Logging middleware is essential for monitoring requests and understanding application behavior. The following example logs each request with timing information:
+
+```python
+import time
+from ravyn import Ravyn, get
+from lilya.middleware import DefineMiddleware
+
+class RequestLoggingMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            start = time.time()
+            print(f"[REQ] {scope['method']} {scope['path']}")
+            await self.app(scope, receive, send)
+            print(f"[RES] {time.time() - start:.3f}s")
+        else:
+            await self.app(scope, receive, send)
+
+@get("/api/users")
+def list_users() -> list:
+    return []
+
+app = Ravyn(
+    routes=[list_users],
+    middleware=[DefineMiddleware(RequestLoggingMiddleware)]
+)
+```
+
+This middleware:
+
+1. Checks if the scope type is HTTP (not WebSocket)
+2. Records the start time before the request is processed
+3. Logs the request method and path
+4. Passes control to the next middleware/handler
+5. Logs the response with total elapsed time in seconds
+
+### CORS Configuration
+
+Cross-Origin Resource Sharing (CORS) allows your API to be accessed from different domains. Ravyn provides a `CORSConfig` object for easy configuration:
+
+```python
+from ravyn import Ravyn
+from ravyn.config.cors import CORSConfig
+
+app = Ravyn(
+    routes=[...],
+    cors_config=CORSConfig(
+        allow_origins=["https://example.com"],
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type"]
+    )
+)
+```
+
+The `CORSConfig` parameters:
+
+- `allow_origins` - List of allowed origin URLs
+- `allow_methods` - HTTP methods allowed (GET, POST, etc.)
+- `allow_headers` - Headers the client can send
+- For production, use specific origin URLs instead of `"*"`
+
+### Rate Limiting Pattern
+
+Rate limiting protects your API from abuse by limiting requests per time window. Here's a simple in-memory pattern:
+
+```python
+import time
+from collections import defaultdict
+from ravyn import Ravyn, get
+from lilya.middleware import DefineMiddleware
+from lilya.responses import PlainText
+
+class SimpleRateLimitMiddleware:
+    def __init__(self, app, max_requests=10, window=60):
+        self.app = app
+        self.max_requests = max_requests
+        self.window = window
+        self.requests = defaultdict(list)
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        client = scope["client"][0] if scope["client"] else "unknown"
+        now = time.time()
+
+        # Clean old requests outside the time window
+        self.requests[client] = [
+            t for t in self.requests[client]
+            if now - t < self.window
+        ]
+
+        # Check if limit exceeded
+        if len(self.requests[client]) >= self.max_requests:
+            response = PlainText("Rate limit exceeded", status_code=429)
+            await response(scope, receive, send)
+            return
+
+        # Record this request
+        self.requests[client].append(now)
+        await self.app(scope, receive, send)
+
+app = Ravyn(
+    routes=[...],
+    middleware=[DefineMiddleware(SimpleRateLimitMiddleware, max_requests=100, window=60)]
+)
+```
+
+This middleware:
+
+1. Tracks requests by client IP address
+2. Removes timestamps older than the time window
+3. Rejects requests if the limit is exceeded (HTTP 429)
+4. Records successful requests in the tracking list
+
+!!! Note
+    This is a simple in-memory pattern suitable for development and single-server deployments. For production with multiple servers, use Redis or similar solutions.
+
+### Middleware Execution Order
+
+Understanding middleware execution order is critical for correct behavior. Middleware executes in the order it's defined, wrapping around the handler:
+
+```python
+from ravyn import Ravyn, get
+from lilya.middleware import DefineMiddleware
+
+class OuterMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        print("1. Outer: before handler")
+        await self.app(scope, receive, send)
+        print("4. Outer: after handler")
+
+class InnerMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        print("2. Inner: before handler")
+        await self.app(scope, receive, send)
+        print("3. Inner: after handler")
+
+@get("/test")
+def test() -> dict:
+    print("Handler executed")
+    return {}
+
+app = Ravyn(
+    routes=[test],
+    middleware=[
+        DefineMiddleware(OuterMiddleware),
+        DefineMiddleware(InnerMiddleware),
+    ]
+)
+```
+
+When a request to `/test` is made, the execution order is:
+
+```
+1. Outer: before handler
+2. Inner: before handler
+Handler executed
+3. Inner: after handler
+4. Outer: after handler
+```
+
+This demonstrates the "onion" pattern where middleware wraps around inner middleware and the handler. The first defined middleware is the outermost layer, and the last defined middleware is closest to the handler.
+
+---
+
 ## What is Middleware?
 
 ## Lilya middleware
@@ -391,6 +572,113 @@ A middleware class for reading/generating request IDs and attaching them to appl
 !!! Tip
     For Ravyn apps, just substitute FastAPI with Ravyn in the examples given or implement
     in the way Ravyn shows in this document.
+
+## Troubleshooting
+
+Working with ASGI middleware can sometimes be tricky due to its low-level nature. Here are common issues and how to solve them.
+
+### Middleware Order Problems
+
+**Problem:** Middleware execution order is wrong, causing features like authentication or logging to fail.
+
+Ravyn processes middleware in an "onion" fashion. The first middleware defined is the outermost layer (runs first on request, last on response).
+
+```python
+from ravyn import Ravyn, Middleware
+from ravyn.middleware.authentication import BasicAuthMiddleware
+from myapp.middleware import CustomLoggingMiddleware
+
+# WRONG: Logging won't have user info because auth runs AFTER logging
+app = Ravyn(
+    middleware=[
+        Middleware(CustomLoggingMiddleware),
+        Middleware(BasicAuthMiddleware),
+    ]
+)
+
+# CORRECT: Auth runs first, so Logging can access user data
+app = Ravyn(
+    middleware=[
+        Middleware(BasicAuthMiddleware),
+        Middleware(CustomLoggingMiddleware),
+    ]
+)
+```
+
+### Response Already Sent
+
+**Problem:** Attempting to modify the response or send a new one after the headers have already been sent.
+
+In ASGI, once you send `http.response.start`, you cannot send it again. If you wrap the `send` callable, ensure you only call it once for the start message.
+
+```python
+async def __call__(self, scope, receive, send):
+    async def wrapped_send(message):
+        if message["type"] == "http.response.start":
+            # Correct: modify headers before sending
+            message["headers"].append((b"x-custom", b"value"))
+        await send(message)
+
+    await self.app(scope, receive, wrapped_send)
+```
+
+### Infinite Loops
+
+**Problem:** Middleware calling its own path or causing circular dependencies.
+
+This usually happens when a middleware performs a sub-request to the same application using a client that triggers the same middleware.
+
+**Solution:** Exclude specific paths or check for a custom header to break the loop.
+
+```python
+async def __call__(self, scope, receive, send):
+    if scope["type"] != "http" or scope["path"] == "/health":
+        return await self.app(scope, receive, send)
+
+    # Process other requests
+    await self.app(scope, receive, send)
+```
+
+### Exception Handling
+
+**Problem:** Exceptions occurring inside middleware are not caught by the application's standard exception handlers.
+
+Middleware wraps the entire application, including exception handlers. If your middleware raises an exception, it must handle it or it will result in a 500 error that skips your custom handlers.
+
+```python
+from ravyn.responses import JSONResponse
+
+async def __call__(self, scope, receive, send):
+    try:
+        await self.app(scope, receive, send)
+    except Exception as exc:
+        response = JSONResponse({"error": "Middleware error"}, status_code=500)
+        await response(scope, receive, send)
+```
+
+### Performance Issues
+
+**Problem:** Synchronous blocking calls inside `async __call__` blocking the entire event loop.
+
+Never use blocking I/O (like `requests` or standard `open()`) inside middleware. Always use async equivalents.
+
+```python
+# WRONG
+import requests
+
+async def __call__(self, scope, receive, send):
+    # This blocks the entire server!
+    requests.get("https://api.example.com")
+    await self.app(scope, receive, send)
+
+# CORRECT
+import httpx
+
+async def __call__(self, scope, receive, send):
+    async with httpx.AsyncClient() as client:
+        await client.get("https://api.example.com")
+    await self.app(scope, receive, send)
+```
 
 ## Important points
 

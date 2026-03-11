@@ -1617,6 +1617,32 @@ class RavynSettings(CacheBackendSettings):
         }
 
     def __hash__(self) -> int:
+        """
+        Generate a hash value for the RavynSettings instance.
+
+        This allows RavynSettings objects to be used in sets and as dictionary keys.
+        The hash is computed based on all instance attributes, with special handling
+        for mutable types like lists and sets (converted to tuples).
+
+        Returns:
+            int: Hash value representing the current state of the settings object.
+
+        **Example**
+
+        ```python
+        from ravyn import RavynSettings
+
+        settings1 = RavynSettings(app_name="MyApp", debug=True)
+        settings2 = RavynSettings(app_name="MyApp", debug=True)
+
+        # Same settings produce same hash
+        assert hash(settings1) == hash(settings2)
+
+        # Different settings produce different hash
+        settings3 = RavynSettings(app_name="OtherApp", debug=False)
+        assert hash(settings1) != hash(settings3)
+        ```
+        """
         values: dict[str, Any] = {}
         for key, value in self.__dict__.items():
             values[key] = None

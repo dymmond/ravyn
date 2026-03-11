@@ -229,7 +229,7 @@ def fetch_custom_directive_by_location(location: str) -> Any:
         klass = load_directive_class_by_filename(app_name, str(path), skip_exit=True)
     except TypeError:
         raise
-    except Exception as exc:  # be specific if you have custom exceptions
+    except (ImportError, ModuleNotFoundError, AttributeError) as exc:
         message = f"Failed to load directive from {location}: {exc}"
         raise DirectiveError(message) from exc
 

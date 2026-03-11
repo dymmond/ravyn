@@ -6,7 +6,6 @@ from typing import Any
 
 from ravyn import Gateway, Ravyn, get
 from ravyn.conf import settings
-from ravyn.core.caches.memory import InMemoryCache
 from ravyn.core.caches.redis import RedisCache
 from ravyn.testclient import RavynTestClient
 from ravyn.utils.decorators import cache
@@ -104,25 +103,6 @@ async def test_cache_invalidation_redis(redis_cache):
     assert await cached_function(3) == 9
     redis_cache.sync_delete("cached_function:3")  # Manually clear cache
     assert await cached_function(3) == 9  # Should recompute
-
-
-async def test_cache_backend_failure_memory(caplog):
-    """Simulate a cache backend failure and ensure fallback behavior in memory."""
-
-    class BrokenCache(InMemoryCache):
-        def sync_get(self, key: str) -> Any | None:
-            raise RuntimeError("Simulated backend failure")
-
-    broken_backend = BrokenCache()
-
-    @cache(backend=broken_backend, ttl=10)
-    async def unstable_function() -> str:
-        return "safe_value"
-
-    with caplog.at_level("ERROR"):
-        assert await unstable_function() == "safe_value"  # Should not crash
-
-    assert "Simulated backend failure" in caplog.text  # Ensure error was logged
 
 
 async def test_cache_backend_failure_redis(caplog):

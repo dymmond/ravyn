@@ -60,7 +60,7 @@ The `get_current_user` dependency will use a (fake) utility function we created.
 ## Inject the current user
 
 Now, we can use the `Inject` and `Injects` with our `get_current_user` dependency in the *path operation*. This is part
-of the special Esmerlad dependency inject system that is also multi layered. You can read again about the
+of the special Ravyn dependency injection system that is also multi layered. You can read again about the
 [dependency injection with Ravyn](../dependencies.md).
 
 ```python hl_lines="27"
@@ -87,7 +87,7 @@ You can use any model, class, or database structure that fits your application's
 
 This example might seem a bit verbose, but remember, we're combining security, data models, utility functions, and *path operations* in the same file.
 
-Here’s the key takeaway:
+Here's the key takeaway:
 
 The security and dependency injection setup is written **once**.
 
@@ -104,8 +104,6 @@ Even with thousands of *path operations*, many of them can be as simple as just 
 ```
 
 Remember that Ravyn has a flexible dependency injection system and the lines can be cut by a lot avoiding repetition.
-
-You can now access the current user directly in your *path operation function*.
 
 We're already halfway there.
 
