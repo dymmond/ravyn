@@ -642,28 +642,68 @@ def get_openapi(
     webhooks: Sequence[BasePath] | None = None,
 ) -> dict[str, Any]:  # pragma: no cover
     """
-    The main function responsible for building the complete OpenAPI specification object
-    for the application.
+    Generates the complete OpenAPI specification for a Ravyn application.
 
-    It performs recursive route traversal, schema generation, and final object assembly.
+    This is the main entry point for OpenAPI schema generation. It traverses all routes,
+    extracts request/response models, generates JSON schemas, and assembles the final
+    OpenAPI document according to the OpenAPI 3.1.0 specification.
+
+    **When to use:**
+    - Automatically called by Ravyn when `enable_openapi=True` (default)
+    - Can be manually invoked to generate custom OpenAPI schemas
+    - Used to customize OpenAPI output via `OpenAPIConfig`
+
+    **Key Features:**
+    - Recursive route traversal (handles nested routers and ChildRavyn apps)
+    - Automatic schema generation from Pydantic models
+    - Security scheme integration (OAuth2, API Keys, etc.)
+    - Webhook support (OpenAPI 3.1.0+)
+    - Validation error response generation
 
     Args:
-        app: The root application instance.
-        title: The title of the API.
-        version: The version of the API.
+        app: The root application instance (Ravyn or ChildRavyn).
+        title: The title of the API (displayed in documentation).
+        version: The version of the API (e.g., "1.0.0").
         openapi_version: The version of the OpenAPI specification (default: "3.1.0").
-        summary: A short summary of the API.
-        description: A detailed description of the API.
-        routes: The sequence of HTTP routes.
-        tags: A list of global tags.
-        servers: A list of server objects.
-        terms_of_service: Link to the terms of service.
-        contact: Contact information object.
-        license: License information object.
-        webhooks: A sequence of Webhook routes (optional, for OpenAPI 3.1).
+        summary: A short summary of the API (optional).
+        description: A detailed description of the API (optional, supports markdown).
+        routes: The sequence of HTTP routes to include in the schema.
+        tags: A list of global tags for organizing operations (optional).
+        servers: A list of server objects defining API endpoints (optional).
+        terms_of_service: Link to the terms of service (optional).
+        contact: Contact information object (optional).
+        license: License information object (optional).
+        webhooks: A sequence of Webhook routes (optional, for OpenAPI 3.1+).
 
     Returns:
-        The final OpenAPI specification dictionary.
+        dict[str, Any]: The final OpenAPI specification dictionary, ready to be
+            serialized as JSON and served at the `/openapi.json` endpoint.
+
+    **Example**
+
+    ```python
+    from ravyn import Ravyn, Gateway, get
+    from ravyn.openapi.openapi import get_openapi
+
+    @get()
+    def hello() -> dict:
+        return {"message": "Hello, World!"}
+
+    app = Ravyn(routes=[Gateway("/hello", handler=hello)])
+
+    # Manually generate OpenAPI schema
+    openapi_schema = get_openapi(
+        app=app,
+        title="My API",
+        version="1.0.0",
+        description="A simple API example",
+        routes=app.routes
+    )
+
+    # Access components
+    print(openapi_schema["info"]["title"])  # "My API"
+    print(openapi_schema["paths"].keys())   # dict_keys(['/hello'])
+    ```
     """
     from ravyn import ChildRavyn, Ravyn
 

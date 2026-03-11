@@ -524,11 +524,34 @@ class SignatureFactory(ArbitraryExtraBaseModel):
         """
         Creates a SignatureModel based on function parameters and annotations.
 
+        This is the main entry point for generating a Pydantic-based signature model
+        from a callable's signature. The model is used for request validation,
+        dependency injection, and parameter encoding.
+
         Returns:
-            Type[SignatureModel]: The created SignatureModel class.
+            Type[SignatureModel]: The created SignatureModel class with dependency names,
+                encoders, and return annotation metadata attached.
 
         Raises:
-            ImproperlyConfigured: If there is an error during signature creation.
+            ImproperlyConfigured: If there is an error during signature creation
+                (e.g., invalid parameter types or missing annotations).
+
+        **Example**
+
+        ```python
+        from ravyn.core.transformers.signature import SignatureFactory
+
+        def my_handler(name: str, age: int = 18) -> dict:
+            return {"name": name, "age": age}
+
+        factory = SignatureFactory(my_handler, dependency_names=set())
+        signature_model = factory.create_signature()
+
+        # Use the signature model for validation
+        validated = signature_model(name="Alice", age=25)
+        print(validated.field_value("name"))  # "Alice"
+        print(validated.field_value("age"))   # 25
+        ```
         """
         try:
             encoders = self._handle_encoders()
