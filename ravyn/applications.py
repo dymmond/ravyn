@@ -37,8 +37,8 @@ from ravyn.core.config import (
     StaticFilesConfig,
 )
 from ravyn.core.datastructures import State
-from ravyn.core.instrospection._builder import GraphBuilder
 from ravyn.core.interceptors.types import Interceptor
+from ravyn.core.introspection._builder import GraphBuilder
 from ravyn.core.protocols.template import TemplateEngineProtocol
 from ravyn.encoders import (
     Encoder,
@@ -2462,7 +2462,7 @@ class Application(BaseLilya):
         child = ChildRavyn(routes=[Gateway(handler=hello)])
 
         app = Ravyn()
-        app.add_child_ravyn(path"/child", child=child)
+        app.add_child_ravyn(path="/child", child=child)
         ```
         """
         if not isinstance(child, (Ravyn, ChildRavyn)):
@@ -2527,7 +2527,7 @@ class Application(BaseLilya):
         child = ChildRavyn(routes=[Gateway(handler=hello)])
 
         app = Ravyn()
-        app.add_child_ravyn(path"/child", child=child)
+        app.add_child_ravyn(path="/child", child=child)
         ```
         """
 

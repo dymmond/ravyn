@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import code
 import select
 import sys
 from collections.abc import Sequence
@@ -37,7 +38,7 @@ async def shell(
         and not sys.stdin.isatty()
         and select.select([sys.stdin], [], [], 0)[0]
     ):
-        exec(sys.stdin.read(), globals())
+        code.interact(local=globals())
         return
 
     on_startup = getattr(env.app, "on_startup", [])

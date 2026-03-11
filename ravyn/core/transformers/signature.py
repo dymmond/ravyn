@@ -280,7 +280,7 @@ class SignatureModel(ArbitraryBaseModel):
     @classmethod
     def build_encoder_exception(
         cls, connection: Union[Request, WebSocket], exception: Exception
-    ) -> Exception:
+    ) -> HTTPException:
         """
         Constructs an exception for encoder-related errors.
 
@@ -289,7 +289,7 @@ class SignatureModel(ArbitraryBaseModel):
             exception (Exception): The original exception object.
 
         Returns:
-            Exception: Constructed exception with detailed error message and context.
+            HTTPException: Constructed exception with detailed error message and context.
         """
 
         def extract_error_message(exception: Exception) -> dict[str, Any]:
@@ -320,14 +320,15 @@ class SignatureModel(ArbitraryBaseModel):
             error_detail = extract_error_message(exception)
             return ValidationErrorException(detail=error_message, extra=[error_detail])
         except Exception as e:
-            # Handle any unexpected errors here
-            # Return the original exception if unable to construct ValidationErrorException
-            return e
+            # If we fail to construct the expected exception, raise the caught exception
+            # rather than returning it. This preserves the exception chain and ensures
+            # the caller's `raise cls.build_encoder_exception(...)` pattern works correctly.
+            raise e from exception
 
     @classmethod
     def build_base_system_exception(
         cls, connection: Union[Request, WebSocket], exception: ValidationError
-    ) -> Union["InternalServerError", "ValidationErrorException", "Exception"]:
+    ) -> Union["InternalServerError", "ValidationErrorException"]:
         """
         Constructs a system exception based on validation errors, categorizing them
         as server or client errors, and providing detailed context.
@@ -371,9 +372,10 @@ class SignatureModel(ArbitraryBaseModel):
                 return ValidationErrorException(detail=error_message, extra=client_errors)
             return InternalServerError(detail=error_message, extra=server_errors)
         except Exception as e:
-            # Handle any unexpected errors here
-            # Return the original exception if unable to construct the expected exceptions
-            return e
+            # If we fail to construct the expected exception, raise the caught exception
+            # rather than returning it. This preserves the exception chain and ensures
+            # the caller's `raise cls.build_base_system_exception(...)` pattern works correctly.
+            raise e from exception
 
     def field_value(self, key: str) -> Any:
         return self.__getattribute__(key)

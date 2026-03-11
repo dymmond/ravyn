@@ -131,7 +131,7 @@ class MsgSpecEncoder(Encoder):
         Returns:
             Any: The serialized object.
         """
-        return msgspec.json.decode(msgspec.json.encode(obj))
+        return msgspec.to_builtins(obj)
 
     def encode(self, annotation: Any, value: Any) -> Any:
         """
