@@ -676,7 +676,7 @@ class BaseRouter(Dispatcher, LilyaRouter):
         self.parent: Optional[ParentType] = parent or app
         self.dependencies = dependencies or {}  # type: ignore
         self.exception_handlers = exception_handlers or {}
-        self.interceptors: Sequence[Interceptor] = interceptors or []
+        self.interceptors: list[Interceptor] = list(interceptors or [])
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
         self._permissions_cache: dict[int, Any] | VoidType = Void
         self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
@@ -1054,8 +1054,8 @@ class BaseRouter(Dispatcher, LilyaRouter):
                 self.routes.pop(self.routes.index(value))
 
 
-class RoutingMethodsMixin:
-    def get(
+class RoutingMethodsMixin:  # HTTP method decorators extend Lilya with interceptors and enhanced DI
+    def get(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1163,7 +1163,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def head(
+    def head(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1271,7 +1271,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def post(
+    def post(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1379,7 +1379,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def put(
+    def put(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1487,7 +1487,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def patch(
+    def patch(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1595,7 +1595,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def delete(
+    def delete(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1703,7 +1703,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def trace(
+    def trace(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1811,7 +1811,7 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def options(
+    def options(  # type: ignore[override]
         self,
         path: Annotated[
             str,
@@ -1919,7 +1919,9 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
-    def forward_single_method_route(self, path: str, method: str, **kwargs: Any) -> Callable:
+    def forward_single_method_route(  # type: ignore[override]  # Ravyn customization: routes through enhanced route() method
+        self, path: str, method: str, **kwargs: Any
+    ) -> Callable:
         """For customization, defaults to route."""
         return self.route(path=path, methods=[method], **kwargs)
 
@@ -2105,7 +2107,7 @@ class RoutingMethodsMixin:
         raise NotImplementedError()
 
 
-class Router(RoutingMethodsMixin, BaseRouter):
+class Router(RoutingMethodsMixin, BaseRouter):  # type: ignore[misc]
     """
     The `Router` object used by `Ravyn` upon instantiation.
 
@@ -2114,6 +2116,9 @@ class Router(RoutingMethodsMixin, BaseRouter):
 
     This object is complex and very powerful. Read more in detail about [the Router](https://ravyn.dev/routing/router/) and how to use it.
 
+    Note: Ravyn's Router intentionally extends Lilya's base Router with additional
+    parameters (interceptors, enhanced dependency injection, etc.) for all routing
+    methods. This creates method signature incompatibilities that are by design.
     """
 
     def add_apiview(
@@ -2216,7 +2221,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
             self.create_signature_models(route)
         self.activate()
 
-    def add_route(
+    def add_route(  # type: ignore[override]  # Ravyn extends Lilya's add_route with interceptors and enhanced dependency injection
         self,
         path: Annotated[
             str,
@@ -2361,7 +2366,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
         self.create_signature_models(gateway)
         self.routes.append(gateway)
 
-    def add_websocket_route(
+    def add_websocket_route(  # type: ignore[override]  # Ravyn extends Lilya's add_websocket_route with interceptors and enhanced dependency injection
         self,
         path: Annotated[
             str,
@@ -2492,7 +2497,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
         self.create_signature_models(websocket_gateway)
         self.routes.append(websocket_gateway)
 
-    def route(
+    def route(  # type: ignore[override]  # Ravyn extends Lilya's route decorator with interceptors and enhanced features
         self,
         path: Annotated[
             str,
@@ -2615,7 +2620,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
 
         return wrapper
 
-    def websocket(
+    def websocket(  # type: ignore[override]  # Ravyn extends Lilya's websocket decorator with interceptors and enhanced features
         self,
         path: Annotated[
             str,
@@ -2872,7 +2877,7 @@ class HTTPHandler(Dispatcher, OpenAPIFieldInfoMixin, LilyaPath):
 
         self.before_request = list(before_request or [])
         self.after_request = list(after_request or [])
-        self.interceptors: Sequence[Interceptor] = []
+        self.interceptors: list[Interceptor] = []
         self.middleware = list(middleware) if middleware else []
         self.description = self.description.split("\f")[0]
         self.media_type = media_type
@@ -3376,7 +3381,7 @@ class WebSocketHandler(Dispatcher, LilyaWebSocketPath):
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
         self._permissions_cache: dict[int, Any] | VoidType = Void
         self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
-        self.interceptors: Sequence[Interceptor] = []
+        self.interceptors: list[Interceptor] = []
         self.handler = handler
         self.parent: ParentType = None
         self.dependencies = dependencies  # type: ignore
@@ -4012,7 +4017,7 @@ class Include(Dispatcher, LilyaInclude):
         self.app = self.resolve_app_parent(app=app)
 
         self.dependencies = dependencies or {}  # type: ignore
-        self.interceptors: Sequence[Interceptor] = interceptors or []
+        self.interceptors: list[Interceptor] = list(interceptors or [])
         self._interceptors: Union[list["RavynInterceptor"], VoidType] = Void
         self._permissions_cache: dict[int, Any] | VoidType = Void
         self._lilya_permissions_cache: dict[int, Any] | VoidType = Void
