@@ -112,6 +112,57 @@ app = Ravyn(
 )
 ```
 
+### Bidirectional Communication
+
+Handle complex message loops and bidirectional data flow in your WebSocket gateways.
+
+```python
+from ravyn import Ravyn, WebSocket, WebSocketGateway, websocket
+from ravyn.websockets import WebSocketDisconnect
+
+@websocket()
+async def chat_hub(socket: WebSocket) -> None:
+    await socket.accept()
+    try:
+        while True:
+            # Receive JSON data from the client
+            data = await socket.receive_json()
+
+            # Process and respond
+            await socket.send_json({
+                "user": "System",
+                "msg": f"Echo: {data['msg']}"
+            })
+    except WebSocketDisconnect:
+        # Handle client disconnection gracefully
+        pass
+
+app = Ravyn(routes=[WebSocketGateway("/chat", handler=chat_hub)])
+```
+
+### Connection Lifecycle
+
+Manage the full lifecycle of a WebSocket connection, from acceptance to closure.
+
+```python
+from ravyn import Ravyn, WebSocket, WebSocketGateway, websocket
+
+@websocket()
+async def lifecycle_ws(socket: WebSocket) -> None:
+    # 1. Accept the incoming connection
+    await socket.accept()
+
+    # 2. Main communication loop
+    for _ in range(5):
+        message = await socket.receive_text()
+        await socket.send_text(f"Processed: {message}")
+
+    # 3. Cleanly close the connection
+    await socket.close()
+
+app = Ravyn(routes=[WebSocketGateway("/lifecycle", handler=lifecycle_ws)])
+```
+
 **Reference:** See all [WebSocketGateway parameters](../references/routing/websocketgateway.md).
 
 ---
@@ -255,6 +306,53 @@ app = Ravyn(
 
 Middleware executes in order: `LoggingMiddleware` → `AuthMiddleware` → handler.
 
+### Route Groups with Shared Configuration
+
+Group related routes to share common configuration like middleware, permissions, and dependencies using `Include`.
+
+```python
+from ravyn import Ravyn, Include, Gateway, get
+from lilya.middleware import DefineMiddleware
+# from myapp.middleware import LoggingMiddleware
+
+@get("/users")
+def list_users() -> list:
+    return []
+
+# Grouping routes with shared middleware
+user_routes = Include(
+    "/users",
+    routes=[Gateway("/", handler=list_users)],
+    # Apply middleware to the entire group
+    # middleware=[DefineMiddleware(LoggingMiddleware)]
+)
+
+app = Ravyn(routes=[user_routes])
+```
+
+### Route Groups with Permissions
+
+Share access control logic across multiple endpoints.
+
+```python
+from ravyn import Ravyn, Include, Gateway, get
+# from ravyn.permissions import IsAuthenticated, IsAdmin
+
+@get("/settings")
+def user_settings() -> dict:
+    return {}
+
+# Grouping routes with shared permissions
+admin_routes = Include(
+    "/admin",
+    routes=[Gateway("/settings", handler=user_settings)],
+    # All routes in this group require these permissions
+    # permissions=[IsAuthenticated, IsAdmin]
+)
+
+app = Ravyn(routes=[admin_routes])
+```
+
 ---
 
 ## Path Parameters
@@ -332,6 +430,118 @@ Gateway("/sales/{date:datetime}", handler=sales_report)
 
 > [!INFO]
 > Path parameters are also available in `request.path_params` dictionary.
+
+---
+
+## Query Parameters
+
+Access URL query strings like `?search=python&limit=10` in your handlers.
+
+### Basic Query Parameter Access
+
+Access query strings directly from the `Request` object.
+
+```python
+from ravyn import Ravyn, Request, get
+
+@get("/search")
+def search(request: Request) -> dict:
+    query = request.query_params.get("q", "")
+    return {"query": query}
+
+app = Ravyn(routes=[search])
+```
+
+Visit `/search?q=python` to see it work.
+
+### Optional Query Parameters with Defaults
+
+Handle pagination and filters with default values for optional parameters.
+
+```python
+from ravyn import Ravyn, Request, get
+
+@get("/products")
+def list_products(request: Request) -> dict:
+    limit = int(request.query_params.get("limit", 10))
+    offset = int(request.query_params.get("offset", 0))
+    return {
+        "limit": limit,
+        "offset": offset,
+        "products": []
+    }
+
+app = Ravyn(routes=[list_products])
+```
+
+### Multiple Query Parameters with Type Conversion
+
+Query parameters are strings by default. Convert them to the necessary Python types.
+
+```python
+from typing import Optional
+from ravyn import Ravyn, Request, get
+
+@get("/filter")
+def filter_items(request: Request) -> dict:
+    # Get optional category
+    category: Optional[str] = request.query_params.get("category")
+
+    # Simple boolean conversion
+    is_active_str = request.query_params.get("active", "true").lower()
+    active: bool = is_active_str == "true"
+
+    return {"category": category, "active": active}
+
+app = Ravyn(routes=[filter_items])
+```
+
+---
+
+## Request Body Handling
+
+Handle various incoming data types, from JSON payloads to form data.
+
+### JSON Request Body with Pydantic
+
+Use Pydantic models to automatically validate and parse incoming JSON data.
+
+```python
+from pydantic import BaseModel
+from ravyn import Ravyn, post
+
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    age: int
+
+@post("/users")
+def create_user(data: UserCreate) -> dict:
+    # Data is already validated and converted to the model
+    return {"status": "created", "user": data.model_dump()}
+
+app = Ravyn(routes=[create_user])
+```
+
+### Form Data Handling
+
+Handle traditional HTML form submissions.
+
+```python
+from ravyn import Ravyn, Request, post
+
+@post("/submit")
+async def submit_form(request: Request) -> dict:
+    # Form data is processed asynchronously
+    form_data = await request.form()
+
+    return {
+        "received": dict(form_data),
+        "username": form_data.get("username")
+    }
+
+app = Ravyn(routes=[submit_form])
+```
 
 ---
 
