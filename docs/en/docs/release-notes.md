@@ -1,5 +1,11 @@
 # Release Notes
 
+## 0.3.12
+
+### Fixed
+
+- Asyncz integration.
+
 ## 0.3.11
 
 ### Added

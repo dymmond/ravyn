@@ -73,10 +73,10 @@ class AsynczConfig(SchedulerConfig):
             if not scheduled_task.is_enabled:
                 continue
 
-        try:
-            scheduled_task.add_task(self.handler)
-        except (ValueError, TypeError, LookupError) as e:
-            raise ImproperlyConfigured(str(e)) from e
+            try:
+                scheduled_task.add_task(self.handler)
+            except (ValueError, TypeError, LookupError) as e:
+                raise ImproperlyConfigured(str(e)) from e
 
     def get_scheduler(
         self,
