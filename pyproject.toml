@@ -390,7 +390,9 @@ omit = [
 addopts = ["--strict-config", "--strict-markers"]
 xfail_strict = true
 junit_family = "xunit2"
-
+markers = [
+    "benchmark: benchmark tests",
+]
 
 [tool.hatch.build.targets.sdist]
 include = ["/ravyn"]

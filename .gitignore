@@ -27,7 +27,7 @@ docs/*/.site/
 target/
 tests/cli/myproject
 tests/cli/simple/myproject
-
+.studio/
 # files
 **/*.so
 **/*.sqlite
