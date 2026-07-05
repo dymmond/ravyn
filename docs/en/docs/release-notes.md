@@ -1,5 +1,32 @@
 # Release Notes
 
+## 0.4.0
+
+### Added
+
+- First-class HTTP `QUERY` method support based on [RFC 10008](https://www.rfc-editor.org/rfc/rfc10008.html).
+- New `@query`, `app.query()`, `router.query()`, and `whquery` developer APIs.
+- Generic `@route(..., methods=["QUERY"])` support across routing and webhook registration.
+- `RavynTestClient.query()` for testing QUERY endpoints directly.
+
+### Changed
+
+- OpenAPI generation now emits native `query` operations with request bodies and parameters.
+- Schemas containing QUERY routes use OpenAPI 3.2.0 so the generated document is valid for the new method.
+- QUERY participates in safe-method behavior for permissions and CSRF protection while still allowing request bodies.
+- Bump Lilya to at least 0.27.0.
+- Bump `ty` to 0.0.55 for the testing type-check environment.
+
+### Removed
+
+- Removed the controller APIs that were deprecated for removal in 0.4.0: `APIView`, `SimpleAPIView`, `ListView`, `CreateAPIView`, `ReadAPIView`, `DeleteAPIView`, and `ListAPIView`.
+- Removed `add_apiview`; use `add_controller`.
+- Removed Ravyn's deprecated `BaseAuthMiddleware`; use `AuthenticationMiddleware`.
+
+### Documentation
+
+- Added QUERY routing documentation, including QUERY vs GET, QUERY vs POST, request body examples, generic route examples, and OpenAPI examples.
+
 ## 0.3.12
 
 ### Fixed
@@ -200,9 +227,8 @@ by [@egorvavilov](https://github.com/egorvavilov). [PR #627](https://github.com/
 
 ### Changed
 
-- Deprecate [BasicAuthMiddleware](./middleware/middleware.md#baseauthmiddleware) in favour of the new
-[AuthenticationMiddleware](./middleware/middleware.md#authenticationmiddleware) from Lilya and it will be removed from
-version 0.4.0.
+- Added migration guidance for the new
+[AuthenticationMiddleware](./middleware/middleware.md#authenticationmiddleware) from Lilya.
 - Updated the documentation for [Edgy](./databases/edgy/motivation.md) with the new AuthenticationMiddleware.
 - Updated the documentation for [MongoZ](./databases/mongoz/motivation.md) with the new AuthenticationMiddleware.
 

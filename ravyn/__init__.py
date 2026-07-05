@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from monkay import Monkay
 
-__version__ = "0.3.12"
+__version__ = "0.4.0"
 
 if TYPE_CHECKING:
     from lilya import status
@@ -42,7 +42,13 @@ if TYPE_CHECKING:
     from .pluggables import Extension, Pluggable
     from .requests import Request
     from .responses import JSONResponse, Response, TemplateResponse
-    from .routing.controllers import APIView, BaseController, Controller, SimpleAPIView, View
+    from .routing.controllers import (
+        BaseController,
+        Controller,
+        ListController,
+        SimpleAPIController,
+        View,
+    )
     from .routing.gateways import Gateway, WebhookGateway, WebSocketGateway
     from .routing.handlers import (
         delete,
@@ -52,6 +58,7 @@ if TYPE_CHECKING:
         patch,
         post,
         put,
+        query,
         route,
         trace,
         websocket,
@@ -65,6 +72,7 @@ if TYPE_CHECKING:
         whpatch,
         whpost,
         whput,
+        whquery,
         whroute,
         whtrace,
     )
@@ -73,7 +81,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AllowAny",
-    "APIView",
     "AsyncDAOProtocol",
     "BackgroundTask",
     "BackgroundTasks",
@@ -107,6 +114,7 @@ __all__ = [
     "ImproperlyConfigured",
     "JSON",
     "JSONResponse",
+    "ListController",
     "LoggingConfig",
     "MethodNotAllowed",
     "MiddlewareProtocol",
@@ -126,7 +134,7 @@ __all__ = [
     "Security",
     "ServiceUnavailable",
     "SessionConfig",
-    "SimpleAPIView",
+    "SimpleAPIController",
     "StaticFilesConfig",
     "Stream",
     "Template",
@@ -147,6 +155,7 @@ __all__ = [
     "patch",
     "post",
     "put",
+    "query",
     "route",
     "settings",
     "status",
@@ -159,6 +168,7 @@ __all__ = [
     "whpatch",
     "whpost",
     "whput",
+    "whquery",
     "whroute",
     "whtrace",
 ]
@@ -220,9 +230,9 @@ _monkay: Monkay = Monkay(
         "JSONResponse": ".responses.JSONResponse",
         "Response": ".responses.Response",
         "TemplateResponse": ".responses.TemplateResponse",
-        "APIView": ".routing.controllers.APIView",
         "Controller": ".routing.controllers.Controller",
-        "SimpleAPIView": ".routing.controllers.SimpleAPIView",
+        "ListController": ".routing.controllers.ListController",
+        "SimpleAPIController": ".routing.controllers.SimpleAPIController",
         "View": ".routing.controllers.View",
         "Gateway": ".routing.gateways.Gateway",
         "WebhookGateway": ".routing.gateways.WebhookGateway",
@@ -240,7 +250,18 @@ _monkay: Monkay = Monkay(
     skip_all_update=True,
     package="ravyn",
 )
-for name in ["delete", "get", "head", "options", "patch", "post", "put", "route", "trace"]:
+for name in [
+    "delete",
+    "get",
+    "head",
+    "options",
+    "patch",
+    "post",
+    "put",
+    "query",
+    "route",
+    "trace",
+]:
     _monkay.add_lazy_import(name, f".routing.handlers.{name}")
     _monkay.add_lazy_import(f"wh{name}", f".routing.webhooks.wh{name}")
 del name

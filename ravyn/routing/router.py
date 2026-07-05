@@ -1243,6 +1243,120 @@ class RoutingMethodsMixin:  # HTTP method decorators extend Lilya with intercept
             after_request=after_request,
         )
 
+    def query(  # type: ignore[override]
+        self,
+        path: Annotated[
+            str,
+            Doc(
+                """
+                Relative path of the `Gateway`.
+                The path can contain parameters in a dictionary like format.
+                """
+            ),
+        ],
+        dependencies: Annotated[
+            Optional[Dependencies],
+            Doc(
+                """
+                A dictionary of string and [Inject](https://ravyn.dev/dependencies/) instances enable application level dependency injection.
+                """
+            ),
+        ] = None,
+        interceptors: Annotated[
+            Optional[Sequence[Interceptor]],
+            Doc(
+                """
+                A list of [interceptors](https://ravyn.dev/interceptors/) to serve the application incoming requests (HTTP and Websockets).
+                """
+            ),
+        ] = None,
+        permissions: Annotated[
+            Optional[Sequence[Permission]],
+            Doc(
+                """
+                A list of [permissions](https://ravyn.dev/permissions/) to serve the application incoming requests (HTTP and Websockets).
+                """
+            ),
+        ] = None,
+        exception_handlers: Annotated[
+            Optional[ExceptionHandlerMap],
+            Doc(
+                """
+                A dictionary of [exception types](https://ravyn.dev/exceptions/) (or custom exceptions) and the handler functions on an application top level. Exception handler callables should be of the form of `handler(request, exc) -> response` and may be be either standard functions, or async functions.
+                """
+            ),
+        ] = None,
+        middleware: Annotated[
+            Optional[list[Middleware]],
+            Doc(
+                """
+                A list of middleware to run for every request. The middlewares of an Include will be checked from top-down or [Lilya Middleware](https://www.lilya.dev/middleware/) as they are both converted internally. Read more about [Python Protocols](https://peps.python.org/pep-0544/).
+                """
+            ),
+        ] = None,
+        name: Annotated[
+            Optional[str],
+            Doc(
+                """
+                The name for the Gateway. The name can be reversed by `url_path_for()`.
+                """
+            ),
+        ] = None,
+        include_in_schema: Annotated[
+            bool,
+            Doc(
+                """
+                Boolean flag indicating if it should be added to the OpenAPI docs.
+                """
+            ),
+        ] = True,
+        deprecated: Annotated[
+            Optional[bool],
+            Doc(
+                """
+                Boolean flag for indicating the deprecation of the Gateway and to display it
+                in the OpenAPI documentation..
+                """
+            ),
+        ] = None,
+        before_request: Annotated[
+            Sequence[Callable[..., Any]] | None,
+            Doc(
+                """
+                A list of events that are triggered before the application processes the request.
+                """
+            ),
+        ] = None,
+        after_request: Annotated[
+            Sequence[Callable[..., Any]] | None,
+            Doc(
+                """
+                A list of events that are triggered after the application processes the request.
+                """
+            ),
+        ] = None,
+    ) -> Callable:
+        """
+        Register a QUERY request handler as a decorator.
+
+        Use this decorator for safe, idempotent query operations that may need
+        structured request content.
+        """
+        return self.forward_single_method_route(
+            path=path,
+            method=HttpMethod.QUERY.value,
+            dependencies=dependencies,
+            interceptors=interceptors,
+            permissions=permissions,
+            exception_handlers=exception_handlers,
+            middleware=middleware,
+            name=name,
+            include_in_schema=include_in_schema,
+            deprecated=deprecated,
+            before_request=before_request,
+            after_request=after_request,
+        )
+
     def head(  # type: ignore[override]
         self,
         path: Annotated[
@@ -2123,6 +2237,7 @@ class RoutingMethodsMixin:  # HTTP method decorators extend Lilya with intercept
                 """
             ),
         ] = None,
+        status_code: int | None = None,
     ) -> Callable:
         raise NotImplementedError()
 
@@ -2218,49 +2333,6 @@ class Router(RoutingMethodsMixin, BaseRouter):  # type: ignore[misc]
     parameters (interceptors, enhanced dependency injection, etc.) for all routing
     methods. This creates method signature incompatibilities that are by design.
     """
-
-    def add_apiview(
-        self,
-        value: Annotated[
-            Union[Gateway, WebSocketGateway],
-            Doc(
-                """
-                The `Controller` or similar to be added.
-                """
-            ),
-        ],
-    ) -> None:
-        """
-        Adds an [Controller](https://ravyn.dev/routing/controllers/) or related
-        to the application routing.
-
-        **Example**
-
-        ```python
-        from ravyn import Router, Controller, Gateway, get
-
-
-        class BaseController(Controller):
-            path = "/"
-
-            @get(status_code=status_code)
-            async def hello(self) -> str:
-                return "Hello, World!"
-
-
-        gateway = Gateway(handler=View)
-
-        app = Router()
-        app.add_apiview(value=gateway)
-        ```
-        """
-        warnings.warn(
-            "add_apiview is deprecated and will be removed in the release 0.4.0. "
-            "Please use add_controller instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        self.add_controller(value=value)
 
     def add_controller(
         self,
@@ -2695,6 +2767,7 @@ class Router(RoutingMethodsMixin, BaseRouter):  # type: ignore[misc]
                 """
             ),
         ] = None,
+        status_code: int | None = None,
     ) -> Callable:
         """
         Register a route handler for one or more HTTP methods as a decorator.
@@ -2716,11 +2789,14 @@ class Router(RoutingMethodsMixin, BaseRouter):  # type: ignore[misc]
         """
         if methods is None:
             methods = [HttpMethod.GET.value]
+        if status_code is None:
+            status_code = status.HTTP_200_OK
 
         def wrapper(func: Callable) -> Callable:
             handler = HTTPHandler(
                 handler=func,
                 methods=methods,
+                status_code=status_code,
                 dependencies=dependencies,
                 permissions=cast(list["Permission"], permissions),
                 exception_handlers=exception_handlers,

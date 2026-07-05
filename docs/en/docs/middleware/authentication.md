@@ -117,7 +117,7 @@ Here we passed extra information to the `authenticate` of the backend to be used
 
 ## Backends
 
-For backends you need the `AuthenticationMiddleware` (not the BaseAuthMiddleware from Lilya). Only here you can provide them
+For backends you need the `AuthenticationMiddleware`. Only here you can provide them
 via the `backend` parameter. This can be a sequence of AuthenticationBackend instances or also a single one.
 
 If a backend doesn't find the user it can return None in `authenticate` to skip to the next Backend.

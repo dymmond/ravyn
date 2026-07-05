@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from ravyn.requests import Request
     from ravyn.types import APIGateHandler
 
-SAFE_METHODS: tuple[str, ...] = ("GET", "HEAD", "OPTIONS")
+SAFE_METHODS: tuple[str, ...] = ("GET", "QUERY", "HEAD", "OPTIONS")
 
 
 async def maybe_awaitable(func: Callable[..., Any], *args: Any, **kwargs: Any) -> bool:

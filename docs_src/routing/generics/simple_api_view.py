@@ -1,7 +1,7 @@
-from ravyn import SimpleAPIView, delete, get, patch, post, put
+from ravyn import SimpleAPIController, delete, get, patch, post, put
 
 
-class UserAPI(SimpleAPIView):
+class UserAPI(SimpleAPIController):
     @get()
     async def get(self) -> str: ...
 

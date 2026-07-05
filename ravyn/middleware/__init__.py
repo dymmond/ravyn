@@ -1,5 +1,4 @@
 from .asyncexitstack import AsyncExitStackMiddleware
-from .authentication import BaseAuthMiddleware
 from .clickjacking import XFrameOptionsMiddleware
 from .cors import CORSMiddleware
 from .csrf import CSRFMiddleware
@@ -11,7 +10,6 @@ from .trustedhost import TrustedHostMiddleware
 
 __all__ = [
     "AsyncExitStackMiddleware",
-    "BaseAuthMiddleware",
     "CORSMiddleware",
     "CSRFMiddleware",
     "GZipMiddleware",

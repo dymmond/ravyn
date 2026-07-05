@@ -6,7 +6,7 @@ from lilya.status import HTTP_200_OK, HTTP_201_CREATED
 
 from ravyn.core.config import CSRFConfig
 from ravyn.routing.gateways import Gateway, WebSocketGateway
-from ravyn.routing.handlers import delete, get, patch, post, put, websocket
+from ravyn.routing.handlers import delete, get, patch, post, put, query, websocket
 from ravyn.testclient import create_client
 from ravyn.utils.crypto import get_random_secret_key
 from ravyn.websockets import WebSocket
@@ -18,6 +18,11 @@ def get_handler() -> None: ...
 
 @post(path="/")
 def post_handler() -> None: ...
+
+
+@query(path="/")
+def query_handler() -> dict:
+    return {"method": "QUERY"}
 
 
 @put(path="/")
@@ -88,6 +93,17 @@ def test_unsafe_method_fails_without_csrf_header(method: str) -> None:
         data = response.json()
         assert data["detail"] == "CSRF token verification failed."
         assert data["status_code"] == 403
+
+
+def test_query_method_is_csrf_safe_without_header() -> None:
+    with create_client(
+        routes=[Gateway(path="/", handler=query_handler)],
+        csrf_config=CSRFConfig(secret=get_random_secret_key()),
+    ) as client:
+        response = client.query("/")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {"method": "QUERY"}
 
 
 def test_invalid_csrf_token() -> None:

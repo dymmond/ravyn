@@ -310,74 +310,6 @@ To add middlewares to the application is very simple.
 done with middleware and how to write some of them, Lilya also goes through with a lot of
 <a href='https://www.lilya.dev/middleware/#writing-pure-asgi-middleware' target='_blank'>detail</a>.
 
-## BaseAuthMiddleware
-
-!!! Warning "Deprecation Notice"
-    `BaseAuthMiddleware` is deprecated and will be removed in future versions of Ravyn (0.4.0).
-    It is recommended to implement custom authentication by using the the [AuthenticationMiddleware](#authenticationmiddleware)
-    instead.
-
-This is a very special middleware and it is the core for every authentication middleware that is used within
-an **Ravyn** application.
-
-`BaseAuthMiddleware` is also a protocol that simply enforces the implementation of the `authenticate` method and
-assigning the result object into a `AuthResult` and make it available on every request.
-
-### API Reference
-
-Check out the [API Reference for BasseAuthMiddleware](../references/middleware/baseauth.md) for more details.
-
-### Example of a JWT middleware class
-
-```python title='/src/middleware/jwt.py'
-{!> ../../../docs_src/middleware/auth_middleware_example.py !}
-```
-
-1. Import the `BaseAuthMiddleware` and `AuthResult` from `ravyn.middleware.authentication`.
-2. Import `JWTConfig` to pass some specific and unique JWT configations into the middleware.
-3. Implement the `authenticate` and assign the `user` result to the `AuthResult`.
-
-!!! Info
-    We use [Edgy](./../databases/edgy/motivation.md) for this example because Ravyn supports S
-    and contains functionalities linked with that support (like the User table) but **Ravyn**
-    **is not dependent of ANY specific ORM** which means that you are free to use whatever you prefer.
-
-#### Import the middleware into an Ravyn application
-
-=== "From the application instance"
-
-    ```python
-    from ravyn import Ravyn
-    from .middleware.jwt import JWTAuthMiddleware
-
-    app = Ravyn(routes=[...], middleware=[JWTAuthMiddleware])
-    ```
-
-=== "From the settings"
-
-    ```python
-    from typing import List
-
-    from ravyn import RavynSettings
-    from ravyn.types import Middleware
-    from .middleware.jwt import JWTAuthMiddleware
-
-    class AppSettings(RavynSettings):
-
-        @property
-        def middleware(self) -> List["Middleware"]:
-            return [
-                JWTAuthMiddleware
-            ]
-
-    # load the settings via RAVYN_SETTINGS_MODULE=src.configs.live.AppSettings
-    app = Ravyn(routes=[...])
-    ```
-
-!!! Tip
-    To know more about loading the settings and the available properties, have a look at the
-    [settings](./../application/settings.md) docs.
-
 ## Middleware and the settings
 
 One of the advantages of Ravyn is leveraging the settings to make the codebase tidy, clean and easy to maintain.
@@ -585,21 +517,22 @@ Ravyn processes middleware in an "onion" fashion. The first middleware defined i
 
 ```python
 from ravyn import Ravyn, Middleware
-from ravyn.middleware.authentication import BasicAuthMiddleware
+from ravyn.middleware.authentication import AuthenticationMiddleware
+from myapp.auth import JWTBackend
 from myapp.middleware import CustomLoggingMiddleware
 
 # WRONG: Logging won't have user info because auth runs AFTER logging
 app = Ravyn(
     middleware=[
         Middleware(CustomLoggingMiddleware),
-        Middleware(BasicAuthMiddleware),
+        Middleware(AuthenticationMiddleware, backend=JWTBackend()),
     ]
 )
 
 # CORRECT: Auth runs first, so Logging can access user data
 app = Ravyn(
     middleware=[
-        Middleware(BasicAuthMiddleware),
+        Middleware(AuthenticationMiddleware, backend=JWTBackend()),
         Middleware(CustomLoggingMiddleware),
     ]
 )
@@ -688,5 +621,5 @@ async def __call__(self, scope, receive, send):
 4. <a href='https://www.lilya.dev/middleware/#pure-asgi-middleware' target='_blank'>Pure ASGI Middleware</a>
 is encouraged and the `MiddlewareProtocol` enforces that.
 5. Middleware classes can be added to any [layer of the application](#quick-note)
-6. All authentication middlewares must inherit from the BaseAuthMiddleware.
+6. Authentication middleware should use `AuthenticationMiddleware` and authentication backends.
 7. You can load the **application middleware** in different ways.

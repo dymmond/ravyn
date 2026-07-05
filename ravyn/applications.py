@@ -1,4 +1,3 @@
-import warnings
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import asynccontextmanager, nullcontext
 from datetime import timezone as dtimezone
@@ -2034,49 +2033,6 @@ class Application(BaseLilya):
         )
         return engine
 
-    def add_apiview(
-        self,
-        value: Annotated[
-            Union["gateways.Gateway", "gateways.WebSocketGateway"],
-            Doc(
-                """
-                The `Controller` or similar to be added.
-                """
-            ),
-        ],
-    ) -> None:
-        """
-        Adds an [Controller](https://ravyn.dev/routing/controllers/) or related
-        to the application routing.
-
-        **Example**
-
-        ```python
-        from ravyn import Ravyn, Controller, Gateway, get
-
-
-        class View(Controller):
-            path = "/"
-
-            @get(status_code=status_code)
-            async def hello(self) -> str:
-                return "Hello, World!"
-
-
-        gateway = Gateway(handler=View)
-
-        app = Ravyn()
-        app.add_apiview(value=gateway)
-        ```
-        """
-        warnings.warn(
-            "add_apiview is deprecated and will be removed in the release 0.4.0. "
-            "Please use add_controller instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        self.add_controller(value=value)
-
     def add_controller(
         self,
         value: Annotated[
@@ -2763,7 +2719,7 @@ class Application(BaseLilya):
         For each route, it will verify from top to bottom which exception handlers are being passed
         and called them accordingly.
 
-        For APIViews, since it's a "wrapper", the handler will update the current list to contain
+        For controllers, since it's a "wrapper", the handler will update the current list to contain
         both.
         """
         if self.benchmark_mode:

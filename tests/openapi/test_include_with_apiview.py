@@ -3,7 +3,7 @@ from typing import Dict, Union
 import pytest
 from pydantic import BaseModel
 
-from ravyn import JSON, Gateway, Include, SimpleAPIView, get
+from ravyn import JSON, Gateway, Include, SimpleAPIController, get
 from ravyn.openapi.datastructures import OpenAPIResponse
 from ravyn.routing.controllers import Controller
 from ravyn.testclient import create_client
@@ -18,10 +18,10 @@ class Item(BaseModel):
 def read_people() -> Dict[str, str]: ...
 
 
-@pytest.mark.parametrize("value", [Controller, SimpleAPIView])
+@pytest.mark.parametrize("value", [Controller, SimpleAPIController])
 def test_add_include_to_openapi(test_client_factory, value):
     class MyAPI(value):
-        if issubclass(value, SimpleAPIView):
+        if issubclass(value, SimpleAPIController):
             extra_allowed = ["read_item"]
 
         @get(
@@ -106,10 +106,10 @@ def test_add_include_to_openapi(test_client_factory, value):
         }
 
 
-@pytest.mark.parametrize("value", [Controller, SimpleAPIView])
+@pytest.mark.parametrize("value", [Controller, SimpleAPIController])
 def test_include_no_include_in_schema(test_client_factory, value):
     class MyAPI(value):
-        if issubclass(value, SimpleAPIView):
+        if issubclass(value, SimpleAPIController):
             extra_allowed = ["read_item"]
 
         @get(

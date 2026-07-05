@@ -148,6 +148,58 @@ def create_user(data: UserCreate) -> User:
 
 ---
 
+## QUERY Operations
+
+Ravyn documents HTTP `QUERY` routes as native OpenAPI `query` operations. QUERY is defined by [RFC 10008](https://www.rfc-editor.org/rfc/rfc10008.html) as a safe, idempotent method for server-side query operations that may include request content.
+
+```python
+from pydantic import BaseModel
+from ravyn import query
+
+class SearchPayload(BaseModel):
+    term: str
+    filters: list[str]
+
+@query("/search", tags=["Search"])
+def search(payload: SearchPayload, page: int) -> dict:
+    return {"term": payload.term, "page": page}
+```
+
+Generated schemas include the `query` operation, any query parameters, and the request body:
+
+```json
+{
+  "openapi": "3.2.0",
+  "paths": {
+    "/search": {
+      "query": {
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchPayload"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    }
+  }
+}
+```
+
+OpenAPI added native QUERY operations in 3.2, so Ravyn emits `openapi: 3.2.0` when a schema contains QUERY routes. Existing schemas without QUERY routes keep the configured OpenAPI version.
+
+---
+
 ## Authentication in Documentation
 
 Add authentication to your docs so you can test protected endpoints.

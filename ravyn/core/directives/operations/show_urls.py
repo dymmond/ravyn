@@ -35,6 +35,8 @@ DOCS_ELEMENTS = [
 def get_http_verb(mapping: Any) -> str:
     if getattr(mapping, "get", None):
         return HttpMethod.GET.value
+    elif getattr(mapping, "query", None):
+        return HttpMethod.QUERY.value
     elif getattr(mapping, "post", None):
         return HttpMethod.POST.value
     elif getattr(mapping, "put", None):

@@ -29,6 +29,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 get = _create_handler_decorator("GET", status.HTTP_200_OK)
+query = _create_handler_decorator("QUERY", status.HTTP_200_OK)
 head = _create_handler_decorator("HEAD", status.HTTP_200_OK)
 post = _create_handler_decorator("POST", status.HTTP_201_CREATED)
 put = _create_handler_decorator("PUT", status.HTTP_200_OK)

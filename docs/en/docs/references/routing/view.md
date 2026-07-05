@@ -3,8 +3,8 @@
 This is the reference for the `BaseController` that contains all the parameters,
 attributes and functions.
 
-The `BaseController` server as the base of alll object oriented views of [Ravyn](../ravyn.md) such as
-[`Controller`](#ravyn.Controller), [`SimpleAPIView`](#ravyn.SimpleAPIView) and all the generics.
+The `BaseController` serves as the base of all object-oriented views of [Ravyn](../ravyn.md) such as
+[`Controller`](#ravyn.Controller), [`SimpleAPIController`](#ravyn.SimpleAPIController) and all the generics.
 
 ::: ravyn.routing.controllers.BaseController
     options:
@@ -26,7 +26,7 @@ The `BaseController` server as the base of alll object oriented views of [Ravyn]
         - "!^handle"
         - "!^create_signature_model"
 
-::: ravyn.SimpleAPIView
+::: ravyn.SimpleAPIController
     options:
         filters:
 

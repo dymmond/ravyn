@@ -11,6 +11,7 @@ class StrEnum(str, Enum):
 
 class HttpMethod(StrEnum):
     GET = "GET"
+    QUERY = "QUERY"
     POST = "POST"
     PUT = "PUT"
     PATCH = "PATCH"

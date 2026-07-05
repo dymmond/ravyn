@@ -73,7 +73,17 @@ else:
     SchedulerType = Any
 
 AsyncAnyCallable = Callable[..., Awaitable[Any]]
-HTTPMethod = Literal["GET", "POST", "DELETE", "PATCH", "PUT", "HEAD"]
+HTTPMethod = Literal[
+    "GET",
+    "QUERY",
+    "POST",
+    "DELETE",
+    "PATCH",
+    "PUT",
+    "HEAD",
+    "OPTIONS",
+    "TRACE",
+]
 HTTPMethods = get_args(HTTPMethod)
 
 Middleware = DefineMiddleware

@@ -487,7 +487,7 @@ def _create_handler_decorator(
             handler.__type__ = method_enum.value
             handler.__original_status_code__ = default_status_code
 
-            if method_upper in {"GET", "HEAD", "PUT", "PATCH", "OPTIONS", "TRACE"}:
+            if method_upper in {"GET", "QUERY", "HEAD", "PUT", "PATCH", "OPTIONS", "TRACE"}:
                 if status_code != handler.__original_status_code__:
                     handler.__is_status_overridden__ = True
 
