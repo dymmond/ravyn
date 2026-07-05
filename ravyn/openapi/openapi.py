@@ -324,11 +324,13 @@ def get_openapi_operation_parameters(
         if field_info.default is not None and field_info.default is not Undefined:
             param_schema["default"] = field_info.default
 
-        parameter: Parameter = Parameter(  # type: ignore[call-arg]
-            name=param.alias,
-            param_in=field_info.in_.value,
-            required=param.is_required(),
-            schema=param_schema,  # type: ignore[arg-type]
+        parameter = Parameter.model_validate(
+            {
+                "name": param.alias,
+                "in": field_info.in_.value,
+                "required": param.is_required(),
+                "schema": param_schema,
+            }
         )
 
         # Add description, examples, and deprecation status

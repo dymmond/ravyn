@@ -3206,4 +3206,4 @@ class ChildRavyn(Ravyn):
     ```
     """
 
-    register_as_global_instance: bool = False
+    register_as_global_instance: ClassVar[bool] = False

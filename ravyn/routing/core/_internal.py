@@ -1,10 +1,10 @@
 import inspect
 import sys
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, TypeVar, Union, cast, get_args, get_origin
+from typing import TYPE_CHECKING, Any, Callable, TypeVar, Union, cast, get_args, get_origin
 
 from lilya.datastructures import DataUpload
-from pydantic import BaseModel, create_model
+from pydantic import BaseModel, ConfigDict, create_model
 from pydantic.fields import FieldInfo
 
 from ravyn.core.datastructures import UploadFile
@@ -28,8 +28,9 @@ def create_field_model(*, field: FieldInfo, name: str, model_name: str) -> type[
     Creates a pydantic model for a specific field
     """
     params = {name.lower(): (field.annotation, field)}
-    data_field_model: type[BaseModel] = create_model(  # type: ignore[call-overload]
-        model_name, __config__={"arbitrary_types_allowed": True}, **params
+    create_model_fn = cast(Callable[..., type[BaseModel]], create_model)
+    data_field_model = create_model_fn(
+        model_name, __config__=ConfigDict(arbitrary_types_allowed=True), **params
     )
     return data_field_model
 
