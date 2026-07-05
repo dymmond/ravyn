@@ -7,6 +7,7 @@ from typing_extensions import Annotated, Doc
 from ravyn.exceptions import ImproperlyConfigured
 from ravyn.openapi.datastructures import OpenAPIResponse
 from ravyn.permissions.types import Permission
+from ravyn.routing._decorator_factory import _create_handler_decorator
 from ravyn.routing.router import WebhookHandler
 from ravyn.types import (
     BackgroundTaskType,
@@ -26,6 +27,8 @@ if TYPE_CHECKING:  # pragma: no cover
 F = TypeVar("F", bound=Callable[..., Any])
 
 SUCCESSFUL_RESPONSE = "Successful response"
+
+whquery = _create_handler_decorator("QUERY", status.HTTP_200_OK, is_webhook=True)
 
 
 def whget(

@@ -1,6 +1,7 @@
 import contextlib
 import functools
 import importlib
+import importlib.util
 import os
 import pkgutil
 import sys

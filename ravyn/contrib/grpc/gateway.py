@@ -20,7 +20,7 @@ from ravyn.responses import JSONResponse
 from ravyn.utils.helpers import make_callable
 
 # Allowed HTTP methods for endpoints.
-HTTP_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"]
+HTTP_ALLOWED_METHODS = ["GET", "QUERY", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"]
 
 
 class HTTPContext:

@@ -3,10 +3,14 @@ from collections import OrderedDict
 from typing import Any
 
 import lilya
+import lilya.compat
 import pydantic
 from monkay import load
 
 import ravyn
+import ravyn.openapi.datastructures
+import ravyn.routing.gateways
+import ravyn.routing.router
 from ravyn.core.terminal import OutputColour, Print
 
 printer = Print()

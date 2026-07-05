@@ -29,6 +29,32 @@ attributes and functions.
             - response_description
             - responses
 
+::: ravyn.query
+    options:
+        members:
+
+            - path
+            - summary
+            - description
+            - status_code
+            - content_encoding
+            - content_media_type
+            - include_in_schema
+            - background
+            - dependencies
+            - exception_handlers
+            - permissions
+            - middleware
+            - media_type
+            - response_class
+            - response_cookies
+            - response_headers
+            - deprecated
+            - security
+            - operation_id
+            - response_description
+            - responses
+
 ::: ravyn.post
     options:
         members:

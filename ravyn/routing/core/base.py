@@ -506,7 +506,7 @@ class BaseDispatcher(BaseResponseHandler):
     This class provides methods for getting a response for a request and calling the handler function.
     """
 
-    def get_response_for_handler(self) -> Callable[[Any], Awaitable[LilyaResponse]]:
+    def get_response_for_handler(self) -> Callable[..., Awaitable[LilyaResponse]]:
         """
         Checks and validates the type of return response and maps to the corresponding
         handler with the given parameters.
@@ -515,7 +515,7 @@ class BaseDispatcher(BaseResponseHandler):
             Callable[[Any], Awaitable[LilyaResponse]]: The response handler function.
         """
         if self._response_handler is not Void:
-            return cast("Callable[[Any], Awaitable[LilyaResponse]]", self._response_handler)
+            return cast("Callable[..., Awaitable[LilyaResponse]]", self._response_handler)
 
         media_type = (
             self.media_type.value if isinstance(self.media_type, Enum) else self.media_type
@@ -539,7 +539,7 @@ class BaseDispatcher(BaseResponseHandler):
         self._response_handler = handler
 
         return cast(
-            Callable[[Any], Awaitable[LilyaResponse]],
+            Callable[..., Awaitable[LilyaResponse]],
             self._response_handler,
         )
 

@@ -102,4 +102,4 @@ class CSRFConfig(BaseModel):
             A set of allowed safe methods that can set the cookie.
             """
         ),
-    ] = {"GET", "HEAD"}
+    ] = {"GET", "QUERY", "HEAD"}

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Type, cast
+from typing import Any, ClassVar, Type, cast
 
 import mongoz
 
@@ -29,6 +29,8 @@ class AbstractUser(mongoz.Document):
 
     class Meta:
         abstract = True
+
+    Meta: ClassVar[type[Any]]
 
     @property
     async def is_authenticated(self) -> bool:

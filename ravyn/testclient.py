@@ -81,6 +81,9 @@ class RavynTestClient(TestClient):
     def routes(self) -> list[Any]:
         return getattr(self.app, "routes", [])
 
+    def query(self, url: str, **kwargs: Any) -> Any:
+        return self.request("QUERY", url, **kwargs)
+
 
 def create_client(
     routes: Union["APIGateHandler", list["APIGateHandler"]],

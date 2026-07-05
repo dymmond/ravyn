@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Set, Tuple, Type, cast
 
 if TYPE_CHECKING:
-    from ravyn import SimpleAPIView
+    from ravyn import SimpleAPIController
     from ravyn.routing.controllers.generics import ListAPIController
 
 
@@ -29,7 +29,7 @@ class SimpleAPIMeta(type):
             return view(cls, name, bases, attrs)
 
         http_allowed_methods: list[str] = []
-        simple_view = cast("SimpleAPIView", view(cls, name, bases, attrs))
+        simple_view = cast("SimpleAPIController", view(cls, name, bases, attrs))
         cls.__filtered_handlers__ = [
             attr
             for attr in dir(simple_view)

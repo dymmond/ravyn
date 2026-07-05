@@ -33,7 +33,7 @@ app = Ravyn(
 
 ## JWTAuthMiddleware
 
-This middleware extends the [BaseAuthMiddleware](../../middleware/index.md#baseauthmiddleware) and enables JWT-based authentication for your Mongoz documents.
+This middleware uses [AuthenticationMiddleware](../../middleware/authentication.md) and enables JWT-based authentication for your Mongoz documents.
 
 ```python
 from ravyn.contrib.auth.mongoz.middleware import JWTAuthMiddleware

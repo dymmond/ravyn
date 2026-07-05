@@ -8,8 +8,8 @@ async def home(request: Request) -> JSONResponse:
     comes from its origins (Lilya).
 
     When building an authentication middleware, it
-    is recommended to inherit from the `BaseAuthMiddleware`.
+    is recommended to use `AuthenticationMiddleware`.
 
-    See more info here: https://ravyn.dymmond.com/middleware/middleware/?h=baseauthmiddleware#baseauthmiddleware
+    See more info here: https://ravyn.dymmond.com/middleware/authentication/
     """
     return JSONResponse({"message": f"hello {request.user.email}"})

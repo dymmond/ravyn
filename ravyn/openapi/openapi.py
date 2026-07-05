@@ -30,11 +30,12 @@ from ravyn.openapi.models import (
     Contact,
     Info,
     License,
-    OpenAPI,
+    OpenAPI as OpenAPI31,
     Operation,
     Parameter,
 )
 from ravyn.openapi.responses import create_internal_response
+from ravyn.openapi.schemas.v3_2_0 import OpenAPI as OpenAPI32
 from ravyn.openapi.utils import (
     STATUS_CODE_RANGES,
     VALIDATION_ERROR_DEFINITION,
@@ -61,6 +62,23 @@ SecurityRequirement = dict[str, Sequence[str]]
 ADDITIONAL_TYPES: list[str] = ["bool", "list", "dict"]
 TRANSFORMER_TYPES_KEYS: list[str] = list(TRANSFORMER_TYPES.keys())
 TRANSFORMER_TYPES_KEYS += ADDITIONAL_TYPES
+
+QUERY_OPENAPI_VERSION = "3.2.0"
+
+
+def _openapi_version_with_query_support(openapi_version: str) -> str:
+    try:
+        major, minor = (int(part) for part in openapi_version.split(".", 2)[:2])
+    except ValueError:
+        return QUERY_OPENAPI_VERSION
+
+    if (major, minor) < (3, 2):
+        return QUERY_OPENAPI_VERSION
+    return openapi_version
+
+
+def _has_query_operation(*path_maps: dict[str, dict[str, Any]]) -> bool:
+    return any("query" in path_item for path_map in path_maps for path_item in path_map.values())
 
 
 def get_flat_params(route: router.HTTPHandler | Any, body_fields: list[str]) -> list[Any]:
@@ -306,11 +324,13 @@ def get_openapi_operation_parameters(
         if field_info.default is not None and field_info.default is not Undefined:
             param_schema["default"] = field_info.default
 
-        parameter: Parameter = Parameter(  # type: ignore[call-arg]
-            name=param.alias,
-            param_in=field_info.in_.value,
-            required=param.is_required(),
-            schema=param_schema,  # type: ignore[arg-type]
+        parameter = Parameter.model_validate(
+            {
+                "name": param.alias,
+                "in": field_info.in_.value,
+                "required": param.is_required(),
+                "schema": param_schema,
+            }
         )
 
         # Add description, examples, and deprecation status
@@ -853,11 +873,15 @@ def get_openapi(
     if webhooks_paths:
         output["webhooks"] = webhooks_paths
 
+    if _has_query_operation(paths, webhooks_paths):
+        output["openapi"] = _openapi_version_with_query_support(openapi_version)
+
     if tags:
         output["tags"] = tags
 
     # Final Pydantic model validation and serialization
-    openapi: OpenAPI = OpenAPI(**output)
+    openapi_model = OpenAPI32 if output["openapi"].startswith("3.2") else OpenAPI31
+    openapi = openapi_model(**output)
     model_dump: str = openapi.model_dump_json(by_alias=True, exclude_none=True)
 
     return cast(dict[str, Any], loads(model_dump))

@@ -33,6 +33,7 @@ CONTEXT = "context"
 
 AVAILABLE_METHODS = [
     HttpMethod.GET,
+    HttpMethod.QUERY,
     HttpMethod.HEAD,
     HttpMethod.PATCH,
     HttpMethod.PUT,

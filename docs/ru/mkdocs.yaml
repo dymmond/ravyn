@@ -288,7 +288,6 @@ nav:
   - Middleware:
     - Base: references/middleware/middlewares.md
     - Authentication: references/middleware/authentication.md
-    - BaseAuth: references/middleware/baseauth.md
   - Responses:
     - Base Response: references/responses/response.md
     - JSON: references/responses/json.md
@@ -336,6 +335,6 @@ extra:
     lang: ru
   social:
   - icon: fontawesome/brands/github-alt
-    link: https://github.com/dymmond/lilya
+    link: https://github.com/dymmond/ravyn
   - icon: fontawesome/brands/discord
     link: https://discord.gg/XVeWXSrJ

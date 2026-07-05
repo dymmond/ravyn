@@ -18,11 +18,11 @@ from ravyn import Ravyn, Controller, get, post
 
 class UserController(Controller):
     path = "/users"
-    
+
     @get("/{user_id}")
     async def get_user(self, user_id: int) -> dict:
         return {"id": user_id, "name": "Alice"}
-    
+
     @post("/")
     async def create_user(self, data: dict) -> dict:
         return {"id": 1, **data}
@@ -53,23 +53,23 @@ from ravyn import Controller, get, post, put, delete
 
 class ProductController(Controller):
     path = "/products"
-    
+
     @get("/")
     async def list_products(self) -> list:
         return [{"id": 1, "name": "Product 1"}]
-    
+
     @get("/{product_id}")
     async def get_product(self, product_id: int) -> dict:
         return {"id": product_id, "name": "Product 1"}
-    
+
     @post("/")
     async def create_product(self, data: dict) -> dict:
         return {"id": 1, **data}
-    
+
     @put("/{product_id}")
     async def update_product(self, product_id: int, data: dict) -> dict:
         return {"id": product_id, **data}
-    
+
     @delete("/{product_id}")
     async def delete_product(self, product_id: int) -> None:
         pass
@@ -99,7 +99,7 @@ from ravyn import Controller, Inject, get
 class UserController(Controller):
     path = "/users"
     dependencies = {"db": Inject(get_database)}
-    
+
     @get("/")
     async def list_users(self, db) -> list:
         return await db.fetch_all("SELECT * FROM users")
@@ -113,7 +113,7 @@ from ravyn import Controller, get
 class AdminController(Controller):
     path = "/admin"
     permissions = [IsAdmin]  # Applied to all methods
-    
+
     @get("/users")
     async def list_users(self) -> list:
         return []
@@ -127,11 +127,11 @@ from ravyn.websockets import WebSocket
 
 class ChatController(Controller):
     path = "/chat"
-    
+
     @get("/")
     async def chat_page(self) -> dict:
         return {"message": "Chat room"}
-    
+
     @websocket("/ws")
     async def chat_ws(self, socket: WebSocket) -> None:
         await socket.accept()
@@ -144,18 +144,18 @@ class ChatController(Controller):
 
 ## Generic Controllers
 
-### SimpleAPIView - All Methods
+### SimpleAPIController - All Methods
 
 ```python
-from ravyn import SimpleAPIView, get, post
+from ravyn import SimpleAPIController, get, post
 
-class UserAPI(SimpleAPIView):
+class UserAPI(SimpleAPIController):
     path = "/users"
-    
+
     @get("/")
     async def get(self) -> list:  # Method name matches HTTP verb
         return []
-    
+
     @post("/")
     async def post(self, data: dict) -> dict:  # Method name matches HTTP verb
         return data
@@ -172,7 +172,7 @@ from ravyn import get
 
 class UserReadAPI(ReadAPIController):
     path = "/users"
-    
+
     @get("/")
     async def get(self) -> list:
         return []
@@ -186,11 +186,11 @@ from ravyn import post, put
 
 class UserCreateAPI(CreateAPIController):
     path = "/users"
-    
+
     @post("/")
     async def post(self, data: dict) -> dict:
         return data
-    
+
     @put("/{user_id}")
     async def put(self, user_id: int, data: dict) -> dict:
         return {"id": user_id, **data}
@@ -204,7 +204,7 @@ from ravyn import delete
 
 class UserDeleteAPI(DeleteAPIController):
     path = "/users"
-    
+
     @delete("/{user_id}")
     async def delete(self, user_id: int) -> None:
         pass
@@ -216,7 +216,7 @@ class UserDeleteAPI(DeleteAPIController):
 
 | Generic | Allowed Methods | Use Case |
 |---------|----------------|----------|
-| `SimpleAPIView` | All | Full CRUD |
+| `SimpleAPIController` | All | Full CRUD |
 | `ReadAPIController` | GET | Read-only APIs |
 | `CreateAPIController` | POST, PUT, PATCH | Create/Update |
 | `DeleteAPIController` | DELETE | Delete operations |
@@ -229,16 +229,16 @@ class UserDeleteAPI(DeleteAPIController):
 Add custom methods with `extra_allowed`:
 
 ```python
-from ravyn import SimpleAPIView, get
+from ravyn import SimpleAPIController, get
 
-class UserAPI(SimpleAPIView):
+class UserAPI(SimpleAPIController):
     path = "/users"
     extra_allowed = ["search_users"]  # Allow custom method
-    
+
     @get("/")
     async def get(self) -> list:
         return []
-    
+
     @get("/search")
     async def search_users(self, query: str) -> list:  # Custom method
         return []
@@ -254,11 +254,11 @@ class UserAPI(SimpleAPIView):
 # Good - grouped by resource
 class UserController(Controller):
     path = "/users"
-    
+
     @get("/")
     async def list_users(self) -> list:
         return []
-    
+
     @post("/")
     async def create_user(self, data: dict) -> dict:
         return data
@@ -270,11 +270,11 @@ class UserController(Controller):
 # Good - shared validation
 class ProductController(Controller):
     path = "/products"
-    
+
     def _validate_product(self, data: dict) -> None:
         if not data.get("name"):
             raise ValueError("Name required")
-    
+
     @post("/")
     async def create_product(self, data: dict) -> dict:
         self._validate_product(data)
@@ -287,7 +287,7 @@ class ProductController(Controller):
 # Good - enforce read-only
 class PublicUserAPI(ReadAPIController):
     path = "/public/users"
-    
+
     @get("/")
     async def get(self) -> list:
         return []

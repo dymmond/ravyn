@@ -18,6 +18,7 @@ def register_grpc_http_routes(
     GrpcGateway instance, and the appropriate handler is attached for each HTTP method
     (GET, POST, PUT, DELETE, PATCH). The handler is a wrapper that invokes the
     corresponding gRPC method and returns the result as a JSON response.
+    Supported methods include GET, QUERY, POST, PUT, DELETE, PATCH, OPTIONS, and TRACE.
 
     Args:
         app (ASGIApp): The Ravyn app instance where the HTTP routes will be registered.

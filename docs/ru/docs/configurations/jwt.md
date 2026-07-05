@@ -1,7 +1,7 @@
 # JWTConfig
 
 JWT расшифровывается как JSON Web Token. Его можно использовать с любым middleware
-на ваш выбор, которое реализует [BaseAuthMiddleware](../middleware/middleware.md#baseauthmiddleware).
+аутентификации на ваш выбор, включая `AuthenticationMiddleware`.
 
 !!! Tip
     Больше информации о JWT

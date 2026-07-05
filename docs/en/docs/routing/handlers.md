@@ -3,6 +3,7 @@
 Think of your API like a restaurant. When customers (clients) interact with your menu (API), they do different things:
 
 - **GET** - "Show me the menu" (read)
+- **QUERY** - "Search the menu with detailed preferences" (safe read with content)
 - **POST** - "I'll order the pasta" (create)
 - **PUT** - "Actually, make that whole wheat pasta" (replace)
 - **PATCH** - "Add extra cheese" (modify)
@@ -12,7 +13,7 @@ Handlers are the decorators that tell your API which "action" each endpoint perf
 
 ## What You'll Learn
 
-- Available HTTP handlers (GET, POST, PUT, PATCH, DELETE)
+- Available HTTP handlers (GET, QUERY, POST, PUT, PATCH, DELETE)
 - Using each HTTP method correctly
 - WebSocket handlers for real-time communication
 - Handler parameters and options
@@ -20,7 +21,11 @@ Handlers are the decorators that tell your API which "action" each endpoint perf
 ## Quick Start
 
 ```python
-from ravyn import Ravyn, get, post
+from ravyn import Gateway, Ravyn, get, post, query
+
+@query("/users/search")
+def search_users(data: dict) -> list:
+    return [{"id": 1, "name": "Alice", **data}]
 
 @get("/users")
 def list_users() -> list:
@@ -31,6 +36,7 @@ def create_user(data: dict) -> dict:
     return {"id": 2, **data}
 
 app = Ravyn(routes=[
+    Gateway(handler=search_users),
     Gateway(handler=list_users),
     Gateway(handler=create_user)
 ])
@@ -53,6 +59,31 @@ def get_user(user_id: int) -> dict:
 ```
 
 **Use for:** Fetching data, listing resources
+
+### @query - Safe Queries With Content
+
+```python
+from pydantic import BaseModel
+from ravyn import query
+
+class SearchFilters(BaseModel):
+    tags: list[str]
+    minimum_score: float
+
+@query("/products/search")
+def search_products(payload: SearchFilters, page: int = 1) -> list[dict]:
+    return [
+        {
+            "page": page,
+            "tags": payload.tags,
+            "minimum_score": payload.minimum_score,
+        }
+    ]
+
+# Default status code: 200
+```
+
+**Use for:** Read-only searches and lookups that need structured request content
 
 ### @post - Create Resources
 
@@ -117,10 +148,114 @@ def delete_user(user_id: int) -> None:
 | Method | Purpose | Default Status | Request Body |
 |--------|---------|----------------|--------------|
 | **GET** | Retrieve | 200 | No |
+| **QUERY** | Safe structured query | 200 | Yes |
 | **POST** | Create | 201 | Yes |
 | **PUT** | Update (full) | 200 | Yes |
 | **PATCH** | Update (partial) | 200 | Yes |
 | **DELETE** | Remove | 204 | No |
+
+---
+
+## QUERY Requests
+
+`QUERY` is the HTTP method defined by [RFC 10008](https://www.rfc-editor.org/rfc/rfc10008.html). It exists for safe, idempotent query operations where the query input is better represented as request content than as a long URL query string.
+
+QUERY is its own HTTP method in Ravyn. It is not treated as GET and it is not treated as POST. Middleware, permissions, routing, request parsing, and OpenAPI generation all see the incoming method as `QUERY`.
+
+### Semantics
+
+- **Safe:** A QUERY handler should not change server state just because it was called.
+- **Idempotent:** Repeating the same QUERY request should have the same intended effect as sending it once.
+- **Body-capable:** QUERY can receive JSON, form, or other supported request content.
+- **Content-typed:** Clients should send an appropriate `Content-Type` when they include content.
+
+### QUERY vs GET
+
+Use GET when the query input fits naturally in the URL, for example `/users?active=true&page=2`.
+
+Use QUERY when the request is still read-only, but the input is structured, large, or inconvenient to encode into a URL:
+
+```python
+from pydantic import BaseModel
+from ravyn import query
+
+class ReportQuery(BaseModel):
+    regions: list[str]
+    metrics: list[str]
+    include_archived: bool = False
+
+@query("/reports/search")
+async def search_reports(payload: ReportQuery) -> dict:
+    return {"regions": payload.regions, "metrics": payload.metrics}
+```
+
+### QUERY vs POST
+
+Use POST for unsafe operations that create, mutate, submit, or trigger work.
+
+Use QUERY for read-only operations that need request content:
+
+```python
+from ravyn import route
+
+@route("/reports/search", methods=["QUERY"])
+async def search_reports(payload: dict) -> dict:
+    return {"results": [], "query": payload}
+```
+
+### App and Router Decorators
+
+```python
+from ravyn import Ravyn
+
+app = Ravyn()
+
+@app.query("/catalog/search")
+async def catalog_search(payload: dict) -> dict:
+    return {"items": [], "filters": payload}
+```
+
+Routers expose the same decorator:
+
+```python
+from ravyn import Router
+
+router = Router()
+
+@router.query("/catalog/search")
+async def catalog_search(payload: dict) -> dict:
+    return {"items": [], "filters": payload}
+```
+
+### OpenAPI
+
+QUERY routes are documented as native `query` operations. If a QUERY route uses request content, Ravyn includes the generated `requestBody` schema alongside normal path, query, header, and cookie parameters.
+
+```json
+{
+  "paths": {
+    "/reports/search": {
+      "query": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportQuery"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    }
+  }
+}
+```
+
+Because native QUERY operations are part of OpenAPI 3.2, Ravyn emits `openapi: 3.2.0` for schemas that contain QUERY routes. Schemas without QUERY routes keep their configured OpenAPI version.
+
+!!! tip
+    Browsers treat QUERY as a non-safelisted CORS method. If a browser client calls QUERY across origins, include `QUERY` in your CORS `allow_methods` configuration.
 
 ---
 
@@ -133,10 +268,12 @@ Handle multiple HTTP methods with one function:
 ```python
 from ravyn import route
 
-@route("/users/{user_id}", methods=["GET", "PUT"])
+@route("/users/{user_id}", methods=["GET", "QUERY", "PUT"])
 def handle_user(user_id: int, request: Request) -> dict:
     if request.method == "GET":
         return {"id": user_id, "name": "Alice"}
+    elif request.method == "QUERY":
+        return {"id": user_id, "matches": []}
     elif request.method == "PUT":
         return {"id": user_id, "updated": True}
 ```
@@ -192,7 +329,7 @@ from ravyn.websockets import WebSocket
 @websocket("/ws")
 async def websocket_endpoint(socket: WebSocket) -> None:
     await socket.accept()
-    
+
     while True:
         data = await socket.receive_text()
         await socket.send_text(f"Echo: {data}")
@@ -240,6 +377,7 @@ def list_users() -> list:
 ```python
 # Good - correct methods
 @get("/users")  # Read
+@query("/users/search")  # Read with structured query content
 @post("/users")  # Create
 @put("/users/{id}")  # Update
 @delete("/users/{id}")  # Delete

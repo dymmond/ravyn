@@ -10,7 +10,7 @@ Core runtime package. Most behavior fans out from `applications.py`, `routing/`,
 | Routing internals | `routing/router.py`, `routing/gateways.py` | Highest complexity and most coupling |
 | OpenAPI generation | `openapi/openapi.py`, `openapi/utils.py` | Pydantic schema plumbing |
 | Security wrappers | `security/http/`, `security/oauth2/`, `security/jwt/` | Mostly wrappers over Lilya primitives |
-| Middleware behavior | `middleware/` | `BaseAuthMiddleware` deprecated |
+| Middleware behavior | `middleware/` | Use `AuthenticationMiddleware`; `BaseAuthMiddleware` has been removed |
 | CLI directives | `core/directives/` | Sayer-based command system |
 | Dependency injection | `injector.py`, `params.py`, `utils/dependencies.py` | DI + parameter model interaction |
 
@@ -26,7 +26,7 @@ Core runtime package. Most behavior fans out from `applications.py`, `routing/`,
 - `openapi/openapi.py` + `openapi/schemas/v3_1_0/*`: schema generation and compatibility.
 
 ## ANTI-PATTERNS
-- Do not introduce new code on deprecated auth middleware path (`BaseAuthMiddleware`).
+- Do not introduce new code on the removed auth middleware path (`BaseAuthMiddleware`).
 - Do not bypass include/schema guards in router/openapi to “fix” edge cases quickly.
 - Do not add alternate runtime entry paths when existing bootstrap hooks already exist.
 

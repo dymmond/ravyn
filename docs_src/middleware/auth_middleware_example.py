@@ -1,14 +1,15 @@
 from ravyn.core.config.jwt import JWTConfig
 from ravyn.contrib.auth.edgy.base_user import User
 from ravyn.exceptions import NotAuthorized
-from ravyn.middleware.authentication import AuthResult, BaseAuthMiddleware
+from ravyn.middleware.authentication import AuthenticationMiddleware
 from ravyn.security.jwt.token import Token
 from lilya._internal._connection import Connection
+from lilya.authentication import AuthCredentials, AuthResult
 from lilya.types import ASGIApp
 from edgy.exceptions import ObjectNotFound
 
 
-class JWTAuthMiddleware(BaseAuthMiddleware):
+class JWTAuthMiddleware(AuthenticationMiddleware):
     def __init__(self, app: "ASGIApp", config: "JWTConfig"):
         super().__init__(app)
         self.app = app
@@ -31,4 +32,4 @@ class JWTAuthMiddleware(BaseAuthMiddleware):
         )
 
         user = await self.retrieve_user(token.sub)
-        return AuthResult(user=user)
+        return AuthCredentials(), user

@@ -75,7 +75,7 @@ def get_definitions(
         inputs=inputs  # type: ignore[arg-type]
     )
 
-    return field_mapping, definitions  # type: ignore[return-value]
+    return field_mapping, {str(key): value for key, value in definitions.items()}
 
 
 def get_schema_from_model_field(
