@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
 
@@ -30,7 +30,7 @@ jobs:
         run: uv pip install --system -e ".[test]" pytest-codspeed==4.3.0
 
       - name: Run the benchmarks
-        uses: CodSpeedHQ/action@v4
+        uses: CodSpeedHQ/action@v4.19.1
         with:
           mode: simulation
           run: pytest tests/benchmarks/ --codspeed
