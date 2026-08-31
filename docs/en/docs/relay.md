@@ -38,7 +38,7 @@ app = Ravyn(
 ```
 
 !!! info
-    Install httpx: `pip install httpx`
+    Install httpx2: `pip install httpx2`
 
 ---
 
@@ -231,18 +231,18 @@ proxy = Relay(
     max_retries=3,
     retry_backoff_factor=0.5,  # 0.5s, 1s, 2s
     retry_statuses=(502, 503, 504),
-    retry_exceptions=(httpx.ConnectError, httpx.ReadTimeout)
+    retry_exceptions=(httpx2.ConnectError, httpx2.ReadTimeout)
 )
 ```
 
 ### Configure Timeouts
 
 ```python
-import httpx
+import httpx2
 
 proxy = Relay(
     target_base_url="http://upstream:8000",
-    timeout=httpx.Timeout(
+    timeout=httpx2.Timeout(
         connect=5.0,   # Connection timeout
         read=30.0,     # Read timeout
         write=30.0,    # Write timeout
@@ -377,7 +377,7 @@ proxy = Relay(
 ### In-Memory Testing
 
 ```python
-import httpx
+import httpx2
 from ravyn import Ravyn
 from lilya.contrib.proxy.relay import Relay
 
@@ -391,7 +391,7 @@ def test_endpoint() -> dict:
 # Create proxy with in-memory transport
 proxy = Relay(
     target_base_url="http://upstream",
-    transport=httpx.ASGITransport(app=upstream_app)
+    transport=httpx2.ASGITransport(app=upstream_app)
 )
 
 # Test app
@@ -498,7 +498,7 @@ app = Ravyn(
 # Good - explicit timeouts
 proxy = Relay(
     target_base_url="http://upstream:8000",
-    timeout=httpx.Timeout(connect=5.0, read=30.0)
+    timeout=httpx2.Timeout(connect=5.0, read=30.0)
 )
 ```
 

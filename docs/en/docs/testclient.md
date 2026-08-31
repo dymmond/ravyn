@@ -64,7 +64,7 @@ Testing gives you:
 
 ## The RavynTestClient
 
-`RavynTestClient` is built on top of `httpx.Client` with Ravyn-specific features.
+`RavynTestClient` is built on top of `httpx2.Client` with Ravyn-specific features.
 
 ### Basic Usage
 
@@ -117,7 +117,7 @@ client.options("/path")
 
 ## Testing with Authentication
 
-Use headers, cookies, and authentication like you would with `httpx`:
+Use headers, cookies, and authentication like you would with `httpx2`:
 
 ### Headers
 

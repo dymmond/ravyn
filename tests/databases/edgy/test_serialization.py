@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import edgy
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 
 from ravyn import Gateway, Ravyn, post
 from ravyn.conf import settings

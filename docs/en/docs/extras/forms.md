@@ -33,7 +33,7 @@ You can send the form in many different formats, for example:
 3. [A pydantic dataclass](#pydantic-dataclass) - Send a pydantic dataclass.
 4. [Pydantic model](#pydantic-model) - Send a pydantic BaseModel.
 
-You decide the best format to send. For the following examples, we will be using `httpx` for the
+You decide the best format to send. For the following examples, we will be using `httpx2` for the
 requests for explanatory purposes.
 
 ### Sending as dictionary

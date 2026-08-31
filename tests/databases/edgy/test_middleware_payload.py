@@ -7,7 +7,7 @@ from uuid import uuid4
 import pytest
 from anyio import from_thread, sleep, to_thread
 from edgy import ObjectNotFound, Registry
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from lilya.middleware import DefineMiddleware as LilyaMiddleware
 from pydantic import BaseModel
 

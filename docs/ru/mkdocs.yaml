@@ -55,7 +55,7 @@ plugins:
           show_root_heading: true
           show_if_no_docstring: true
           preload_modules:
-          - httpx
+          - httpx2
           - lilya
           - a2wsgi
           inherited_members: true

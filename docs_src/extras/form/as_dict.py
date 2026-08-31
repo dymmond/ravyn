@@ -1,8 +1,8 @@
-from typing import Any, Dict
+from typing import Dict
 
-import httpx
+import httpx2
 
-from ravyn import Ravyn, Form, Gateway, post
+from ravyn import Form, Gateway, Ravyn, post
 
 
 @post("/create")
@@ -20,4 +20,4 @@ app = Ravyn(routes=[Gateway(handler=create)])
 data = {"name": "example", "email": "example@ravyn.dev"}
 
 # Send the request
-httpx.post("/create", data=data)
+httpx2.post("/create", data=data)

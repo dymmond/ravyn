@@ -11,7 +11,7 @@ from typing import (
     cast,
 )
 
-from httpx._client import CookieTypes
+from httpx2._client import CookieTypes
 from lilya.testclient import TestClient  # noqa
 from pydantic import AnyUrl
 

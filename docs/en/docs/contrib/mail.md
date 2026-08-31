@@ -197,7 +197,7 @@ You can integrate **any third-party service** (Mailgun, Brevo, Mailchimp, etc.) 
 ### Example: Mailgun Backend
 
 ```python
-import httpx
+import httpx2
 from lilya.contrib.mail.backends.base import BaseMailBackend
 from lilya.contrib.mail.message import EmailMessage
 
@@ -207,7 +207,7 @@ class MailgunBackend(BaseMailBackend):
         self.domain = domain
 
     async def send(self, message: EmailMessage) -> None:
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             await client.post(
                 f"https://api.mailgun.net/v3/{self.domain}/messages",
                 auth=("api", self.api_key),
@@ -224,7 +224,7 @@ class MailgunBackend(BaseMailBackend):
 ### Example: Brevo Backend
 
 ```python
-import httpx
+import httpx2
 from lilya.contrib.mail.backends.base import BaseMailBackend
 from lilya.contrib.mail.message import EmailMessage
 
@@ -233,7 +233,7 @@ class BrevoBackend(BaseMailBackend):
         self.api_key = api_key
 
     async def send(self, message: EmailMessage) -> None:
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             await client.post(
                 "https://api.brevo.com/v3/smtp/email",
                 headers={"api-key": self.api_key},
@@ -250,7 +250,7 @@ class BrevoBackend(BaseMailBackend):
 ### Example: Mailchimp Transactional (Mandrill)
 
 ```python
-import httpx
+import httpx2
 from lilya.contrib.mail.backends.base import BaseMailBackend
 from lilya.contrib.mail.message import EmailMessage
 
@@ -259,7 +259,7 @@ class MailchimpBackend(BaseMailBackend):
         self.api_key = api_key
 
     async def send(self, message: EmailMessage) -> None:
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             await client.post(
                 "https://mandrillapp.com/api/1.0/messages/send.json",
                 json={

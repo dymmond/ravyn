@@ -205,9 +205,9 @@ async def cleanup_old_sessions():
 @scheduler(name="sync_users", trigger="interval", minutes=15)
 async def sync_users_from_api():
     """Sync users every 15 minutes."""
-    import httpx
+    import httpx2
 
-    async with httpx.AsyncClient() as client:
+    async with httpx2.AsyncClient() as client:
         response = await client.get("https://api.example.com/users")
         users = response.json()
 

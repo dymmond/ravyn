@@ -71,9 +71,10 @@ def test_websocket_headers(test_client_factory):  # pragma: no cover
 
     client = RavynTestClient(app)
     with client.websocket_connect("/") as websocket:
+        accept_encoding = "gzip, deflate, zstd" if sys.version_info >= (3, 14) else "gzip, deflate"
         expected_headers = {
             "accept": "*/*",
-            "accept-encoding": "gzip, deflate",
+            "accept-encoding": accept_encoding,
             "connection": "upgrade",
             "host": "testserver",
             "user-agent": "testclient",

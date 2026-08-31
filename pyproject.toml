@@ -51,7 +51,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
-    "lilya[standard]>=0.27.0",
+    "lilya[standard]>=0.27.2",
     "pydantic-settings>=2.9.0",
     "orjson>=3.8.5,<4.0.0",
     "msgspec>=0.20.0,<0.22.0",
@@ -159,7 +159,7 @@ Funding = "https://github.com/sponsors/tarsil"
 Source = "https://github.com/dymmond/ravyn"
 
 [project.optional-dependencies]
-test = ["httpx>=0.25.0"]
+test = ["httpx2>=2.12.0"]
 dev = [
     # includes watchfiles
     "palfrey[standard]>=0.1.3",
@@ -175,7 +175,7 @@ standard = [
     # For template rendering
     "jinja2>=3.1.2,<4.0.0",
     # For client testing
-    "httpx>=0.25.0,<0.30.0",
+    "httpx2>=2.12.0",
     # For static files serving
     "palfrey[standard]>=0.1.3",
 ]
@@ -232,8 +232,8 @@ testing = [
 docs = [
     "sayer>=0.7.4",
     "a2wsgi>=1.9.0",
-    "httpx>=0.25.0",
-    "lilya[standard]>=0.27.0",
+    "httpx2>=2.12.0",
+    "lilya[standard]>=0.27.2",
     "zensical>=0.0.23,<0.1.0",
     "griffe-typingdoc>=0.2.2,<1.0",
     "mkdocs-meta-descriptions-plugin>=2.3.0",
