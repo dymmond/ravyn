@@ -41,10 +41,10 @@ def send_welcome_email(email: str):
 def register_user(email: str, background_tasks: BackgroundTask) -> JSONResponse:
     # Save user to database (fast)
     user_id = 123
-    
+
     # Send email in background (slow)
     background_tasks = BackgroundTask(send_welcome_email, email)
-    
+
     # Response sent immediately, email sent after
     return JSONResponse(
         {"user_id": user_id, "message": "Registration successful"},
@@ -148,7 +148,7 @@ def register(email: str) -> JSONResponse:
         BackgroundTask(send_email, email),
         BackgroundTask(log_event, "user_registered")
     ])
-    
+
     # Pass tasks via response
     return JSONResponse(
         {"registered": email},
@@ -178,7 +178,7 @@ def send_notification(user_id: int, message: str):
 def notify_user(user_id: int, message: str) -> JSONResponse:
     # Create background task with request data
     task = BackgroundTask(send_notification, user_id, message)
-    
+
     return JSONResponse(
         {"status": "notification queued"},
         background=task
@@ -211,7 +211,7 @@ def process_order(user_id: int, email: str) -> JSONResponse:
         BackgroundTask(update_database, user_id),
         BackgroundTask(log_action, "order_processed")
     ])
-    
+
     return JSONResponse(
         {"status": "processing"},
         background=tasks
@@ -238,14 +238,14 @@ def write_log(message: str):
 @post("/action")
 def perform_action(user_email: str, action_type: str) -> JSONResponse:
     tasks = BackgroundTasks()
-    
+
     # Add tasks conditionally
     if action_type == "important":
         tasks.add_task(send_email, user_email, "Important Action")
         tasks.add_task(write_log, f"Important action by {user_email}")
     else:
         tasks.add_task(write_log, f"Regular action by {user_email}")
-    
+
     return JSONResponse(
         {"status": "completed"},
         background=tasks
@@ -287,7 +287,7 @@ def handler() -> JSONResponse:
         BackgroundTask(sync_task, "Hello"),
         BackgroundTask(async_task, "World")
     ])
-    
+
     return JSONResponse({"status": "ok"}, background=tasks)
 
 app = Ravyn()
@@ -319,13 +319,13 @@ def notify_admin(user_email: str):
 def register_user(email: str, password: str) -> JSONResponse:
     # Quick database insert
     user_id = 123  # Simulated
-    
+
     # Background tasks
     tasks = BackgroundTasks()
     tasks.add_task(send_welcome_email, email)
     tasks.add_task(create_user_profile, user_id)
     tasks.add_task(notify_admin, email)
-    
+
     return JSONResponse(
         {"user_id": user_id, "message": "Registration successful"},
         status_code=201,
@@ -350,10 +350,10 @@ def process_uploaded_file(filename: str, user_id: int):
 async def upload_file(filename: str, user_id: int) -> JSONResponse:
     # Save file quickly
     file_path = f"/uploads/{filename}"
-    
+
     # Process in background
     task = BackgroundTask(process_uploaded_file, filename, user_id)
-    
+
     # Return immediately with 202 Accepted
     return JSONResponse(
         {"message": "File uploaded, processing started", "file": filename},
@@ -370,20 +370,20 @@ app.add_route(upload_file)
 ```python
 from ravyn import Ravyn, post, BackgroundTask
 from ravyn.responses import JSONResponse
-import httpx
+import httpx2
 
 async def send_webhook(url: str, data: dict):
-    async with httpx.AsyncClient() as client:
+    async with httpx2.AsyncClient() as client:
         await client.post(url, json=data)
 
 @post("/orders")
 async def create_order(item: str, quantity: int, webhook_url: str) -> JSONResponse:
     order_id = 456  # Simulated
-    
+
     # Send webhook notification in background
     webhook_data = {"order_id": order_id, "item": item, "quantity": quantity}
     task = BackgroundTask(send_webhook, webhook_url, webhook_data)
-    
+
     return JSONResponse(
         {"order_id": order_id, "status": "created"},
         status_code=201,
@@ -426,7 +426,7 @@ def log_calculation(items: list):
 def handler() -> JSONResponse:
     items = [1, 2, 3]
     total = sum(items)  # Calculate in handler
-    
+
     task = BackgroundTask(log_calculation, items)  # Log in background
     return JSONResponse({"total": total}, background=task)
 ```

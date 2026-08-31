@@ -605,10 +605,10 @@ async def __call__(self, scope, receive, send):
     await self.app(scope, receive, send)
 
 # CORRECT
-import httpx
+import httpx2
 
 async def __call__(self, scope, receive, send):
-    async with httpx.AsyncClient() as client:
+    async with httpx2.AsyncClient() as client:
         await client.get("https://api.example.com")
     await self.app(scope, receive, send)
 ```

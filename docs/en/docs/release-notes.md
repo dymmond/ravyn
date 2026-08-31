@@ -1,5 +1,11 @@
 # Release Notes
 
+## 0.4.1
+
+### Changed
+
+- Replaced HTTPX with HTTPX2, Pydantic's continuation of the HTTPX project, across Ravyn's test client, documentation, and HTTP-backed examples.
+
 ## 0.4.0
 
 ### Added

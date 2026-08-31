@@ -163,7 +163,7 @@ Ravyn provides a complete guide for implementing refresh tokens:
 
 ## Testing the Flow
 
-Let's test the complete authentication flow using `httpx`:
+Let's test the complete authentication flow using `httpx2`:
 
 ### Complete Test Script
 
@@ -294,7 +294,7 @@ from pydantic import BaseModel, EmailStr
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
-    
+
     @validator('password')
     def password_strength(cls, v):
         if len(v) < 8:
@@ -367,7 +367,7 @@ user2 = User(email="user2@example.com", social={...})
 You've built a complete, production-ready authentication system with:
 
 ✅ User registration with password hashing
-✅ Login with JWT token generation  
+✅ Login with JWT token generation
 ✅ Protected routes with middleware
 ✅ Clean, maintainable code structure
 ✅ MongoDB flexibility

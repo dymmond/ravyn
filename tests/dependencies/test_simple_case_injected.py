@@ -2,7 +2,7 @@ from typing import AsyncGenerator, List, Type
 
 import edgy
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from pydantic import BaseModel
 
 from ravyn import Ravyn, post
