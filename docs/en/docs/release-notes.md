@@ -5,7 +5,6 @@
 ### Changed
 
 - Replaced HTTPX with HTTPX2, Pydantic's continuation of the HTTPX project, across Ravyn's test client, documentation, and HTTP-backed examples.
-- Bump Lilya to at least 0.27.2.
 
 ## 0.4.0
 
