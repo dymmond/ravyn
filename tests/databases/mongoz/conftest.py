@@ -1,4 +1,3 @@
-import asyncio
 import typing
 
 import pytest
@@ -12,16 +11,15 @@ def pytest_configure(config):
     config.option.asyncio_mode = "strict"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def anyio_backend():
     return ("asyncio", {"debug": False})
 
 
-@pytest.fixture(scope="session")
-def event_loop() -> typing.Generator[asyncio.AbstractEventLoop, None, None]:
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+@pytest.fixture(scope="package", autouse=True)
+async def registry_lifespan() -> typing.AsyncGenerator:
+    yield
+    await client.close()
 
 
 @pytest.fixture(autouse=True)

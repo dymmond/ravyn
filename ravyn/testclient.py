@@ -1,4 +1,4 @@
-import asyncio
+import inspect
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -294,7 +294,7 @@ class override_settings:
             Any: The result of the test function.
 
         """
-        if asyncio.iscoroutinefunction(func):
+        if inspect.iscoroutinefunction(func):
 
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:

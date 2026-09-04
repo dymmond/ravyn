@@ -5,6 +5,8 @@
 ### Changed
 
 - Replaced HTTPX with HTTPX2, Pydantic's continuation of the HTTPX project, across Ravyn's test client, documentation, and HTTP-backed examples.
+- Updated the test stack to Mongoz 0.14.0, AnyIO 4.15.0, and ty 0.0.78, including Mongoz's registry lifecycle changes.
+- Declared Python 3.14 as the current maximum supported version while preparing the dependency stack for Python 3.15.
 
 ## 0.4.0
 
