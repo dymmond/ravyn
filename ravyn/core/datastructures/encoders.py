@@ -7,16 +7,17 @@ from ravyn.utils.enums import MediaType
 
 if TYPE_CHECKING:  # pragma: no cover
     from ravyn.applications import Ravyn
+    from ravyn.responses.encoders import ORJSONResponse, UJSONResponse
+else:
+    try:
+        from ravyn.responses.encoders import ORJSONResponse
+    except ImportError:  # pragma: no cover
+        ORJSONResponse = None
 
-try:
-    from ravyn.responses.encoders import ORJSONResponse
-except ImportError:  # pragma: no cover
-    ORJSONResponse = None
-
-try:
-    from ravyn.responses.encoders import UJSONResponse
-except ImportError:  # pragma: no cover
-    UJSONResponse = None
+    try:
+        from ravyn.responses.encoders import UJSONResponse
+    except ImportError:  # pragma: no cover
+        UJSONResponse = None
 
 
 class ORJSON(ResponseContainer[ORJSONResponse]):

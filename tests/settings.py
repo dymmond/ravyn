@@ -1,4 +1,3 @@
-import asyncio
 import os
 from functools import cached_property
 from typing import Any, Optional, Tuple
@@ -42,7 +41,7 @@ class AppTestSettings(RavynSettings):
 
     @cached_property
     def mongoz_registry(self) -> mongoz.Registry:
-        return mongoz.Registry(TEST_DATABASE_URL, event_loop=asyncio.get_running_loop)
+        return mongoz.Registry(TEST_DATABASE_URL)
 
     @property
     def jwt_config(self) -> JWTConfig:
