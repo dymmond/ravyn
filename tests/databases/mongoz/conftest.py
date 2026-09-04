@@ -11,12 +11,12 @@ def pytest_configure(config):
     config.option.asyncio_mode = "strict"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def anyio_backend():
     return ("asyncio", {"debug": False})
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="package", autouse=True)
 async def registry_lifespan() -> typing.AsyncGenerator:
     yield
     await client.close()
