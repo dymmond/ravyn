@@ -214,7 +214,7 @@ testing = [
     "freezegun>=1.2.2,<2.0.0",
     "grpcio-tools>=1.71.0",
     "litestar>=2.18.0",
-    "mongoz==0.14.0",
+    "mongoz==0.15.0",
     "ty==0.0.78",
     "pytest>=7.1.3,<10.0.0",
     "pytest-cov>=4.1.0,<8.0.0",
