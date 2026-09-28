@@ -52,7 +52,7 @@ async def check_password(
     must_update: bool = hasher_changed or preferred_hasher.must_update(encoded)
     is_correct: bool = hasher_handler.verify(password, encoded)
 
-    if setter and is_correct and must_update:
+    if setter is not None and is_correct and must_update:
         await setter(password)
     return is_correct
 

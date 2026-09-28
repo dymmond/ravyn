@@ -112,6 +112,8 @@ app = Ravyn(
 | `issuer` | str | Token issuer | `None` |
 | `audience` | str | Token audience | `None` |
 
+Set `audience` on the `JWTConfig` passed to the built-in Edgy or Mongoz JWT authentication backend when the service expects a particular audience. The backend rejects tokens with a different or missing `aud` claim before looking up the user. Without an expected audience, audience validation remains disabled for compatibility. You can also set `issuer` to validate `iss`. Custom authentication implementations must pass these expected values to `Token.decode()` themselves and issue tokens with the matching claims.
+
 ---
 
 ## Generating Tokens
