@@ -652,7 +652,7 @@ class BaseRequires:
 
         if not callable(dependency):
             dependency = make_callable(dependency)
-        self.signature_model = inspect.signature(dependency) if dependency else None
+        self.signature_model = inspect.signature(dependency) if dependency is not None else None
 
     def __repr__(self) -> str:
         attr = getattr(self.dependency, "__name__", type(self.dependency).__name__)

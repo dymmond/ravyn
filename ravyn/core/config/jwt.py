@@ -88,6 +88,14 @@ class JWTConfig(BaseModel):
             """
         ),
     ] = "HS256"
+    audience: Annotated[
+        str | None,
+        Doc("Expected JWT audience for authentication. When set, tokens must match it."),
+    ] = None
+    issuer: Annotated[
+        str | None,
+        Doc("Expected JWT issuer for authentication. When set, tokens must match it."),
+    ] = None
     access_token_lifetime: Annotated[
         Union[datetime, timedelta, str, float],
         Doc(

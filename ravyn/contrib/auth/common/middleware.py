@@ -81,6 +81,8 @@ class CommonJWTAuthBackend(AuthenticationBackend):  # pragma: no cover
                 token=auth_token,
                 key=self.config.signing_key,
                 algorithms=[self.config.algorithm],
+                audience=self.config.audience,
+                issuer=self.config.issuer,
             )
         except PyJWTError as e:
             raise AuthenticationError(str(e)) from e

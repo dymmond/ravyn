@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 from functools import wraps
 from typing import (
@@ -294,7 +295,15 @@ class override_settings:
             Any: The result of the test function.
 
         """
-        if inspect.iscoroutinefunction(func):
+        code = getattr(func, "__code__", None)
+        is_generator_coroutine = inspect.isgeneratorfunction(func) and bool(
+            code and code.co_flags & inspect.CO_ITERABLE_COROUTINE
+        )
+        if (
+            inspect.iscoroutinefunction(func)
+            or asyncio.iscoroutinefunction(func)
+            or is_generator_coroutine
+        ):
 
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:

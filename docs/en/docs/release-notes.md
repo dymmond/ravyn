@@ -1,5 +1,20 @@
 # Release Notes
 
+## 0.4.3
+
+### Security
+
+- Enforce JWT audience validation when an expected audience is passed to `Token.decode()` or configured for the built-in Edgy and Mongoz authentication backends. This prevents a signed token for another audience from authenticating against a service that has configured its own audience. Thanks to [@sleepyguy396](https://github.com/sleepyguy396) for reporting [issue #739](https://github.com/dymmond/ravyn/issues/739).
+
+### Changed
+
+- Add optional `audience` and `issuer` settings to `JWTConfig` for built-in JWT authentication; deployments without an expected audience retain their existing behavior.
+- Bump the test environment's `ty` to 0.0.84.
+
+### Fixed
+
+- Preserve async execution for generator-based coroutine test functions wrapped by `override_settings`.
+
 ## 0.4.2
 
 ## Changed
