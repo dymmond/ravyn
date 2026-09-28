@@ -82,6 +82,8 @@ class Token(BaseModel):
             options["verify_aud"] = True
         else:
             options.setdefault("verify_aud", False)
+        if kwargs.get("issuer") is not None:
+            options["verify_iss"] = True
         try:
             data = jwt.decode(jwt=token, key=key, algorithms=algorithms, options=options, **kwargs)
         except PyJWTError as e:

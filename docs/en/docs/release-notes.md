@@ -4,7 +4,7 @@
 
 ### Security
 
-- Enforce JWT audience validation when an expected audience is passed to `Token.decode()` or configured for the built-in Edgy and Mongoz authentication backends. This prevents a signed token for another audience from authenticating against a service that has configured its own audience. Thanks to [@sleepyguy396](https://github.com/sleepyguy396) for reporting [issue #739](https://github.com/dymmond/ravyn/issues/739).
+- Enforce JWT audience and issuer validation when expected values are passed to `Token.decode()` or configured for the built-in Edgy and Mongoz authentication backends, even if decode options attempt to disable those checks. This prevents a signed token for another audience from authenticating against a service that has configured its own audience. Thanks to [@sleepyguy396](https://github.com/sleepyguy396) for reporting [issue #739](https://github.com/dymmond/ravyn/issues/739).
 
 ### Changed
 
@@ -13,7 +13,7 @@
 
 ### Fixed
 
-- Preserve async execution for generator-based coroutine test functions wrapped by `override_settings`.
+- Preserve async execution for generator-based coroutine test functions wrapped by `override_settings`, including partials and callable instances.
 
 ## 0.4.2
 
