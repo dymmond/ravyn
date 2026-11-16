@@ -222,7 +222,7 @@ testing = [
     "polyfactory>=2.5.0,<4.0.0",
     "pytz",
     "ujson>=5.7.0,<7",
-    "loguru>=0.7.0,<0.8.0",
+    "loguru>=0.7.0,<0.9.0",
     "structlog>=25.2.0",
     "ipdb",
     "types-ujson==5.10.0.20250822",
