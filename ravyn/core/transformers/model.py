@@ -508,14 +508,12 @@ def _get_form_data(
         Optional[Tuple[EncodingType, FieldInfo]]: Tuple containing media type and data
         field information, or None if not found.
     """
-    data_field = None
+    data_field = next(
+        (field for field in signature_model.model_fields.values() if isinstance(field, Body)),
+        None,
+    )
 
-    for _, field in signature_model.model_fields.items():
-        if isinstance(field, Body):
-            data_field = field
-            break
-
-    if data_field:
+    if data_field is not None:
         extra = getattr(data_field, "json_schema_extra", None) or {}
         media_type = extra.get("media_type")
         if media_type in MEDIA_TYPES:

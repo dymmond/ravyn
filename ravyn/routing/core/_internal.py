@@ -1,5 +1,4 @@
 import inspect
-import sys
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Callable, TypeVar, Union, cast, get_args, get_origin
 
@@ -143,10 +142,8 @@ def convert_annotation_to_pydantic_model(field_annotation: Any) -> Any:
     # Handle Framework Encoder Types (The main conversion logic)
     # Iterate through registered encoder types to find a match
     for enc in LILYA_ENCODER_TYPES.get():
-        if sys.version_info <= (3, 12):
-            # For backwards compatibility
-            if not hasattr(field_annotation, "__annotations__"):
-                return field_annotation
+        if not hasattr(field_annotation, "__annotations__"):
+            return field_annotation
 
         is_structure: bool = hasattr(enc, "is_type_structure") and enc.is_type_structure(
             field_annotation
