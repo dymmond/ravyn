@@ -75,5 +75,5 @@ jobs:
           DATABASE_URI: "mongodb://root:mongoadmin@localhost:27017"
         run: "hatch run test:test"
       - name: "Build documentation"
-        if: matrix.python-version == '3.10'
+        if: matrix.python-version == '3.11'
         run: "hatch run docs:build"
